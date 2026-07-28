@@ -39,39 +39,42 @@ export default function ChecklistPage() {
   const { data, isLoading, isError } = useChecklistData(tripId!);
   const { mutate: togglePacked } = useTogglePacked(tripId!);
 
-  const [search,       setSearch]       = useState('');
-  const [catFilter,    setCatFilter]    = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
 
-  const [addOpen,       setAddOpen]       = useState(false);
-  const [editItem,      setEditItem]      = useState<PackingItemRow | undefined>(undefined);
-  const [editOpen,      setEditOpen]      = useState(false);
-  const [deleteTarget,  setDeleteTarget]  = useState<PackingItemRow | null>(null);
-  const [deleteOpen,    setDeleteOpen]    = useState(false);
-
-  if (isLoading) return <ChecklistSkeleton />;
-  if (isError || !data) return <Navigate to="/trips" replace />;
-
-  const { tripTitle, items } = data;
+  const [addOpen, setAddOpen] = useState(false);
+  const [editItem, setEditItem] = useState<PackingItemRow | undefined>(undefined);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PackingItemRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const filtered = useMemo(() => {
-    let result = items;
+    let result = data?.items ?? [];
     if (catFilter !== 'all') {
       result = result.filter((i) => (i.category ?? 'Other') === catFilter);
     }
-    if (statusFilter === 'packed')   result = result.filter((i) =>  i.is_packed);
+    if (statusFilter === 'packed') result = result.filter((i) => i.is_packed);
     if (statusFilter === 'unpacked') result = result.filter((i) => !i.is_packed);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter((i) => i.name.toLowerCase().includes(q));
     }
     return result;
-  }, [items, catFilter, statusFilter, search]);
+  }, [data, catFilter, statusFilter, search]);
+
+  if (isLoading) return <ChecklistSkeleton />;
+  if (isError || !data) return <Navigate to="/trips" replace />;
+
+  const { tripTitle } = data;
+  const items: PackingItemRow[] = data.items;
 
   const hasActiveFilters = search !== '' || catFilter !== 'all' || statusFilter !== 'all';
 
   function clearFilters() {
-    setSearch(''); setCatFilter('all'); setStatusFilter('all');
+    setSearch('');
+    setCatFilter('all');
+    setStatusFilter('all');
   }
 
   function handleToggle(item: PackingItemRow) {
@@ -90,17 +93,21 @@ export default function ChecklistPage() {
     setDeleteOpen(true);
   }
 
-  const usedCategories = Array.from(
-    new Set(items.map((i) => i.category ?? 'Other')),
-  ).sort();
+  const usedCategories = Array.from(new Set(items.map((i) => i.category ?? 'Other'))).sort();
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mt-0.5 shrink-0"
+          aria-label="Back to trip"
+          asChild
+        >
           <Link to={`/trips/${tripId}`}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
         <PageHeader title="Packing Checklist" description={tripTitle}>
@@ -117,9 +124,10 @@ export default function ChecklistPage() {
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search items…"
+            aria-label="Search packing items"
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -143,10 +151,7 @@ export default function ChecklistPage() {
           </SelectContent>
         </Select>
 
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as FilterStatus)}
-        >
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as FilterStatus)}>
           <SelectTrigger className="w-full sm:w-36">
             <SelectValue />
           </SelectTrigger>

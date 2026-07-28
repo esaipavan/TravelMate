@@ -19,12 +19,7 @@ interface DeleteTripDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function DeleteTripDialog({
-  tripId,
-  tripTitle,
-  open,
-  onOpenChange,
-}: DeleteTripDialogProps) {
+export function DeleteTripDialog({ tripId, tripTitle, open, onOpenChange }: DeleteTripDialogProps) {
   const navigate = useNavigate();
   const { mutateAsync, isPending } = useDeleteTrip();
 
@@ -45,14 +40,16 @@ export function DeleteTripDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete "{tripTitle}"?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete the trip and all its expenses, itinerary, checklist
-            items, and journal entries. This action cannot be undone.
+            This will permanently delete the trip and all its expenses, itinerary, checklist items,
+            and journal entries. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
+            onClick={() => {
+              void handleDelete();
+            }}
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

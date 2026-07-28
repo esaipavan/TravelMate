@@ -25,32 +25,35 @@ import { useCreateItem, useUpdateItem } from '../hooks/useItinerary';
 import type { ItineraryItemRow, ItineraryCategory, ItemStatus } from '../types';
 
 const ITINERARY_CATEGORIES = [
-  { value: 'transport',     label: '✈️ Transport' },
+  { value: 'transport', label: '✈️ Transport' },
   { value: 'accommodation', label: '🏨 Accommodation' },
-  { value: 'activity',      label: '🎯 Activity' },
-  { value: 'food',          label: '🍽️ Food' },
-  { value: 'other',         label: '📌 Other' },
+  { value: 'activity', label: '🎯 Activity' },
+  { value: 'food', label: '🍽️ Food' },
+  { value: 'other', label: '📌 Other' },
 ] as const;
 
 const ITEM_STATUSES = ['planned', 'confirmed', 'completed', 'cancelled'] as const;
 
 const STATUS_LABELS: Record<string, string> = {
-  planned:   'Planned',
+  planned: 'Planned',
   confirmed: 'Confirmed',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
 
-const CATEGORY_VALUES = ITINERARY_CATEGORIES.map((c) => c.value) as [ItineraryCategory, ...ItineraryCategory[]];
+const CATEGORY_VALUES = ITINERARY_CATEGORIES.map((c) => c.value) as [
+  ItineraryCategory,
+  ...ItineraryCategory[],
+];
 
 const schema = z.object({
-  title:          z.string().min(1, 'Title is required').max(150),
-  category:       z.enum(CATEGORY_VALUES),
-  status:         z.enum(ITEM_STATUSES),
-  start_time:     z.string(),
-  end_time:       z.string(),
-  location_name:  z.string(),
-  description:    z.string(),
+  title: z.string().min(1, 'Title is required').max(150),
+  category: z.enum(CATEGORY_VALUES),
+  status: z.enum(ITEM_STATUSES),
+  start_time: z.string(),
+  end_time: z.string(),
+  location_name: z.string(),
+  description: z.string(),
   estimated_cost: z
     .string()
     .refine((v) => v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Must be a positive number'),
@@ -83,13 +86,13 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title:          '',
-      category:       'activity',
-      status:         'planned',
-      start_time:     '',
-      end_time:       '',
-      location_name:  '',
-      description:    '',
+      title: '',
+      category: 'activity',
+      status: 'planned',
+      start_time: '',
+      end_time: '',
+      location_name: '',
+      description: '',
       estimated_cost: '',
     },
   });
@@ -98,20 +101,25 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
     if (open) {
       if (item) {
         reset({
-          title:          item.title,
-          category:       item.category,
-          status:         item.status,
-          start_time:     item.start_time ? item.start_time.slice(0, 5) : '',
-          end_time:       item.end_time   ? item.end_time.slice(0, 5)   : '',
-          location_name:  item.location_name ?? '',
-          description:    item.description  ?? '',
+          title: item.title,
+          category: item.category,
+          status: item.status,
+          start_time: item.start_time ? item.start_time.slice(0, 5) : '',
+          end_time: item.end_time ? item.end_time.slice(0, 5) : '',
+          location_name: item.location_name ?? '',
+          description: item.description ?? '',
           estimated_cost: item.estimated_cost != null ? String(item.estimated_cost) : '',
         });
       } else {
         reset({
-          title: '', category: 'activity', status: 'planned',
-          start_time: '', end_time: '', location_name: '',
-          description: '', estimated_cost: '',
+          title: '',
+          category: 'activity',
+          status: 'planned',
+          start_time: '',
+          end_time: '',
+          location_name: '',
+          description: '',
+          estimated_cost: '',
         });
       }
     }
@@ -120,13 +128,13 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
   async function onSubmit(values: FormValues) {
     try {
       const payload = {
-        title:          values.title,
-        category:       values.category as ItineraryCategory,
-        status:         values.status   as ItemStatus,
-        start_time:     values.start_time     || null,
-        end_time:       values.end_time       || null,
-        location_name:  values.location_name  || null,
-        description:    values.description    || null,
+        title: values.title,
+        category: values.category,
+        status: values.status,
+        start_time: values.start_time || null,
+        end_time: values.end_time || null,
+        location_name: values.location_name || null,
+        description: values.description || null,
         estimated_cost: values.estimated_cost !== '' ? Number(values.estimated_cost) : null,
       };
 
@@ -150,7 +158,12 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
           <DialogTitle>{isEdit ? 'Edit item' : 'Add item'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-4"
+        >
           {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="item-title">Title</Label>
@@ -166,10 +179,14 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
                 value={watch('category')}
                 onValueChange={(v) => setValue('category', v as ItineraryCategory)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {ITINERARY_CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -180,10 +197,14 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
                 value={watch('status')}
                 onValueChange={(v) => setValue('status', v as ItemStatus)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {ITEM_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {STATUS_LABELS[s]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -193,18 +214,24 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
           {/* Start + End time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="start-time">Start time <span className="text-muted-foreground">(optional)</span></Label>
+              <Label htmlFor="start-time">
+                Start time <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Input id="start-time" type="time" {...register('start_time')} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="end-time">End time <span className="text-muted-foreground">(optional)</span></Label>
+              <Label htmlFor="end-time">
+                End time <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Input id="end-time" type="time" {...register('end_time')} />
             </div>
           </div>
 
           {/* Location */}
           <div className="space-y-1.5">
-            <Label htmlFor="location">Location <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="location">
+              Location <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="location"
               placeholder="e.g. Narita International Airport"
@@ -214,7 +241,9 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
 
           {/* Estimated cost */}
           <div className="space-y-1.5">
-            <Label htmlFor="estimated-cost">Estimated cost <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="estimated-cost">
+              Estimated cost <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="estimated-cost"
               type="number"
@@ -230,7 +259,9 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label htmlFor="description">Notes <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="description">
+              Notes <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Textarea
               id="description"
               placeholder="Any details, confirmation numbers, etc."

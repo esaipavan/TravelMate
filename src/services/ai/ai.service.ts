@@ -6,14 +6,17 @@ export async function chatWithAI(
   messages: AIMessage[],
   options?: AIRequestOptions,
 ): Promise<AIResponse> {
-  const { data, error } = await supabase.functions.invoke<AIResponse>('ai-chat', {
+  const result = await supabase.functions.invoke<AIResponse>('ai-chat', {
     body: { messages, options },
   });
 
-  if (error) throw new Error(`AI request failed: ${error.message}`);
-  if (!data) throw new Error('No response from AI service');
+  if (result.error) {
+    const msg = result.error instanceof Error ? result.error.message : 'AI request failed';
+    throw new Error(msg);
+  }
+  if (!result.data) throw new Error('No response from AI service');
 
-  return data;
+  return result.data;
 }
 
 export async function streamChatWithAI(
@@ -22,12 +25,15 @@ export async function streamChatWithAI(
   _onChunk: (chunk: string) => void,
   onDone: (response: AIResponse) => void,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke<AIResponse>('ai-chat', {
+  const result = await supabase.functions.invoke<AIResponse>('ai-chat', {
     body: { messages, options, stream: true },
   });
 
-  if (error) throw new Error(`AI stream failed: ${error.message}`);
-  if (!data) throw new Error('No response from AI stream');
+  if (result.error) {
+    const msg = result.error instanceof Error ? result.error.message : 'AI stream failed';
+    throw new Error(msg);
+  }
+  if (!result.data) throw new Error('No response from AI stream');
 
-  onDone(data);
+  onDone(result.data);
 }

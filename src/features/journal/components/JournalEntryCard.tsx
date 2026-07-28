@@ -5,10 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import type { JournalEntryRow, MoodEnum } from '../types';
 
 const MOOD_EMOJI: Record<MoodEnum, string> = {
-  amazing:  '🤩',
-  good:     '😊',
-  okay:     '😐',
-  bad:      '😔',
+  amazing: '🤩',
+  good: '😊',
+  okay: '😐',
+  bad: '😔',
   terrible: '😢',
 };
 
@@ -28,20 +28,14 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 interface Props {
-  entry:              JournalEntryRow;
-  onView:             (entry: JournalEntryRow) => void;
-  onEdit:             (entry: JournalEntryRow) => void;
-  onDelete:           (entry: JournalEntryRow) => void;
-  onToggleFavourite:  (entry: JournalEntryRow) => void;
+  entry: JournalEntryRow;
+  onView: (entry: JournalEntryRow) => void;
+  onEdit: (entry: JournalEntryRow) => void;
+  onDelete: (entry: JournalEntryRow) => void;
+  onToggleFavourite: (entry: JournalEntryRow) => void;
 }
 
-export function JournalEntryCard({
-  entry,
-  onView,
-  onEdit,
-  onDelete,
-  onToggleFavourite,
-}: Props) {
+export function JournalEntryCard({ entry, onView, onEdit, onDelete, onToggleFavourite }: Props) {
   const coverImage = entry.image_urls?.[0];
   const extraCount = (entry.image_urls?.length ?? 0) - 1;
 
@@ -108,7 +102,7 @@ export function JournalEntryCard({
           )}
           {entry.mood && (
             <Badge variant="secondary" className="h-5 gap-1 px-1.5 text-xs">
-              {MOOD_EMOJI[entry.mood as MoodEnum]} {entry.mood}
+              {MOOD_EMOJI[entry.mood]} {entry.mood}
             </Badge>
           )}
         </div>

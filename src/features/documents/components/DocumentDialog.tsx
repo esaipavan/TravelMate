@@ -24,9 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input }      from '@/components/ui/input';
-import { Textarea }   from '@/components/ui/textarea';
-import { Button }     from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   documentFormSchema,
@@ -41,42 +41,48 @@ import {
 } from '../types';
 
 interface TripOption {
-  id:          string;
-  title:       string;
+  id: string;
+  title: string;
   destination: string;
 }
 
 interface Props {
-  open:           boolean;
-  onOpenChange:   (open: boolean) => void;
-  document?:      TravelDocumentRow | null;
-  trips:          TripOption[];
-  onSave:         (values: DocumentFormValues, file?: File) => Promise<void>;
-  isPending:      boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  document?: TravelDocumentRow | null;
+  trips: TripOption[];
+  onSave: (values: DocumentFormValues, file?: File) => Promise<void>;
+  isPending: boolean;
   defaultTripId?: string | null;
 }
 
 const EMPTY_DEFAULTS: DocumentFormValues = {
-  name:        '',
-  type:        '',
-  trip_id:     null,
-  country:     '',
+  name: '',
+  type: '',
+  trip_id: null,
+  country: '',
   expiry_date: null,
-  notes:       '',
+  notes: '',
 };
 
 export function DocumentDialog({
-  open, onOpenChange, document: doc, trips, onSave, isPending, defaultTripId,
+  open,
+  onOpenChange,
+  document: doc,
+  trips,
+  onSave,
+  isPending,
+  defaultTripId,
 }: Props) {
   const isEdit = !!doc;
 
-  const [file,        setFile]        = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [fileError,   setFileError]   = useState('');
+  const [fileError, setFileError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<DocumentFormValues>({
-    resolver:      zodResolver(documentFormSchema),
+    resolver: zodResolver(documentFormSchema),
     defaultValues: EMPTY_DEFAULTS,
   });
 
@@ -84,12 +90,12 @@ export function DocumentDialog({
     if (!open) return;
     if (doc) {
       form.reset({
-        name:        doc.name,
-        type:        doc.type,
-        trip_id:     doc.trip_id,
-        country:     doc.country     ?? '',
+        name: doc.name,
+        type: doc.type,
+        trip_id: doc.trip_id,
+        country: doc.country ?? '',
         expiry_date: doc.expiry_date ?? null,
-        notes:       doc.notes       ?? '',
+        notes: doc.notes ?? '',
       });
     } else {
       form.reset({ ...EMPTY_DEFAULTS, trip_id: defaultTripId ?? null });
@@ -158,7 +164,9 @@ export function DocumentDialog({
           <Form {...form}>
             <form
               id="doc-form"
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                void form.handleSubmit(onSubmit)(e);
+              }}
               className="space-y-4 px-6 py-4"
             >
               {/* File picker (create only) */}
@@ -171,19 +179,13 @@ export function DocumentDialog({
                   {file ? (
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2">
                       {filePreview ? (
-                        <img
-                          src={filePreview}
-                          alt=""
-                          className="h-10 w-10 rounded object-cover"
-                        />
+                        <img src={filePreview} alt="" className="h-10 w-10 rounded object-cover" />
                       ) : (
                         <FileText className="h-8 w-8 shrink-0 text-red-500" />
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(file.size)}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                       </div>
                       <button type="button" onClick={clearFile} className="shrink-0">
                         <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
@@ -208,9 +210,7 @@ export function DocumentDialog({
                     className="hidden"
                     onChange={handleFileChange}
                   />
-                  {fileError && (
-                    <p className="text-xs text-destructive">{fileError}</p>
-                  )}
+                  {fileError && <p className="text-xs text-destructive">{fileError}</p>}
                 </div>
               )}
 
@@ -218,11 +218,7 @@ export function DocumentDialog({
               {isEdit && currentFileUrl && (
                 <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
                   {isImageUrl(currentFileUrl) ? (
-                    <img
-                      src={currentFileUrl}
-                      alt=""
-                      className="h-10 w-10 rounded object-cover"
-                    />
+                    <img src={currentFileUrl} alt="" className="h-10 w-10 rounded object-cover" />
                   ) : isPdfUrl(currentFileUrl) ? (
                     <FileText className="h-8 w-8 shrink-0 text-red-500" />
                   ) : (
@@ -265,10 +261,7 @@ export function DocumentDialog({
                       <FormLabel>
                         Type <span className="text-destructive">*</span>
                       </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ''}
-                      >
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
@@ -343,9 +336,7 @@ export function DocumentDialog({
                         <Input
                           type="date"
                           value={field.value ?? ''}
-                          onChange={(e) =>
-                            field.onChange(e.target.value || null)
-                          }
+                          onChange={(e) => field.onChange(e.target.value || null)}
                         />
                       </FormControl>
                       <FormMessage />

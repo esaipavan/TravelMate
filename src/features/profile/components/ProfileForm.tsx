@@ -2,84 +2,93 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Form, FormControl, FormField, FormItem,
-  FormLabel, FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { SUPPORTED_CURRENCIES } from '@/utils/constants';
-import {
-  profileFormSchema,
-  LANGUAGES,
-  TIMEZONES,
-  GENDER_OPTIONS,
-} from '../types';
+import { profileFormSchema, LANGUAGES, TIMEZONES, GENDER_OPTIONS } from '../types';
 import type { ProfileFormValues, ProfileRow } from '../types';
 import { useUpdateProfile } from '../hooks/useProfile';
 
-interface Props { profile: ProfileRow; }
+interface Props {
+  profile: ProfileRow;
+}
 
 export function ProfileForm({ profile }: Props) {
   const { mutate, isPending } = useUpdateProfile();
 
   const form = useForm<ProfileFormValues>({
-    resolver:      zodResolver(profileFormSchema),
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      full_name:          profile.full_name          ?? '',
-      username:           profile.username           ?? '',
-      phone_number:       profile.phone_number       ?? '',
-      date_of_birth:      profile.date_of_birth      ?? '',
-      gender:             profile.gender             ?? '',
-      country:            profile.country            ?? '',
-      city:               profile.city               ?? '',
-      bio:                profile.bio                ?? '',
+      full_name: profile.full_name ?? '',
+      username: profile.username ?? '',
+      phone_number: profile.phone_number ?? '',
+      date_of_birth: profile.date_of_birth ?? '',
+      gender: profile.gender ?? '',
+      country: profile.country ?? '',
+      city: profile.city ?? '',
+      bio: profile.bio ?? '',
       preferred_language: profile.preferred_language ?? 'en',
-      home_currency:      profile.home_currency      ?? 'INR',
-      time_zone:          profile.time_zone          ?? 'UTC',
+      home_currency: profile.home_currency ?? 'INR',
+      time_zone: profile.time_zone ?? 'UTC',
     },
   });
 
   // Sync form defaults when profile data loads
   useEffect(() => {
     form.reset({
-      full_name:          profile.full_name          ?? '',
-      username:           profile.username           ?? '',
-      phone_number:       profile.phone_number       ?? '',
-      date_of_birth:      profile.date_of_birth      ?? '',
-      gender:             profile.gender             ?? '',
-      country:            profile.country            ?? '',
-      city:               profile.city               ?? '',
-      bio:                profile.bio                ?? '',
+      full_name: profile.full_name ?? '',
+      username: profile.username ?? '',
+      phone_number: profile.phone_number ?? '',
+      date_of_birth: profile.date_of_birth ?? '',
+      gender: profile.gender ?? '',
+      country: profile.country ?? '',
+      city: profile.city ?? '',
+      bio: profile.bio ?? '',
       preferred_language: profile.preferred_language ?? 'en',
-      home_currency:      profile.home_currency      ?? 'INR',
-      time_zone:          profile.time_zone          ?? 'UTC',
+      home_currency: profile.home_currency ?? 'INR',
+      time_zone: profile.time_zone ?? 'UTC',
     });
   }, [profile, form]);
 
   function onSubmit(values: ProfileFormValues) {
     mutate({
-      full_name:          values.full_name || null,
-      username:           values.username  || null,
-      phone_number:       values.phone_number || null,
-      date_of_birth:      values.date_of_birth || null,
-      gender:             values.gender || null,
-      country:            values.country || null,
-      city:               values.city || null,
-      bio:                values.bio || null,
+      full_name: values.full_name || null,
+      username: values.username || null,
+      phone_number: values.phone_number || null,
+      date_of_birth: values.date_of_birth || null,
+      gender: values.gender || null,
+      country: values.country || null,
+      city: values.city || null,
+      bio: values.bio || null,
       preferred_language: values.preferred_language,
-      home_currency:      values.home_currency,
-      time_zone:          values.time_zone,
+      home_currency: values.home_currency,
+      time_zone: values.time_zone,
     });
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          void form.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-4"
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Full Name */}
           <FormField
@@ -156,7 +165,9 @@ export function ProfileForm({ profile }: Props) {
                   </FormControl>
                   <SelectContent>
                     {GENDER_OPTIONS.map((g) => (
-                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                      <SelectItem key={g.value} value={g.value}>
+                        {g.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -210,7 +221,9 @@ export function ProfileForm({ profile }: Props) {
                   </FormControl>
                   <SelectContent>
                     {LANGUAGES.map((l) => (
-                      <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -234,7 +247,9 @@ export function ProfileForm({ profile }: Props) {
                   </FormControl>
                   <SelectContent>
                     {SUPPORTED_CURRENCIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -258,7 +273,9 @@ export function ProfileForm({ profile }: Props) {
                   </FormControl>
                   <SelectContent>
                     {TIMEZONES.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -285,7 +302,7 @@ export function ProfileForm({ profile }: Props) {
               </FormControl>
               <div className="flex justify-between">
                 <FormMessage />
-                <span className="text-xs text-muted-foreground ml-auto">
+                <span className="ml-auto text-xs text-muted-foreground">
                   {(field.value ?? '').length}/200
                 </span>
               </div>

@@ -1,18 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Upload, Search, FileText, SlidersHorizontal, X, Clock, ArrowLeft } from 'lucide-react';
-import { Button }   from '@/components/ui/button';
-import { Input }    from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch }   from '@/components/ui/switch';
-import { Label }    from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, Upload, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { rv, FADE_VARIANTS, LIST_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import {
   useDocuments,
   useUserTrips,
@@ -31,75 +21,53 @@ import {
   useUpdateDocument,
   useDeleteDocument,
 } from '../hooks/useDocuments';
-import { DocumentStats } from '../components/DocumentStats';
-import { DocumentCard }  from '../components/DocumentCard';
 import { DocumentDialog } from '../components/DocumentDialog';
+import { VaultSkeleton } from '../components/premium/VaultSkeleton';
+import { VaultEmptyState } from '../components/premium/VaultEmptyState';
+import { DocumentHealthOverview } from '../components/premium/DocumentHealthOverview';
+import { ExpiryTimeline } from '../components/premium/ExpiryTimeline';
+import { AIDocumentInsights } from '../components/premium/AIDocumentInsights';
+import { VaultUploadZone } from '../components/premium/VaultUploadZone';
+import { DocumentFilterBar } from '../components/premium/DocumentFilterBar';
+import { DocumentVaultCard } from '../components/premium/DocumentVaultCard';
+import { DocumentGroupSection, DOC_GROUPS } from '../components/premium/DocumentGroupSection';
 import {
-  DOCUMENT_TYPES,
   getExpiryStatus,
   type TravelDocumentRow,
   type DocumentFilters,
   type DocumentFormValues,
 } from '../types';
 
-// ── Loading skeleton ──────────────────────────────────────────────────────────
-
-function DocsSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
-        ))}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-56 rounded-xl" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Default filters ───────────────────────────────────────────────────────────
-
 const DEFAULT_FILTERS: DocumentFilters = {
-  search:       '',
-  type:         '',
-  tripId:       '',
+  search: '',
+  type: '',
+  tripId: '',
   expiringSoon: false,
-  sortOrder:    'newest',
+  sortOrder: 'newest',
 };
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function DocumentsPage() {
-  // Present on /trips/:id/documents; undefined on /documents
   const { id: tripId } = useParams<{ id?: string }>();
+  const reduced = useReducedMotion();
 
-  const { data: documents = [], isLoading }      = useDocuments(tripId);
+  const { data: documents = [], isLoading } = useDocuments(tripId);
   const { data: trips = [], isLoading: tripsLoading } = useUserTrips();
 
-  // Used for the back link label and page description when scoped to a trip
   const currentTrip = tripId ? trips.find((t) => t.id === tripId) : undefined;
 
   const uploadMutation = useUploadDocument();
   const updateMutation = useUpdateDocument();
   const deleteMutation = useDeleteDocument();
 
-  const [dialogOpen,  setDialogOpen]  = useState(false);
-  const [editDoc,     setEditDoc]     = useState<TravelDocumentRow | null>(null);
-  const [deleteDoc,   setDeleteDoc]   = useState<TravelDocumentRow | null>(null);
-  const [filters,     setFilters]     = useState<DocumentFilters>(DEFAULT_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDoc, setEditDoc] = useState<TravelDocumentRow | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<TravelDocumentRow | null>(null);
+  const [filters, setFilters] = useState<DocumentFilters>(DEFAULT_FILTERS);
 
-  // ── Trip lookup map ─────────────────────────────────────────────────────────
-  const tripMap = useMemo(
-    () => Object.fromEntries(trips.map((t) => [t.id, t.title])),
-    [trips],
-  );
+  // ── Derived data ──────────────────────────────────────────────────────────────
 
-  // ── Filtered / sorted list ──────────────────────────────────────────────────
+  const tripMap = useMemo(() => Object.fromEntries(trips.map((t) => [t.id, t.title])), [trips]);
+
   const filtered = useMemo(() => {
     let result = [...documents];
 
@@ -108,19 +76,12 @@ export default function DocumentsPage() {
       result = result.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
-          (d.country     ?? '').toLowerCase().includes(q) ||
-          (d.notes       ?? '').toLowerCase().includes(q),
+          (d.country ?? '').toLowerCase().includes(q) ||
+          (d.notes ?? '').toLowerCase().includes(q),
       );
     }
-
-    if (filters.type) {
-      result = result.filter((d) => d.type === filters.type);
-    }
-
-    if (filters.tripId) {
-      result = result.filter((d) => d.trip_id === filters.tripId);
-    }
-
+    if (filters.type) result = result.filter((d) => d.type === filters.type);
+    if (filters.tripId) result = result.filter((d) => d.trip_id === filters.tripId);
     if (filters.expiringSoon) {
       result = result.filter((d) => {
         const s = getExpiryStatus(d.expiry_date);
@@ -129,8 +90,7 @@ export default function DocumentsPage() {
     }
 
     result.sort((a, b) => {
-      const diff =
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return filters.sortOrder === 'newest' ? diff : -diff;
     });
 
@@ -140,7 +100,26 @@ export default function DocumentsPage() {
   const hasActiveFilter =
     !!filters.search || !!filters.type || !!filters.tripId || filters.expiringSoon;
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  const expiringSoonCount = useMemo(
+    () => documents.filter((d) => getExpiryStatus(d.expiry_date) === 'expiring_soon').length,
+    [documents],
+  );
+
+  const expiringDocsSorted = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in90 = new Date(today.getTime() + 90 * 86_400_000);
+    return documents
+      .filter((d) => {
+        if (!d.expiry_date) return false;
+        const exp = new Date(d.expiry_date);
+        return exp <= in90;
+      })
+      .sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime());
+  }, [documents]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────────
+
   function openUpload() {
     setEditDoc(null);
     setDialogOpen(true);
@@ -178,246 +157,155 @@ export default function DocumentsPage() {
 
   const isSaving = uploadMutation.isPending || updateMutation.isPending;
 
-  // ── Expiring-soon count for filter chip label ───────────────────────────────
-  const expiringSoonCount = useMemo(
-    () =>
-      documents.filter(
-        (d) => getExpiryStatus(d.expiry_date) === 'expiring_soon',
-      ).length,
-    [documents],
-  );
+  // ── Loading ───────────────────────────────────────────────────────────────────
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  if (isLoading) return <VaultSkeleton />;
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
+    <div className="space-y-8 pb-12">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-start gap-3">
         {tripId && (tripsLoading || currentTrip) && (
           <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" asChild>
-            <Link to={`/trips/${tripId}`}>
+            <Link to={`/trips/${tripId}`} aria-label="Back to trip">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
         )}
-        <PageHeader
-          title="Travel Documents"
-          description={
-            currentTrip
+
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold text-foreground">Travel Vault</h1>
+          <p className="truncate text-sm text-muted-foreground">
+            {currentTrip
               ? currentTrip.title
-              : 'Passports, visas, tickets and all your essential travel paperwork'
-          }
+              : 'Your secure document collection — passports, visas, tickets and more'}
+          </p>
+        </div>
+
+        <Button
+          onClick={openUpload}
+          disabled={!!tripId && tripsLoading}
+          className="shrink-0 gap-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-600 hover:to-violet-600"
         >
-          <Button onClick={openUpload} disabled={!!tripId && tripsLoading}>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Document
-          </Button>
-        </PageHeader>
+          <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+          Upload Document
+        </Button>
       </div>
 
-      {isLoading ? (
-        <DocsSkeleton />
-      ) : (
+      {/* ── Health overview (when docs exist) ── */}
+      {documents.length > 0 && (
         <>
-          {/* Stats */}
-          {documents.length > 0 && <DocumentStats documents={documents} />}
+          <DocumentHealthOverview documents={documents} isLoaded={!isLoading} />
 
-          {/* Search + filter bar */}
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Search by title, country, or notes…"
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters((f) => ({ ...f, search: e.target.value }))
-                  }
-                />
-              </div>
+          {/* ── Expiry timeline ── */}
+          {expiringDocsSorted.length > 0 && <ExpiryTimeline documents={expiringDocsSorted} />}
 
-              {expiringSoonCount > 0 && (
-                <Button
-                  variant={filters.expiringSoon ? 'secondary' : 'outline'}
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() =>
-                    setFilters((f) => ({ ...f, expiringSoon: !f.expiringSoon }))
-                  }
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  Expiring ({expiringSoonCount})
-                </Button>
-              )}
-
-              <Button
-                variant={showFilters ? 'secondary' : 'outline'}
-                size="icon"
-                onClick={() => setShowFilters((v) => !v)}
-                title="More filters"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
-
-              {hasActiveFilter && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearFilters}
-                  title="Clear filters"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
-            {/* Expanded filters */}
-            {showFilters && (
-              <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card px-4 py-3">
-                {/* Type */}
-                <div className="flex items-center gap-2">
-                  <Label className="shrink-0 text-xs text-muted-foreground">Type</Label>
-                  <Select
-                    value={filters.type || '_all'}
-                    onValueChange={(v) =>
-                      setFilters((f) => ({ ...f, type: v === '_all' ? '' : v }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-44">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_all">All types</SelectItem>
-                      {DOCUMENT_TYPES.map((dt) => (
-                        <SelectItem key={dt.value} value={dt.value}>
-                          {dt.emoji} {dt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Trip — hidden when already scoped to a specific trip via URL */}
-                {!tripId && trips.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Label className="shrink-0 text-xs text-muted-foreground">Trip</Label>
-                    <Select
-                      value={filters.tripId || '_all'}
-                      onValueChange={(v) =>
-                        setFilters((f) => ({
-                          ...f,
-                          tripId: v === '_all' ? '' : v,
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-44">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_all">All trips</SelectItem>
-                        {trips.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Sort */}
-                <div className="flex items-center gap-2">
-                  <Label className="shrink-0 text-xs text-muted-foreground">Sort</Label>
-                  <Select
-                    value={filters.sortOrder}
-                    onValueChange={(v) =>
-                      setFilters((f) => ({
-                        ...f,
-                        sortOrder: v as DocumentFilters['sortOrder'],
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest first</SelectItem>
-                      <SelectItem value="oldest">Oldest first</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Expiring soon switch */}
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="expiring-sw"
-                    checked={filters.expiringSoon}
-                    onCheckedChange={(v) =>
-                      setFilters((f) => ({ ...f, expiringSoon: v }))
-                    }
-                  />
-                  <Label htmlFor="expiring-sw" className="cursor-pointer text-xs">
-                    Expiring / Expired only
-                  </Label>
-                </div>
-              </div>
-            )}
+          {/* ── AI insights + upload zone ── */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AIDocumentInsights documents={documents} />
+            <VaultUploadZone onUploadClick={openUpload} />
           </div>
-
-          {/* Count */}
-          {documents.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              {filtered.length === documents.length
-                ? `${documents.length} ${documents.length === 1 ? 'document' : 'documents'}`
-                : `${filtered.length} of ${documents.length} documents`}
-            </p>
-          )}
-
-          {/* Empty — no documents at all */}
-          {documents.length === 0 && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-20 text-center">
-              <FileText className="h-10 w-10 text-muted-foreground opacity-40" />
-              <div className="space-y-1">
-                <p className="font-medium">No documents yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Upload your passports, visas, tickets and more.
-                </p>
-              </div>
-              <Button onClick={openUpload}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload first document
-              </Button>
-            </div>
-          )}
-
-          {/* Empty — filter too strict */}
-          {documents.length > 0 && filtered.length === 0 && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-16 text-center">
-              <Search className="h-8 w-8 text-muted-foreground opacity-40" />
-              <p className="font-medium">No documents match your filters</p>
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            </div>
-          )}
-
-          {/* Grid */}
-          {filtered.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((doc) => (
-                <DocumentCard
-                  key={doc.id}
-                  document={doc}
-                  tripTitle={doc.trip_id ? tripMap[doc.trip_id] : undefined}
-                  onEdit={openEdit}
-                  onDelete={confirmDelete}
-                />
-              ))}
-            </div>
-          )}
         </>
       )}
 
-      {/* Upload / Edit dialog */}
+      {/* ── Filter bar ── */}
+      <DocumentFilterBar
+        filters={filters}
+        onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
+        onClear={clearFilters}
+        totalCount={documents.length}
+        filteredCount={filtered.length}
+        expiringSoonCount={expiringSoonCount}
+        trips={trips}
+        showTripFilter={!tripId}
+      />
+
+      {/* ── Document content area ── */}
+      <AnimatePresence mode="wait">
+        {documents.length === 0 ? (
+          /* No documents at all */
+          <motion.div
+            key="empty"
+            variants={rv(FADE_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+          >
+            <VaultEmptyState onUploadClick={openUpload} />
+          </motion.div>
+        ) : hasActiveFilter ? (
+          /* Filtered flat grid */
+          <motion.div
+            key="filtered"
+            variants={rv(FADE_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+          >
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center">
+                <Search className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+                <div>
+                  <p className="font-medium text-foreground">No documents match your filters</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try adjusting or clearing them.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              </div>
+            ) : (
+              <motion.div
+                variants={reduced ? REDUCED_VARIANTS : LIST_VARIANTS}
+                initial="hidden"
+                animate="show"
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {filtered.map((doc) => (
+                  <DocumentVaultCard
+                    key={doc.id}
+                    document={doc}
+                    tripTitle={doc.trip_id ? tripMap[doc.trip_id] : undefined}
+                    onEdit={openEdit}
+                    onDelete={confirmDelete}
+                    staggered
+                  />
+                ))}
+              </motion.div>
+            )}
+          </motion.div>
+        ) : (
+          /* Grouped view (no active filter) */
+          <motion.div
+            key="grouped"
+            variants={rv(FADE_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="space-y-10"
+          >
+            {DOC_GROUPS.map((group) => {
+              const groupDocs = documents.filter((d) => group.types.includes(d.type));
+              return (
+                <DocumentGroupSection
+                  key={group.key}
+                  label={group.label}
+                  emoji={group.emoji}
+                  documents={groupDocs}
+                  tripMap={tripMap}
+                  onEdit={openEdit}
+                  onDelete={confirmDelete}
+                />
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Dialogs ── */}
       <DocumentDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -431,17 +319,17 @@ export default function DocumentsPage() {
         defaultTripId={tripId}
       />
 
-      {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteDoc}
-        onOpenChange={(open) => { if (!open) setDeleteDoc(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteDoc(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteDoc?.name}" will be permanently deleted from storage.
-              This cannot be undone.
+              "{deleteDoc?.name}" will be permanently deleted from storage. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

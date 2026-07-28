@@ -26,22 +26,20 @@ import { PACKING_CATEGORIES } from '../types';
 import type { PackingItemRow, ItemFormValues } from '../types';
 
 const schema = z.object({
-  name:         z.string().min(1, 'Name is required').max(100),
-  category:     z.string().min(1, 'Category is required'),
-  quantity:     z
-    .string()
-    .refine((v) => !isNaN(Number(v)) && Number(v) >= 1, 'Must be at least 1'),
+  name: z.string().min(1, 'Name is required').max(100),
+  category: z.string().min(1, 'Category is required'),
+  quantity: z.string().refine((v) => !isNaN(Number(v)) && Number(v) >= 1, 'Must be at least 1'),
   is_essential: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 interface Props {
-  tripId:        string;
-  totalItems:    number;
-  item?:         PackingItemRow;
-  open:          boolean;
-  onOpenChange:  (open: boolean) => void;
+  tripId: string;
+  totalItems: number;
+  item?: PackingItemRow;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Props) {
@@ -60,9 +58,9 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:         '',
-      category:     'Other',
-      quantity:     '1',
+      name: '',
+      category: 'Other',
+      quantity: '1',
       is_essential: false,
     },
   });
@@ -71,9 +69,9 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
     if (open) {
       if (item) {
         reset({
-          name:         item.name,
-          category:     item.category ?? 'Other',
-          quantity:     String(item.quantity),
+          name: item.name,
+          category: item.category ?? 'Other',
+          quantity: String(item.quantity),
           is_essential: item.is_essential,
         });
       } else {
@@ -85,9 +83,9 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
   async function onSubmit(values: FormValues) {
     try {
       const payload: Omit<ItemFormValues, 'quantity'> & { quantity: number } = {
-        name:         values.name,
-        category:     values.category,
-        quantity:     Number(values.quantity),
+        name: values.name,
+        category: values.category,
+        quantity: Number(values.quantity),
         is_essential: values.is_essential,
       };
 
@@ -97,7 +95,7 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
       } else {
         await createItem({
           ...payload,
-          trip_id:     tripId,
+          trip_id: tripId,
           order_index: totalItems,
         });
         toast.success('Item added.');
@@ -115,7 +113,12 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
           <DialogTitle>{isEdit ? 'Edit item' : 'Add item'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-4"
+        >
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="item-name">Name</Label>
@@ -127,11 +130,10 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select
-                value={watch('category')}
-                onValueChange={(v) => setValue('category', v)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={watch('category')} onValueChange={(v) => setValue('category', v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {PACKING_CATEGORIES.map((c) => (
                     <SelectItem key={c.value} value={c.value}>
@@ -146,13 +148,7 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                step="1"
-                {...register('quantity')}
-              />
+              <Input id="quantity" type="number" min="1" step="1" {...register('quantity')} />
               {errors.quantity && (
                 <p className="text-xs text-destructive">{errors.quantity.message}</p>
               )}

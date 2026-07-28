@@ -3,6 +3,7 @@ export interface DashboardStats {
   totalBudget: number;
   totalExpenses: number;
   homeCurrency: string;
+  travelDays: number;
 }
 
 export interface UpcomingTrip {

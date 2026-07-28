@@ -17,9 +17,9 @@ export function useExpenseData(tripId: string) {
 }
 
 function invalidate(qc: ReturnType<typeof useQueryClient>, tripId: string) {
-  qc.invalidateQueries({ queryKey: ['expenses', tripId] });
-  qc.invalidateQueries({ queryKey: ['budget', tripId] });
-  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  void qc.invalidateQueries({ queryKey: ['expenses', tripId] });
+  void qc.invalidateQueries({ queryKey: ['budget', tripId] });
+  void qc.invalidateQueries({ queryKey: ['dashboard'] });
 }
 
 export function useCreateExpense(tripId: string) {
@@ -33,8 +33,7 @@ export function useCreateExpense(tripId: string) {
 export function useUpdateExpense(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ExpenseUpdate }) =>
-      updateExpense(id, data),
+    mutationFn: ({ id, data }: { id: string; data: ExpenseUpdate }) => updateExpense(id, data),
     onSuccess: () => invalidate(qc, tripId),
   });
 }

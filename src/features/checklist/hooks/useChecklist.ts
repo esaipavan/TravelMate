@@ -9,8 +9,8 @@ import {
 import type { PackingItemInsert, PackingItemUpdate } from '../types';
 
 function invalidate(qc: ReturnType<typeof useQueryClient>, tripId: string) {
-  qc.invalidateQueries({ queryKey: ['checklist', tripId] });
-  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  void qc.invalidateQueries({ queryKey: ['checklist', tripId] });
+  void qc.invalidateQueries({ queryKey: ['dashboard'] });
 }
 
 export function useChecklistData(tripId: string) {
@@ -33,8 +33,7 @@ export function useCreatePackingItem(tripId: string) {
 export function useUpdatePackingItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: PackingItemUpdate }) =>
-      updateItem(id, data),
+    mutationFn: ({ id, data }: { id: string; data: PackingItemUpdate }) => updateItem(id, data),
     onSuccess: () => invalidate(qc, tripId),
   });
 }

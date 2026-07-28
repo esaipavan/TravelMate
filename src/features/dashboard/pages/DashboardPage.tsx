@@ -1,40 +1,39 @@
-import { lazy, Suspense }      from 'react';
-import { WelcomeCard }         from '../components/WelcomeCard';
-import { StatsGrid }           from '../components/StatsGrid';
-import { UpcomingTrips }       from '../components/UpcomingTrips';
-import { RecentExpenses }      from '../components/RecentExpenses';
-import { WeatherWidget }       from '../components/WeatherWidget';
-import { QuickActions }        from '../components/QuickActions';
-import { UpcomingReminders }   from '../components/UpcomingReminders';
-import { Skeleton }            from '@/components/ui/skeleton';
-
-const BudgetVsActualChart = lazy(() =>
-  import('../components/BudgetVsActualChart').then(m => ({ default: m.BudgetVsActualChart }))
-);
-
-function ChartSkeleton() {
-  return <Skeleton className="h-[300px] w-full rounded-xl" />;
-}
+import { DashboardBackground } from '../components/DashboardBackground';
+import { TripCommandHero } from '../components/TripCommandHero';
+import { PremiumQuickActions } from '../components/PremiumQuickActions';
+import { TodayTimeline } from '../components/TodayTimeline';
+import { AIInsightsPanel } from '../components/AIInsightsPanel';
+import { BudgetDonut } from '../components/BudgetDonut';
+import { EnhancedWeatherWidget } from '../components/EnhancedWeatherWidget';
+import { UpcomingTripsSection } from '../components/UpcomingTripsSection';
+import { TravelStats } from '../components/TravelStats';
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <WelcomeCard />
-      <StatsGrid />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Suspense fallback={<ChartSkeleton />}>
-            <BudgetVsActualChart />
-          </Suspense>
+    <div className="relative space-y-8 pb-20">
+      <DashboardBackground />
+
+      <TripCommandHero />
+
+      <PremiumQuickActions />
+
+      <div className="grid gap-5 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <TodayTimeline />
         </div>
-        <WeatherWidget />
+        <div className="lg:col-span-5">
+          <AIInsightsPanel />
+        </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <UpcomingTrips />
-        <RecentExpenses />
-        <UpcomingReminders />
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <BudgetDonut />
+        <EnhancedWeatherWidget />
       </div>
-      <QuickActions />
+
+      <UpcomingTripsSection />
+
+      <TravelStats />
     </div>
   );
 }

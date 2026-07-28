@@ -29,8 +29,8 @@ export function useUpsertCategoryBudget(tripId: string) {
       currency: string;
     }) => upsertCategoryBudget(tripId, category, allocatedAmount, currency),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['budget', tripId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['budget', tripId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -40,8 +40,8 @@ export function useDeleteCategoryBudget(tripId: string) {
   return useMutation({
     mutationFn: (category: ExpenseCategory) => deleteCategoryBudget(tripId, category),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['budget', tripId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['budget', tripId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -57,8 +57,8 @@ export function useBatchUpsertBudgets(tripId: string) {
       currency: string;
     }) => batchUpsertCategoryBudgets(tripId, allocations, currency),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['budget', tripId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['budget', tripId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

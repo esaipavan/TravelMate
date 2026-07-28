@@ -49,7 +49,9 @@ export function DeleteExpenseDialog({ tripId, expense, open, onOpenChange }: Pro
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
+            onClick={() => {
+              void handleDelete();
+            }}
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

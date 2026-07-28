@@ -86,11 +86,14 @@ export function SetBudgetDialog({ tripId, item, summary, open, onOpenChange }: P
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-1.5">
-            <Label htmlFor="allocatedAmount">
-              Allocated amount ({summary.tripCurrency})
-            </Label>
+            <Label htmlFor="allocatedAmount">Allocated amount ({summary.tripCurrency})</Label>
             <Input
               id="allocatedAmount"
               type="number"
@@ -106,7 +109,7 @@ export function SetBudgetDialog({ tripId, item, summary, open, onOpenChange }: P
           </div>
 
           {/* Context info */}
-          <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+          <div className="space-y-1 rounded-lg bg-muted/50 p-3 text-sm">
             {item.spent > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Already spent</span>
@@ -123,7 +126,9 @@ export function SetBudgetDialog({ tripId, item, summary, open, onOpenChange }: P
                   <span className="text-muted-foreground">Other categories</span>
                   <span className="tabular-nums">{fmt(otherAllocated)}</span>
                 </div>
-                <div className={`flex justify-between border-t pt-1 font-medium ${exceedsBudget ? 'text-destructive' : ''}`}>
+                <div
+                  className={`flex justify-between border-t pt-1 font-medium ${exceedsBudget ? 'text-destructive' : ''}`}
+                >
                   <span>New total allocated</span>
                   <span className="tabular-nums">{fmt(newTotal)}</span>
                 </div>

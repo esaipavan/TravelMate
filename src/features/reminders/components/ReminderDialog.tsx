@@ -24,9 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input }      from '@/components/ui/input';
-import { Textarea }   from '@/components/ui/textarea';
-import { Button }     from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   reminderFormSchema,
@@ -37,40 +37,38 @@ import {
 } from '../types';
 
 interface TripOption {
-  id:          string;
-  title:       string;
+  id: string;
+  title: string;
   destination: string;
 }
 
 interface Props {
-  open:         boolean;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
-  reminder?:    ReminderRow | null;
-  trips:        TripOption[];
-  onSave:       (values: ReminderFormValues) => Promise<void>;
-  isPending:    boolean;
+  reminder?: ReminderRow | null;
+  trips: TripOption[];
+  onSave: (values: ReminderFormValues) => Promise<void>;
+  isPending: boolean;
 }
 
 const TODAY = new Date().toISOString().split('T')[0];
 
 const EMPTY_DEFAULTS: ReminderFormValues = {
-  title:         '',
-  description:   '',
-  trip_id:       null,
-  type:          '',
+  title: '',
+  description: '',
+  trip_id: null,
+  type: '',
   reminder_date: TODAY,
   reminder_time: null,
-  priority:      'medium',
-  repeat:        'none',
+  priority: 'medium',
+  repeat: 'none',
 };
 
-export function ReminderDialog({
-  open, onOpenChange, reminder, trips, onSave, isPending,
-}: Props) {
+export function ReminderDialog({ open, onOpenChange, reminder, trips, onSave, isPending }: Props) {
   const isEdit = !!reminder;
 
   const form = useForm<ReminderFormValues>({
-    resolver:      zodResolver(reminderFormSchema),
+    resolver: zodResolver(reminderFormSchema),
     defaultValues: EMPTY_DEFAULTS,
   });
 
@@ -78,14 +76,14 @@ export function ReminderDialog({
     if (!open) return;
     if (reminder) {
       form.reset({
-        title:         reminder.title,
-        description:   reminder.description  ?? '',
-        trip_id:       reminder.trip_id      ?? null,
-        type:          reminder.type,
+        title: reminder.title,
+        description: reminder.description ?? '',
+        trip_id: reminder.trip_id ?? null,
+        type: reminder.type,
         reminder_date: reminder.reminder_date,
         reminder_time: reminder.reminder_time ?? null,
-        priority:      reminder.priority,
-        repeat:        reminder.repeat,
+        priority: reminder.priority,
+        repeat: reminder.repeat,
       });
     } else {
       form.reset(EMPTY_DEFAULTS);
@@ -107,7 +105,9 @@ export function ReminderDialog({
           <Form {...form}>
             <form
               id="reminder-form"
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                void form.handleSubmit(onSubmit)(e);
+              }}
               className="space-y-4 px-6 py-4"
             >
               {/* Title */}
@@ -116,7 +116,9 @@ export function ReminderDialog({
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Title <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="Reminder title" {...field} />
                     </FormControl>
@@ -152,7 +154,9 @@ export function ReminderDialog({
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>
+                        Type <span className="text-destructive">*</span>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
@@ -202,7 +206,9 @@ export function ReminderDialog({
                   name="reminder_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>
+                        Date <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>

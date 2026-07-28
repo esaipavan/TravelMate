@@ -12,21 +12,13 @@ export async function getTrips(userId: string): Promise<TripRow[]> {
 }
 
 export async function getTripById(id: string): Promise<TripRow | null> {
-  const { data, error } = await supabase
-    .from('trips')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('trips').select('*').eq('id', id).single();
   if (error) throw new Error(error.message);
   return data;
 }
 
 export async function createTrip(trip: TripInsert): Promise<TripRow> {
-  const { data, error } = await supabase
-    .from('trips')
-    .insert(trip)
-    .select()
-    .single();
+  const { data, error } = await supabase.from('trips').insert(trip).select().single();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -45,6 +37,28 @@ export async function updateTrip(id: string, trip: TripUpdate): Promise<TripRow>
 export async function deleteTrip(id: string): Promise<void> {
   const { error } = await supabase.from('trips').delete().eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+export async function duplicateTrip(trip: TripRow): Promise<TripRow> {
+  const { data, error } = await supabase
+    .from('trips')
+    .insert({
+      user_id: trip.user_id,
+      title: `${trip.title} (Copy)`,
+      destination: trip.destination,
+      country_code: trip.country_code,
+      start_date: trip.start_date,
+      end_date: trip.end_date,
+      currency: trip.currency,
+      total_budget: trip.total_budget,
+      notes: trip.notes,
+      status: 'planning' as const,
+      is_public: false,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function toggleFavourite(id: string, isFavourite: boolean): Promise<void> {

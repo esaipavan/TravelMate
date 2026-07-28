@@ -26,10 +26,7 @@ import type { TripFormValues } from '../types';
 const tripSchema = z
   .object({
     title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
-    destination: z
-      .string()
-      .min(1, 'Destination is required')
-      .max(200, 'Destination is too long'),
+    destination: z.string().min(1, 'Destination is required').max(200, 'Destination is too long'),
     start_date: z.string().min(1, 'Start date is required'),
     end_date: z.string().min(1, 'End date is required'),
     total_budget: z.preprocess(
@@ -79,7 +76,13 @@ export function TripForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form
+        onSubmit={(e) => {
+          void form.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-4"
+        noValidate
+      >
         {/* Title */}
         <FormField
           control={form.control}
@@ -156,9 +159,7 @@ export function TripForm({
                     placeholder="50000"
                     disabled={isSubmitting}
                     value={field.value ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? '' : e.target.value)
-                    }
+                    onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />

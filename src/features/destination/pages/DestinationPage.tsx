@@ -31,8 +31,8 @@ function DestinationSkeleton() {
 }
 
 export default function DestinationPage() {
-  const [input,   setInput]   = useState('');
-  const [query,   setQuery]   = useState('');
+  const [input, setInput] = useState('');
+  const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>(getSearchHistory);
 
   const qc = useQueryClient();
@@ -43,7 +43,7 @@ export default function DestinationPage() {
     const q = (value ?? input).trim();
     if (!q) return;
     if (q === query) {
-      qc.invalidateQueries({ queryKey: ['destination', query] });
+      void qc.invalidateQueries({ queryKey: ['destination', query] });
     } else {
       setQuery(q);
       setInput(value ? value : input);
@@ -66,7 +66,7 @@ export default function DestinationPage() {
   }
 
   function handleRefresh() {
-    qc.invalidateQueries({ queryKey: ['destination', query] });
+    void qc.invalidateQueries({ queryKey: ['destination', query] });
   }
 
   return (
@@ -79,7 +79,7 @@ export default function DestinationPage() {
       {/* Search bar */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
             placeholder="Search country or city — e.g. Japan, Paris, Bali…"
@@ -155,22 +155,14 @@ export default function DestinationPage() {
           {data.country && <CountryInfoCard country={data.country} />}
 
           {/* Wikipedia overview */}
-          {data.wiki && (
-            <WikiSummaryCard
-              wiki={data.wiki}
-              title={`About ${data.wiki.title}`}
-            />
-          )}
+          {data.wiki && <WikiSummaryCard wiki={data.wiki} title={`About ${data.wiki.title}`} />}
 
           {/* Travel tips */}
           {data.country && <TravelTipsCard country={data.country} />}
 
           {/* Tourist attractions */}
           {data.attractions && (
-            <WikiSummaryCard
-              wiki={data.attractions}
-              title="Tourism & Attractions"
-            />
+            <WikiSummaryCard wiki={data.attractions} title="Tourism & Attractions" />
           )}
         </div>
       )}

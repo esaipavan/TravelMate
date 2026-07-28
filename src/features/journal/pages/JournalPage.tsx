@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { Plus, Search, BookOpen, SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
-import { Button }   from '@/components/ui/button';
-import { Input }    from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch }   from '@/components/ui/switch';
-import { Label }    from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -32,8 +32,8 @@ import {
   useDeleteJournalEntry,
   useToggleFavourite,
 } from '../hooks/useJournal';
-import { JournalStats }       from '../components/JournalStats';
-import { JournalEntryCard }   from '../components/JournalEntryCard';
+import { JournalStats } from '../components/JournalStats';
+import { JournalEntryCard } from '../components/JournalEntryCard';
 import { JournalEntryDialog } from '../components/JournalEntryDialog';
 import { JournalDetailDialog } from '../components/JournalDetailDialog';
 import type { JournalEntryRow, JournalFilters, JournalFormValues } from '../types';
@@ -60,31 +60,31 @@ function JournalSkeleton() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS: JournalFilters = {
-  search:        '',
-  rating:        null,
+  search: '',
+  rating: null,
   favouriteOnly: false,
-  sortOrder:     'newest',
+  sortOrder: 'newest',
 };
 
 export default function JournalPage() {
   const { id: tripId } = useParams<{ id: string }>();
-  if (!tripId) return <Navigate to="/trips" replace />;
+  const safeId = tripId ?? '';
 
-  const { data: trip }                              = useTrip(tripId);
-  const { data: entries = [], isLoading, isError } = useJournalEntries(tripId);
+  const { data: trip } = useTrip(safeId);
+  const { data: entries = [], isLoading, isError } = useJournalEntries(safeId);
 
-  const createMutation   = useCreateJournalEntry(tripId);
-  const updateMutation   = useUpdateJournalEntry(tripId);
-  const deleteMutation   = useDeleteJournalEntry(tripId);
-  const favouriteMutation = useToggleFavourite(tripId);
+  const createMutation = useCreateJournalEntry(safeId);
+  const updateMutation = useUpdateJournalEntry(safeId);
+  const deleteMutation = useDeleteJournalEntry(safeId);
+  const favouriteMutation = useToggleFavourite(safeId);
 
   // UI state
-  const [dialogOpen,   setDialogOpen]   = useState(false);
-  const [editEntry,    setEditEntry]    = useState<JournalEntryRow | null>(null);
-  const [viewEntry,    setViewEntry]    = useState<JournalEntryRow | null>(null);
-  const [deleteEntry,  setDeleteEntry]  = useState<JournalEntryRow | null>(null);
-  const [filters,      setFilters]      = useState<JournalFilters>(DEFAULT_FILTERS);
-  const [showFilters,  setShowFilters]  = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<JournalEntryRow | null>(null);
+  const [viewEntry, setViewEntry] = useState<JournalEntryRow | null>(null);
+  const [deleteEntry, setDeleteEntry] = useState<JournalEntryRow | null>(null);
+  const [filters, setFilters] = useState<JournalFilters>(DEFAULT_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
 
   // ── Filtered list ───────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -94,8 +94,8 @@ export default function JournalPage() {
       const q = filters.search.toLowerCase();
       result = result.filter(
         (e) =>
-          (e.title        ?? '').toLowerCase().includes(q) ||
-          (e.content      ?? '').toLowerCase().includes(q) ||
+          (e.title ?? '').toLowerCase().includes(q) ||
+          (e.content ?? '').toLowerCase().includes(q) ||
           (e.location_name ?? '').toLowerCase().includes(q),
       );
     }
@@ -114,8 +114,9 @@ export default function JournalPage() {
     return result;
   }, [entries, filters]);
 
-  const hasActiveFilter =
-    !!filters.search || filters.rating != null || filters.favouriteOnly;
+  if (!tripId) return <Navigate to="/trips" replace />;
+
+  const hasActiveFilter = !!filters.search || filters.rating != null || filters.favouriteOnly;
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   function openCreate() {
@@ -156,7 +157,7 @@ export default function JournalPage() {
   function executeDelete() {
     if (!deleteEntry) return;
     deleteMutation.mutate({
-      id:        deleteEntry.id,
+      id: deleteEntry.id,
       imageUrls: deleteEntry.image_urls ?? [],
     });
     setDeleteEntry(null);
@@ -178,15 +179,18 @@ export default function JournalPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mt-0.5 shrink-0"
+          aria-label="Back to trip"
+          asChild
+        >
           <Link to={`/trips/${tripId}`}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
-        <PageHeader
-          title="Travel Journal"
-          description={trip?.title ?? ''}
-        >
+        <PageHeader title="Travel Journal" description={trip?.title ?? ''}>
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
             New Entry
@@ -205,27 +209,31 @@ export default function JournalPage() {
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
                   placeholder="Search by title, content, or destination…"
                   value={filters.search}
-                  onChange={(e) =>
-                    setFilters((f) => ({ ...f, search: e.target.value }))
-                  }
+                  onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
                 />
               </div>
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
                 size="icon"
                 onClick={() => setShowFilters((v) => !v)}
-                title="Toggle filters"
+                aria-label="Toggle filters"
+                aria-expanded={showFilters}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               </Button>
               {hasActiveFilter && (
-                <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear filters">
-                  <X className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearFilters}
+                  aria-label="Clear filters"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </Button>
               )}
             </div>
@@ -235,7 +243,7 @@ export default function JournalPage() {
               <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card px-4 py-3">
                 {/* Rating filter */}
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground shrink-0">Rating</Label>
+                  <Label className="shrink-0 text-xs text-muted-foreground">Rating</Label>
                   <Select
                     value={filters.rating?.toString() ?? 'any'}
                     onValueChange={(v) =>
@@ -252,7 +260,8 @@ export default function JournalPage() {
                       <SelectItem value="any">Any</SelectItem>
                       {[5, 4, 3, 2, 1].map((r) => (
                         <SelectItem key={r} value={r.toString()}>
-                          {'★'.repeat(r)}{'☆'.repeat(5 - r)}
+                          {'★'.repeat(r)}
+                          {'☆'.repeat(5 - r)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -261,7 +270,7 @@ export default function JournalPage() {
 
                 {/* Sort */}
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground shrink-0">Sort</Label>
+                  <Label className="shrink-0 text-xs text-muted-foreground">Sort</Label>
                   <Select
                     value={filters.sortOrder}
                     onValueChange={(v) =>
@@ -286,11 +295,9 @@ export default function JournalPage() {
                   <Switch
                     id="fav-filter"
                     checked={filters.favouriteOnly}
-                    onCheckedChange={(v) =>
-                      setFilters((f) => ({ ...f, favouriteOnly: v }))
-                    }
+                    onCheckedChange={(v) => setFilters((f) => ({ ...f, favouriteOnly: v }))}
                   />
-                  <Label htmlFor="fav-filter" className="text-xs cursor-pointer">
+                  <Label htmlFor="fav-filter" className="cursor-pointer text-xs">
                     Favourites only
                   </Label>
                 </div>
@@ -366,22 +373,21 @@ export default function JournalPage() {
       />
 
       {/* Detail view */}
-      <JournalDetailDialog
-        entry={viewEntry}
-        onClose={() => setViewEntry(null)}
-      />
+      <JournalDetailDialog entry={viewEntry} onClose={() => setViewEntry(null)} />
 
       {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteEntry}
-        onOpenChange={(open) => { if (!open) setDeleteEntry(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteEntry(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete journal entry?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteEntry?.title ?? 'Untitled'}" will be permanently deleted along with
-              all its photos. This cannot be undone.
+              "{deleteEntry?.title ?? 'Untitled'}" will be permanently deleted along with all its
+              photos. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

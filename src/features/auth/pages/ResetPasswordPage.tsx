@@ -7,13 +7,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -56,7 +50,9 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Supabase fires PASSWORD_RECOVERY when the user arrives via the email link.
     // supabase-js detects the token in the URL hash automatically (detectSessionInUrl: true).
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setPageState('ready');
       }
@@ -64,7 +60,7 @@ export default function ResetPasswordPage() {
 
     // Fallback: if the user already has a session when this page loads (e.g. navigated
     // back after the event already fired), mark as ready immediately.
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setPageState('ready');
       }
@@ -134,7 +130,13 @@ export default function ResetPasswordPage() {
 
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <form
+            onSubmit={(e) => {
+              void form.handleSubmit(onSubmit)(e);
+            }}
+            className="space-y-4"
+            noValidate
+          >
             <FormField
               control={form.control}
               name="password"
@@ -194,11 +196,7 @@ export default function ResetPasswordPage() {
                         tabIndex={-1}
                         aria-label={showConfirm ? 'Hide password' : 'Show password'}
                       >
-                        {showConfirm ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </FormControl>

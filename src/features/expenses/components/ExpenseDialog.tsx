@@ -26,11 +26,20 @@ import { EXPENSE_CATEGORIES, PAYMENT_METHODS, SUPPORTED_CURRENCIES } from '@/uti
 import { useAuthStore } from '@/store/auth.store';
 import { uploadReceipt, deleteReceipt } from '../services/expenses.service';
 import { useCreateExpense, useUpdateExpense } from '../hooks/useExpenses';
+import { parseSplitMeta, encodeSplitMeta } from '../utils/settlement';
 import type { ExpenseRow, ExpenseFormValues, ExpenseCategory, PaymentMethod } from '../types';
+import type { TripMember } from '../utils/settlement';
 
 const CATEGORY_VALUES = [
-  'hotel', 'food', 'transport', 'shopping', 'activity',
-  'emergency', 'fuel', 'taxi', 'misc',
+  'hotel',
+  'food',
+  'transport',
+  'shopping',
+  'activity',
+  'emergency',
+  'fuel',
+  'taxi',
+  'misc',
 ] as const;
 
 const schema = z.object({
@@ -52,11 +61,22 @@ interface Props {
   expense?: ExpenseRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  members?: TripMember[];
 }
 
-export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChange }: Props) {
+export function ExpenseDialog({
+  tripId,
+  tripCurrency,
+  expense,
+  open,
+  onOpenChange,
+  members,
+}: Props) {
   const user = useAuthStore((s) => s.user);
   const isEdit = !!expense;
+
+  const ownerMemberId = members?.find((m) => m.isOwner)?.id ?? user?.id ?? '';
+  const showPaidBy = (members?.length ?? 0) > 1;
 
   const { mutateAsync: createExpense, isPending: creating } = useCreateExpense(tripId);
   const { mutateAsync: updateExpense, isPending: updating } = useUpdateExpense(tripId);
@@ -65,6 +85,7 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [removeReceipt, setRemoveReceipt] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [paidById, setPaidById] = useState(ownerMemberId);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -94,15 +115,18 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
       setReceiptFile(null);
       setRemoveReceipt(false);
       if (expense) {
+        const meta = parseSplitMeta(expense.notes);
+        const displayNotes = meta ? (meta._notes ?? '') : (expense.notes ?? '');
         reset({
           title: expense.title,
           amount: String(expense.amount),
           currency: expense.currency,
-          category: expense.category as ExpenseCategory,
+          category: expense.category,
           date: expense.date,
           payment_method: expense.payment_method ?? '',
-          notes: expense.notes ?? '',
+          notes: displayNotes,
         });
+        setPaidById(meta?._paidBy ?? ownerMemberId);
       } else {
         reset({
           title: '',
@@ -113,9 +137,10 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
           payment_method: '',
           notes: '',
         });
+        setPaidById(ownerMemberId);
       }
     }
-  }, [open, expense, tripCurrency, reset, today]);
+  }, [open, expense, tripCurrency, reset, today, ownerMemberId]);
 
   async function onSubmit(values: ExpenseFormValues) {
     if (!user) return;
@@ -133,14 +158,20 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
         setUploadingReceipt(false);
       }
 
+      const userNotes = values.notes;
+      const notesFinal =
+        showPaidBy && paidById && paidById !== ownerMemberId
+          ? encodeSplitMeta(paidById, userNotes)
+          : userNotes || null;
+
       const payload = {
         title: values.title,
         amount: Number(values.amount),
         currency: values.currency,
-        category: values.category as ExpenseCategory,
+        category: values.category,
         date: values.date,
         payment_method: (values.payment_method as PaymentMethod) || null,
-        notes: values.notes || null,
+        notes: notesFinal,
         receipt_url: receiptUrl,
       };
 
@@ -167,7 +198,12 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
           <DialogTitle>{isEdit ? 'Edit expense' : 'Add expense'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-4"
+        >
           {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
@@ -191,16 +227,15 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
             </div>
             <div className="space-y-1.5">
               <Label>Currency</Label>
-              <Select
-                value={watch('currency')}
-                onValueChange={(v) => setValue('currency', v)}
-              >
+              <Select value={watch('currency')} onValueChange={(v) => setValue('currency', v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   {SUPPORTED_CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -226,7 +261,9 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && <p className="text-xs text-destructive">{errors.category.message}</p>}
+              {errors.category && (
+                <p className="text-xs text-destructive">{errors.category.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="date">Date</Label>
@@ -237,7 +274,9 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
 
           {/* Payment method */}
           <div className="space-y-1.5">
-            <Label>Payment method <span className="text-muted-foreground">(optional)</span></Label>
+            <Label>
+              Payment method <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Select
               value={watch('payment_method')}
               onValueChange={(v) => setValue('payment_method', v)}
@@ -248,15 +287,39 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
                 {PAYMENT_METHODS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Paid by — shown only when group has multiple members */}
+          {showPaidBy && members && (
+            <div className="space-y-1.5">
+              <Label>Paid by</Label>
+              <Select value={paidById} onValueChange={setPaidById}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Who paid?" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                      {m.isOwner ? ' (you)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes <span className="text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="notes">
+              Notes <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Textarea
               id="notes"
               placeholder="Any additional details…"
@@ -267,7 +330,9 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
 
           {/* Receipt upload */}
           <div className="space-y-1.5">
-            <Label>Receipt <span className="text-muted-foreground">(optional)</span></Label>
+            <Label>
+              Receipt <span className="text-muted-foreground">(optional)</span>
+            </Label>
             {existingReceipt ? (
               <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -294,7 +359,9 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
                 {receiptFile ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
-                    <span className="flex-1 truncate text-muted-foreground">{receiptFile.name}</span>
+                    <span className="flex-1 truncate text-muted-foreground">
+                      {receiptFile.name}
+                    </span>
                     <Button
                       type="button"
                       size="icon"
@@ -329,7 +396,13 @@ export function ExpenseDialog({ tripId, tripCurrency, expense, open, onOpenChang
               Cancel
             </Button>
             <Button type="submit" disabled={isPending || uploadingReceipt}>
-              {uploadingReceipt ? 'Uploading…' : isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add expense'}
+              {uploadingReceipt
+                ? 'Uploading…'
+                : isPending
+                  ? 'Saving…'
+                  : isEdit
+                    ? 'Save changes'
+                    : 'Add expense'}
             </Button>
           </DialogFooter>
         </form>

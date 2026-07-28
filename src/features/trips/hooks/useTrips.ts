@@ -6,9 +6,10 @@ import {
   createTrip,
   updateTrip,
   deleteTrip,
+  duplicateTrip,
   toggleFavourite,
 } from '../services/trips.service';
-import type { TripInsert, TripUpdate } from '../types';
+import type { TripInsert, TripRow, TripUpdate } from '../types';
 
 const STALE = 5 * 60 * 1000;
 
@@ -37,8 +38,8 @@ export function useCreateTrip() {
   return useMutation({
     mutationFn: (data: TripInsert) => createTrip(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trips', userId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['trips', userId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -47,12 +48,11 @@ export function useUpdateTrip() {
   const qc = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: TripUpdate }) =>
-      updateTrip(id, data),
+    mutationFn: ({ id, data }: { id: string; data: TripUpdate }) => updateTrip(id, data),
     onSuccess: (_result, { id }) => {
-      qc.invalidateQueries({ queryKey: ['trip', id] });
-      qc.invalidateQueries({ queryKey: ['trips', userId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['trip', id] });
+      void qc.invalidateQueries({ queryKey: ['trips', userId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -63,8 +63,20 @@ export function useDeleteTrip() {
   return useMutation({
     mutationFn: (id: string) => deleteTrip(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['trips', userId] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['trips', userId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useDuplicateTrip() {
+  const qc = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+  return useMutation({
+    mutationFn: (trip: TripRow) => duplicateTrip(trip),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['trips', userId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -76,8 +88,8 @@ export function useToggleFavourite() {
     mutationFn: ({ id, isFavourite }: { id: string; isFavourite: boolean }) =>
       toggleFavourite(id, isFavourite),
     onSuccess: (_result, { id }) => {
-      qc.invalidateQueries({ queryKey: ['trip', id] });
-      qc.invalidateQueries({ queryKey: ['trips', userId] });
+      void qc.invalidateQueries({ queryKey: ['trip', id] });
+      void qc.invalidateQueries({ queryKey: ['trips', userId] });
     },
   });
 }

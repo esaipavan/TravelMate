@@ -24,7 +24,7 @@ function WeatherSkeleton() {
 }
 
 export default function WeatherPage() {
-  const [input,       setInput]       = useState('');
+  const [input, setInput] = useState('');
   const [destination, setDestination] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -35,7 +35,7 @@ export default function WeatherPage() {
     const q = input.trim();
     if (!q) return;
     if (q === destination) {
-      qc.invalidateQueries({ queryKey: ['weather', destination] });
+      void qc.invalidateQueries({ queryKey: ['weather', destination] });
     } else {
       setDestination(q);
     }
@@ -46,22 +46,19 @@ export default function WeatherPage() {
   }
 
   function handleRefresh() {
-    qc.invalidateQueries({ queryKey: ['weather', destination] });
+    void qc.invalidateQueries({ queryKey: ['weather', destination] });
   }
 
   const todayDate = data?.forecast[0]?.date ?? '';
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Weather"
-        description="7-day forecast for any destination"
-      />
+      <PageHeader title="Weather" description="7-day forecast for any destination" />
 
       {/* Search bar */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             ref={inputRef}
             className="pl-9"
@@ -112,9 +109,7 @@ export default function WeatherPage() {
           <CloudOff className="h-10 w-10 text-muted-foreground opacity-40" />
           <div className="space-y-1">
             <p className="font-medium">Could not load weather</p>
-            <p className="text-sm text-muted-foreground">
-              Check the city name and try again.
-            </p>
+            <p className="text-sm text-muted-foreground">Check the city name and try again.</p>
           </div>
           <Button size="sm" variant="outline" onClick={handleRefresh}>
             Try again
@@ -126,33 +121,26 @@ export default function WeatherPage() {
         <div className="space-y-4">
           {/* Location label + last updated */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
+            <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{data.location.displayName}</span>
             </div>
             {dataUpdatedAt > 0 && (
-              <span className="text-xs text-muted-foreground shrink-0">
+              <span className="shrink-0 text-xs text-muted-foreground">
                 Updated {formatTimeAgo(new Date(dataUpdatedAt))}
               </span>
             )}
           </div>
 
           {/* Current conditions */}
-          <CurrentWeatherCard
-            current={data.current}
-            location={data.location.displayName}
-          />
+          <CurrentWeatherCard current={data.current} location={data.location.displayName} />
 
           {/* 7-day forecast */}
           <div>
             <h2 className="mb-3 font-semibold">7-Day Forecast</h2>
             <div className="space-y-2">
               {data.forecast.map((day) => (
-                <ForecastRow
-                  key={day.date}
-                  day={day}
-                  today={day.date === todayDate}
-                />
+                <ForecastRow key={day.date} day={day} today={day.date === todayDate} />
               ))}
             </div>
           </div>

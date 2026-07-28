@@ -18,11 +18,7 @@ export async function getDocuments(userId: string, tripId?: string): Promise<Tra
 }
 
 export async function createDocument(doc: TravelDocumentInsert): Promise<TravelDocumentRow> {
-  const { data, error } = await supabase
-    .from('travel_documents')
-    .insert(doc)
-    .select()
-    .single();
+  const { data, error } = await supabase.from('travel_documents').insert(doc).select().single();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -53,11 +49,9 @@ export async function uploadDocumentFile(
   docId: string,
   file: File,
 ): Promise<string> {
-  const safeName = file.name.replace(/[^\w.\-]/g, '_');
-  const path     = `${userId}/${docId}/${safeName}`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { upsert: true });
+  const safeName = file.name.replace(/[^\w.-]/g, '_');
+  const path = `${userId}/${docId}/${safeName}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
   if (error) throw new Error(error.message);
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
@@ -65,7 +59,7 @@ export async function uploadDocumentFile(
 
 export async function deleteDocumentFile(fileUrl: string): Promise<void> {
   const marker = `/object/public/${BUCKET}/`;
-  const idx    = fileUrl.indexOf(marker);
+  const idx = fileUrl.indexOf(marker);
   if (idx === -1) return;
   const path = fileUrl.slice(idx + marker.length);
   await supabase.storage.from(BUCKET).remove([path]);

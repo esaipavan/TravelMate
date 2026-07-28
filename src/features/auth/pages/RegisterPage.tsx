@@ -21,14 +21,14 @@ import { signUp } from '../services/auth.service';
 
 const registerSchema = z
   .object({
-    fullName:        z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-    email:           emailSchema,
-    password:        passwordSchema,
+    fullName: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
+    email: emailSchema,
+    password: passwordSchema,
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',
-    path:    ['confirmPassword'],
+    path: ['confirmPassword'],
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -37,23 +37,34 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 function EmailSentState({ email }: { email: string }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   return (
     <div className="space-y-6 text-center">
-      <div aria-hidden="true" className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+      <div
+        aria-hidden="true"
+        className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20"
+      >
         <Mail className="h-6 w-6 text-primary" />
       </div>
 
       <div className="space-y-1.5">
-        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight outline-none">Check your email</h1>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-2xl font-bold tracking-tight outline-none"
+        >
+          Check your email
+        </h1>
         <p className="text-sm text-muted-foreground">
           We sent a verification link to{' '}
           <span className="font-medium text-foreground">{email}</span>
         </p>
       </div>
 
-      <div className="rounded-lg border bg-muted/40 p-4 text-left text-sm text-muted-foreground space-y-1.5">
+      <div className="space-y-1.5 rounded-lg border bg-muted/40 p-4 text-left text-sm text-muted-foreground">
         <p>Click the link in the email to verify your account and get started.</p>
         <p>Didn't receive it? Check your spam or junk folder.</p>
       </div>
@@ -71,13 +82,13 @@ function EmailSentState({ email }: { email: string }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
-  const [showPw,      setShowPw]      = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [submitted,   setSubmitted]   = useState(false);
-  const [regEmail,    setRegEmail]    = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [regEmail, setRegEmail] = useState('');
 
   const form = useForm<RegisterFormValues>({
-    resolver:      zodResolver(registerSchema),
+    resolver: zodResolver(registerSchema),
     defaultValues: { fullName: '', email: '', password: '', confirmPassword: '' },
   });
 
@@ -107,7 +118,13 @@ export default function RegisterPage() {
 
       {/* Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={(e) => {
+            void form.handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-4"
+          noValidate
+        >
           <FormField
             control={form.control}
             name="fullName"

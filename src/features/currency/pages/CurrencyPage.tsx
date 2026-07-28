@@ -23,22 +23,22 @@ const COMMON_PAIRS: [string, string][] = [
 
 function formatResult(value: number): string {
   if (value >= 1000) return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  if (value >= 1)    return value.toFixed(4);
+  if (value >= 1) return value.toFixed(4);
   return value.toFixed(6);
 }
 
 export default function CurrencyPage() {
-  const [from,   setFrom]   = useState('USD');
-  const [to,     setTo]     = useState('INR');
+  const [from, setFrom] = useState('USD');
+  const [to, setTo] = useState('INR');
   const [amount, setAmount] = useState('1');
 
   const qc = useQueryClient();
 
   const { data: currencies, isLoading: loadingCurrencies } = useCurrencies();
   const {
-    data:        rateData,
-    isLoading:   loadingRate,
-    isError:     rateError,
+    data: rateData,
+    isLoading: loadingRate,
+    isError: rateError,
     isFetching,
     dataUpdatedAt,
   } = useExchangeRate(from, to);
@@ -49,11 +49,11 @@ export default function CurrencyPage() {
   }
 
   function refresh() {
-    qc.invalidateQueries({ queryKey: ['exchange-rate', from, to] });
+    void qc.invalidateQueries({ queryKey: ['exchange-rate', from, to] });
   }
 
   const numericAmount = parseFloat(amount) || 0;
-  const result        = rateData ? numericAmount * rateData.rate : null;
+  const result = rateData ? numericAmount * rateData.rate : null;
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -67,7 +67,10 @@ export default function CurrencyPage() {
         {COMMON_PAIRS.map(([f, t]) => (
           <button
             key={`${f}-${t}`}
-            onClick={() => { setFrom(f); setTo(t); }}
+            onClick={() => {
+              setFrom(f);
+              setTo(t);
+            }}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:bg-accent ${
               from === f && to === t
                 ? 'border-primary bg-primary/10 text-primary'
@@ -80,7 +83,7 @@ export default function CurrencyPage() {
       </div>
 
       {/* Converter card */}
-      <div className="rounded-xl border bg-card p-6 space-y-5">
+      <div className="space-y-5 rounded-xl border bg-card p-6">
         {/* Amount */}
         <div className="space-y-1.5">
           <Label htmlFor="amount">Amount</Label>
@@ -103,11 +106,7 @@ export default function CurrencyPage() {
             {loadingCurrencies ? (
               <Skeleton className="h-10 w-full" />
             ) : (
-              <CurrencySelect
-                value={from}
-                onChange={setFrom}
-                currencies={currencies ?? {}}
-              />
+              <CurrencySelect value={from} onChange={setFrom} currencies={currencies ?? {}} />
             )}
           </div>
 
@@ -126,17 +125,13 @@ export default function CurrencyPage() {
             {loadingCurrencies ? (
               <Skeleton className="h-10 w-full" />
             ) : (
-              <CurrencySelect
-                value={to}
-                onChange={setTo}
-                currencies={currencies ?? {}}
-              />
+              <CurrencySelect value={to} onChange={setTo} currencies={currencies ?? {}} />
             )}
           </div>
         </div>
 
         {/* Result */}
-        <div className="rounded-lg bg-muted/50 px-4 py-4 space-y-3">
+        <div className="space-y-3 rounded-lg bg-muted/50 px-4 py-4">
           {loadingRate && !rateData ? (
             <div className="space-y-2">
               <Skeleton className="h-9 w-48" />
@@ -155,7 +150,7 @@ export default function CurrencyPage() {
             <>
               <div className="flex items-end justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">
+                  <p className="mb-0.5 text-xs text-muted-foreground">
                     {numericAmount.toLocaleString()} {from} =
                   </p>
                   <p className="text-3xl font-bold tabular-nums">
@@ -175,12 +170,15 @@ export default function CurrencyPage() {
                 </Button>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-t pt-3">
+              <div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>
                   1 {from} = {formatResult(rateData.rate)} {to}
                   {from !== to && (
-                    <> &nbsp;·&nbsp; 1 {to} = {formatResult(1 / rateData.rate)} {from}</>
+                    <>
+                      {' '}
+                      &nbsp;·&nbsp; 1 {to} = {formatResult(1 / rateData.rate)} {from}
+                    </>
                   )}
                 </span>
               </div>
@@ -188,7 +186,7 @@ export default function CurrencyPage() {
               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>Rate as of {formatDate(rateData.updatedAt)}</span>
                 {dataUpdatedAt > 0 && (
-                  <span className="flex items-center gap-1 shrink-0">
+                  <span className="flex shrink-0 items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {formatTimeAgo(new Date(dataUpdatedAt))}
                   </span>

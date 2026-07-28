@@ -1,67 +1,93 @@
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import { useAuthStore } from '@/store/auth.store';
-import { TripForm } from '../components/TripForm';
 import { useCreateTrip } from '../hooks/useTrips';
-import type { TripFormValues } from '../types';
+import {
+  WizardProvider,
+  useWizard,
+  generateTripTitle,
+  totalBudget,
+} from '../components/wizard/WizardContext';
+import { WizardShell } from '../components/wizard/WizardShell';
 
-export default function TripNewPage() {
+/* ── Inner component (has access to WizardContext) ───────────────── */
+
+function WizardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { mutateAsync, isPending } = useCreateTrip();
+  const { state } = useWizard();
 
-  async function handleSubmit(values: TripFormValues) {
+  async function handleSubmit() {
     if (!user) return;
+
+    const {
+      destination,
+      destinationMeta,
+      tripType,
+      startDate,
+      endDate,
+      budget,
+      currency,
+      generatedSections,
+    } = state;
+
+    /* Format enabled AI sections as markdown notes */
+    const enabledSections = generatedSections.filter((s) => s.enabled);
+    const notes =
+      enabledSections.length > 0
+        ? [
+            '## ✈️ AI Travel Guide',
+            '',
+            ...enabledSections.map((s) => `### ${s.icon} ${s.title}\n${s.content}`),
+          ].join('\n\n')
+        : null;
+
+    const total = totalBudget(budget);
+
+    /* Derive cover image */
+    const coverUrl = resolveDestinationImageUrl(destination);
+
+    /* Build title from destination + trip type */
+    const title = generateTripTitle(destination, tripType);
+
+    /* Format dates — already YYYY-MM-DD strings from the calendar */
+    const startFormatted = startDate || format(new Date(), 'yyyy-MM-dd');
+    const endFormatted = endDate || format(new Date(), 'yyyy-MM-dd');
+
     try {
       const trip = await mutateAsync({
         user_id: user.id,
-        title: values.title,
-        destination: values.destination,
-        start_date: values.start_date,
-        end_date: values.end_date,
-        total_budget: values.total_budget ?? null,
-        currency: values.currency,
-        status: values.status,
-        notes: values.notes || null,
-        is_public: values.is_public,
+        title,
+        destination,
+        country_code: destinationMeta?.countryCode ?? null,
+        cover_image_url: coverUrl,
+        start_date: startFormatted,
+        end_date: endFormatted,
+        total_budget: total > 0 ? total : null,
+        currency,
+        status: 'planning',
+        notes,
+        is_public: false,
       });
-      toast.success('Trip created!');
+      toast.success('🎉 Trip created! Your adventure begins here.');
       navigate(`/trips/${trip.id}`, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create trip.');
+      toast.error(err instanceof Error ? err.message : 'Failed to create trip. Please try again.');
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/trips">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <PageHeader
-          title="New Trip"
-          description="Tell us about your upcoming adventure."
-        />
-      </div>
+  return <WizardShell onSubmit={() => void handleSubmit()} isSubmitting={isPending} />;
+}
 
-      <div className="mx-auto max-w-2xl">
-        <Card>
-          <CardContent className="pt-6">
-            <TripForm
-              onSubmit={handleSubmit}
-              isSubmitting={isPending}
-              submitLabel="Create trip"
-              onCancel={() => navigate('/trips')}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+/* ── Page export ─────────────────────────────────────────────────── */
+
+export default function TripNewPage() {
+  return (
+    <WizardProvider>
+      <WizardPage />
+    </WizardProvider>
   );
 }

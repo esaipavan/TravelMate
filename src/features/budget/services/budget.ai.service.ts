@@ -1,4 +1,4 @@
-import { callAIAssistant } from '@/features/assistant/services/assistant.service';
+import { chatWithAI } from '@/services/ai/ai.service';
 import type { ExpenseCategory } from '../types';
 
 export type BudgetStyleValue = 'budget' | 'comfort' | 'luxury';
@@ -11,9 +11,24 @@ export interface BudgetStyle {
 }
 
 export const BUDGET_STYLES: BudgetStyle[] = [
-  { value: 'budget',  label: 'Budget',  emoji: '🎒', description: 'Hostels, street food, public transport' },
-  { value: 'comfort', label: 'Comfort', emoji: '🏨', description: 'Mid-range hotels, restaurants, occasional taxi' },
-  { value: 'luxury',  label: 'Luxury',  emoji: '✨', description: '5-star hotels, fine dining, private transfers' },
+  {
+    value: 'budget',
+    label: 'Budget',
+    emoji: '🎒',
+    description: 'Hostels, street food, public transport',
+  },
+  {
+    value: 'comfort',
+    label: 'Comfort',
+    emoji: '🏨',
+    description: 'Mid-range hotels, restaurants, occasional taxi',
+  },
+  {
+    value: 'luxury',
+    label: 'Luxury',
+    emoji: '✨',
+    description: '5-star hotels, fine dining, private transfers',
+  },
 ];
 
 export interface AIBudgetEstimate {
@@ -23,7 +38,15 @@ export interface AIBudgetEstimate {
 }
 
 const CATEGORIES: ExpenseCategory[] = [
-  'hotel', 'food', 'transport', 'shopping', 'activity', 'fuel', 'taxi', 'emergency', 'misc',
+  'hotel',
+  'food',
+  'transport',
+  'shopping',
+  'activity',
+  'fuel',
+  'taxi',
+  'emergency',
+  'misc',
 ];
 
 export async function getAIBudgetEstimate(
@@ -53,9 +76,8 @@ Return ONLY a JSON object, with no markdown, no backticks, no explanation:
 
 All amounts are in ${currency} for the ENTIRE ${days}-day trip. Base estimates on real typical costs in ${destination}. For budget style, prefer cheaper options; for luxury, use premium rates.`;
 
-  const content = await callAIAssistant([
-    { id: 'budget-ai-req', role: 'user', content: prompt, timestamp: new Date() },
-  ]);
+  const response = await chatWithAI([{ role: 'user', content: prompt }]);
+  const content = response.content;
 
   let parsed: Record<string, unknown>;
   try {
@@ -74,9 +96,10 @@ All amounts are in ${currency} for the ENTIRE ${days}-day trip. Base estimates o
     }
   }
 
-  const total = typeof parsed.totalEstimate === 'number'
-    ? Math.round(parsed.totalEstimate)
-    : Object.values(allocations).reduce<number>((s, v) => s + (v ?? 0), 0);
+  const total =
+    typeof parsed.totalEstimate === 'number'
+      ? Math.round(parsed.totalEstimate)
+      : Object.values(allocations).reduce<number>((s, v) => s + (v ?? 0), 0);
 
   return {
     allocations,

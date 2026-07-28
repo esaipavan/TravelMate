@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/utils/constants';
 import { getReceiptSignedUrl } from '../services/expenses.service';
+import { getDisplayNotes } from '../utils/settlement';
 import type { ExpenseRow, ExpenseCategory } from '../types';
 
 interface Props {
@@ -13,20 +14,21 @@ interface Props {
 }
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  hotel:     'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  food:      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  hotel: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  food: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
   transport: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  shopping:  'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
-  activity:  'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  shopping: 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+  activity: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   emergency: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  fuel:      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  taxi:      'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
-  misc:      'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  fuel: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  taxi: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+  misc: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
 };
 
 export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Props) {
   const catMeta = EXPENSE_CATEGORIES.find((c) => c.value === expense.category);
   const pmLabel = PAYMENT_METHODS.find((p) => p.value === expense.payment_method)?.label;
+  const displayNotes = getDisplayNotes(expense.notes);
 
   async function handleViewReceipt() {
     if (!expense.receipt_url) return;
@@ -37,7 +39,11 @@ export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Prop
   return (
     <div className="group flex items-start gap-4 rounded-lg border bg-card p-4 transition-shadow hover:shadow-sm">
       {/* Category emoji */}
-      <span className="mt-0.5 text-2xl leading-none shrink-0" role="img" aria-label={catMeta?.label}>
+      <span
+        className="mt-0.5 shrink-0 text-2xl leading-none"
+        role="img"
+        aria-label={catMeta?.label}
+      >
         {catMeta?.emoji ?? '💰'}
       </span>
 
@@ -64,8 +70,8 @@ export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Prop
           )}
         </div>
 
-        {expense.notes && (
-          <p className="line-clamp-1 text-xs text-muted-foreground">{expense.notes}</p>
+        {displayNotes && (
+          <p className="line-clamp-1 text-xs text-muted-foreground">{displayNotes}</p>
         )}
       </div>
 
@@ -81,7 +87,9 @@ export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Prop
               size="icon"
               variant="ghost"
               className="h-7 w-7"
-              onClick={handleViewReceipt}
+              onClick={() => {
+                void handleViewReceipt();
+              }}
               aria-label="View receipt"
               title="View receipt"
             >

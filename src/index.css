@@ -2,117 +2,435 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════
+   TRAVELMATE 2026 — Premium Design System
+   Inspired by: Apple · VisionOS · Airbnb · Linear · Arc · Revolut
+═══════════════════════════════════════════════════════════════ */
+
 @layer base {
   :root {
-    /* Travel/Tourism palette — sky blue + adventure orange (Soft UI Evolution) */
-    --background: 204 100% 97%;
-    --foreground: 202 80% 24%;
+    /* ── Core Palette ── */
+    --background: 40 25% 98%;
+    --foreground: 220 26% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 202 80% 24%;
+    --card-foreground: 220 26% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 202 80% 24%;
-    --primary: 199 89% 48%;
+    --popover-foreground: 220 26% 9%;
+
+    /* ── Brand Blue ── */
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 204 95% 93%;
-    --secondary-foreground: 202 80% 24%;
-    --muted: 203 53% 94%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 21 90% 48%;
+
+    /* ── Neutrals ── */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 26% 20%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 48%;
+
+    /* ── Accent Violet ── */
+    --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+
+    /* ── Status ── */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 200 95% 86%;
-    --input: 200 95% 86%;
-    --ring: 199 89% 48%;
-    --radius: 0.75rem;
-    --chart-1: 199 89% 48%;
-    --chart-2: 174 71% 30%;
-    --chart-3: 21 90% 48%;
-    --chart-4: 262 84% 58%;
-    --chart-5: 0 72% 51%;
+
+    /* ── Chrome ── */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+    --radius: 1rem;
+
+    /* ── Semantic Status Colors ── */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 60% 95%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 48 95% 93%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 200 95% 93%;
+
+    /* ── Charts ── */
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 338 80% 55%;
+
+    /* ── Surface Elevation ── */
+    --surface-base: 40 25% 98%;
+    --surface-raised: 0 0% 100%;
+    --surface-overlay: 220 14% 97%;
   }
 
   .dark {
-    --background: 210 57% 8%;
-    --foreground: 204 95% 93%;
-    --card: 207 55% 11%;
-    --card-foreground: 204 95% 93%;
-    --popover: 207 55% 11%;
-    --popover-foreground: 204 95% 93%;
-    --primary: 199 93% 60%;
-    --primary-foreground: 201 82% 12%;
-    --secondary: 205 50% 14%;
-    --secondary-foreground: 200 95% 86%;
-    --muted: 205 50% 14%;
-    --muted-foreground: 203 20% 55%;
-    --accent: 21 90% 48%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 93% 94%;
-    --border: 205 40% 18%;
-    --input: 205 40% 18%;
-    --ring: 199 93% 60%;
-    --chart-1: 199 93% 60%;
-    --chart-2: 174 71% 45%;
-    --chart-3: 21 90% 55%;
-    --chart-4: 262 84% 65%;
-    --chart-5: 0 72% 55%;
+    /* ── Core Palette ── */
+    --background: 240 12% 5%;
+    --foreground: 220 16% 96%;
+    --card: 240 11% 8%;
+    --card-foreground: 220 16% 96%;
+    --popover: 240 11% 10%;
+    --popover-foreground: 220 16% 96%;
+
+    /* ── Brand Blue (brighter for dark) ── */
+    --primary: 213 100% 67%;
+    --primary-foreground: 240 12% 5%;
+
+    /* ── Neutrals ── */
+    --secondary: 240 8% 14%;
+    --secondary-foreground: 220 10% 80%;
+    --muted: 240 8% 14%;
+    --muted-foreground: 220 8% 56%;
+
+    /* ── Accent Violet ── */
+    --accent: 267 83% 70%;
+    --accent-foreground: 240 12% 5%;
+
+    /* ── Status ── */
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── Chrome ── */
+    --border: 240 8% 16%;
+    --input: 240 8% 18%;
+    --ring: 213 100% 67%;
+
+    /* ── Semantic Status Colors ── */
+    --success: 142 71% 50%;
+    --success-foreground: 240 12% 5%;
+    --success-muted: 142 40% 12%;
+    --warning: 38 92% 56%;
+    --warning-foreground: 240 12% 5%;
+    --warning-muted: 38 50% 12%;
+    --info: 199 89% 55%;
+    --info-foreground: 240 12% 5%;
+    --info-muted: 199 50% 12%;
+
+    /* ── Charts ── */
+    --chart-1: 213 100% 67%;
+    --chart-2: 142 71% 55%;
+    --chart-3: 267 83% 70%;
+    --chart-4: 38 92% 56%;
+    --chart-5: 338 80% 65%;
+
+    /* ── Surface Elevation ── */
+    --surface-base: 240 12% 5%;
+    --surface-raised: 240 11% 8%;
+    --surface-overlay: 240 8% 14%;
   }
 }
 
+/* ═══════════════════════════════════════════
+   BASE RESET + TYPOGRAPHY
+═══════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+  html {
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
     font-feature-settings:
       'rlig' 1,
-      'calt' 1;
+      'calt' 1,
+      'ss01' 1,
+      'cv11' 1;
   }
 
-  /* Smooth scrolling — suppressed for users who prefer reduced motion */
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      'Plus Jakarta Sans',
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;
     }
   }
 
-  /* Custom scrollbar */
+  /* Premium minimal scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-muted;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-border;
+    background: hsl(var(--border));
+    border-radius: 99px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/40;
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  /* Brand selection color */
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+    color: hsl(var(--foreground));
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM UTILITY CLASSES
+═══════════════════════════════════════════ */
 @layer utilities {
-  .animate-fade-in {
-    animation: fade-in 0.2s ease-out;
+  /* ── Glassmorphism ── */
+  .glass {
+    background: hsl(0 0% 100% / 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(0 0% 100% / 0.5);
+  }
+  .dark .glass {
+    background: hsl(220 16% 96% / 0.06);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(220 16% 96% / 0.1);
+  }
+  .glass-subtle {
+    background: hsl(0 0% 100% / 0.5);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid hsl(0 0% 100% / 0.3);
+  }
+  .dark .glass-subtle {
+    background: hsl(220 16% 96% / 0.04);
+    border: 1px solid hsl(220 16% 96% / 0.07);
+  }
+
+  /* ── Gradient Text ── */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-warm {
+    background: linear-gradient(135deg, hsl(38 92% 50%), hsl(338 80% 55%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-sky {
+    background: linear-gradient(135deg, hsl(199 89% 48%), hsl(221 83% 53%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Gradient Backgrounds ── */
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, hsl(38 92% 50%), hsl(338 80% 55%));
+  }
+  .bg-gradient-ocean {
+    background: linear-gradient(135deg, hsl(199 89% 48%), hsl(221 83% 53%));
+  }
+  .bg-gradient-forest {
+    background: linear-gradient(135deg, hsl(142 71% 45%), hsl(199 89% 48%));
+  }
+  .bg-gradient-sunset {
+    background: linear-gradient(135deg, hsl(338 80% 55%), hsl(38 92% 50%));
+  }
+
+  /* ── Mesh Background ── */
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 0% 0%, hsl(var(--primary) / 0.1) 0px, transparent 60%),
+      radial-gradient(at 100% 0%, hsl(var(--accent) / 0.08) 0px, transparent 60%),
+      radial-gradient(at 50% 100%, hsl(199 89% 48% / 0.06) 0px, transparent 60%);
+  }
+
+  /* ── Typography ── */
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .tracking-tightest {
+    letter-spacing: -0.03em;
+  }
+  .tracking-tighter {
+    letter-spacing: -0.02em;
+  }
+
+  /* ── Depth Shadows ── */
+  .shadow-xs {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  }
+  .shadow-card {
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.06),
+      0 4px 16px -4px rgb(0 0 0 / 0.06);
+  }
+  .shadow-float {
+    box-shadow:
+      0 8px 32px -4px rgb(0 0 0 / 0.1),
+      0 2px 8px -2px rgb(0 0 0 / 0.06);
+  }
+  .shadow-lifted {
+    box-shadow:
+      0 16px 48px -8px rgb(0 0 0 / 0.14),
+      0 4px 12px -4px rgb(0 0 0 / 0.06);
+  }
+  .shadow-glow {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.2),
+      0 4px 24px hsl(var(--primary) / 0.2);
+  }
+  .shadow-glow-accent {
+    box-shadow:
+      0 0 0 1px hsl(var(--accent) / 0.2),
+      0 4px 24px hsl(var(--accent) / 0.2);
+  }
+
+  /* ── Interactive States ── */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 32px -4px rgb(0 0 0 / 0.12),
+      0 2px 8px -2px rgb(0 0 0 / 0.08);
+  }
+
+  /* ── Animation Helpers ── */
+  .animate-in {
+    animation: tm-fade-in 0.25s ease-out both;
+  }
+  .animate-slide-up {
+    animation: tm-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-scale-in {
+    animation: tm-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-float {
+    animation: tm-float 4s ease-in-out infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-fade-in {
+    .animate-in,
+    .animate-slide-up,
+    .animate-scale-in,
+    .animate-float {
       animation: none;
     }
   }
+
+  /* ── Safe Area ── */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
+/* ═══════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════ */
+@keyframes tm-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes tm-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes tm-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tm-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+/* Legacy shimmer — kept for existing Skeleton component */
 @keyframes shimmer {
-  100% { transform: translateX(100%); }
+  100% {
+    transform: translateX(100%);
+  }
 }
-
+/* Accordion — kept for Radix UI */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+/* Fade in (legacy alias) */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }

@@ -13,9 +13,9 @@ import { useDeletePackingItem } from '../hooks/useChecklist';
 import type { PackingItemRow } from '../types';
 
 interface Props {
-  tripId:       string;
-  item:         PackingItemRow | null;
-  open:         boolean;
+  tripId: string;
+  item: PackingItemRow | null;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -45,7 +45,9 @@ export function DeleteItemDialog({ tripId, item, open, onOpenChange }: Props) {
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
+            onClick={() => {
+              void handleDelete();
+            }}
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

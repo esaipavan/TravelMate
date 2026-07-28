@@ -14,59 +14,55 @@ import {
   Bell,
   BarChart2,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { FADE_VARIANTS, REDUCED_VARIANTS, DUR, EASE } from '@/lib/motion';
 
 interface MobileNavProps {
   className?: string;
 }
 
 const mobileItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Home'    },
-  { to: '/trips',     icon: Map,             label: 'Trips'   },
-  { to: '/assistant', icon: MessageSquare,   label: 'AI'      },
-  { to: '/profile',   icon: User,            label: 'Profile' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { to: '/trips', icon: Map, label: 'Trips' },
+  { to: '/assistant', icon: MessageSquare, label: 'AI' },
+  { to: '/profile', icon: User, label: 'Profile' },
 ];
 
 const moreItems = [
-  { to: '/weather',     icon: Cloud,       label: 'Weather'     },
-  { to: '/currency',    icon: DollarSign,  label: 'Currency'    },
-  { to: '/nearby',      icon: MapPin,      label: 'Nearby'      },
-  { to: '/destination', icon: Compass,     label: 'Destination' },
-  { to: '/documents',   icon: FolderOpen,  label: 'Documents'   },
-  { to: '/reminders',   icon: Bell,        label: 'Reminders'   },
-  { to: '/analytics',   icon: BarChart2,   label: 'Analytics'   },
+  { to: '/weather', icon: Cloud, label: 'Weather' },
+  { to: '/currency', icon: DollarSign, label: 'Currency' },
+  { to: '/nearby', icon: MapPin, label: 'Nearby' },
+  { to: '/destination', icon: Compass, label: 'Destination' },
+  { to: '/documents', icon: FolderOpen, label: 'Documents' },
+  { to: '/reminders', icon: Bell, label: 'Reminders' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
 ];
 
 const panelVariants = {
   hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] as const } },
-  exit:   { opacity: 0, y: 16, transition: { duration: 0.14, ease: [0.4, 0, 1, 1] as const } },
-};
-
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  show:   { opacity: 1, transition: { duration: 0.15 } },
-  exit:   { opacity: 0, transition: { duration: 0.12 } },
+  show: { opacity: 1, y: 0, transition: { duration: DUR.normal, ease: EASE.inOut } },
+  exit: { opacity: 0, y: 16, transition: { duration: DUR.fast, ease: EASE.in } },
 };
 
 export function MobileNav({ className }: MobileNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const reduced = useReducedMotion();
 
   return (
     <nav
       aria-label="Mobile navigation"
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-10 border-t bg-card/95 pb-safe backdrop-blur-sm',
+        'pb-safe fixed bottom-0 left-0 right-0 z-10 border-t bg-card/95 backdrop-blur-sm',
         className,
       )}
     >
-      {/* Animated backdrop */}
+      {/* Backdrop */}
       <AnimatePresence>
         {moreOpen && (
           <motion.div
             key="backdrop"
-            variants={backdropVariants}
+            variants={reduced ? REDUCED_VARIANTS : FADE_VARIANTS}
             initial="hidden"
             animate="show"
             exit="exit"
@@ -78,12 +74,12 @@ export function MobileNav({ className }: MobileNavProps) {
         )}
       </AnimatePresence>
 
-      {/* Animated more panel */}
+      {/* More panel */}
       <AnimatePresence>
         {moreOpen && (
           <motion.div
             key="panel"
-            variants={panelVariants}
+            variants={reduced ? REDUCED_VARIANTS : panelVariants}
             initial="hidden"
             animate="show"
             exit="exit"
@@ -103,7 +99,7 @@ export function MobileNav({ className }: MobileNavProps) {
                   onClick={() => setMoreOpen(false)}
                   className={({ isActive }) =>
                     cn(
-                      'flex flex-col items-center gap-1 rounded-lg p-2 text-[11px] font-medium transition-colors min-h-[60px] justify-center',
+                      'flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg p-2 text-[11px] font-medium transition-colors',
                       isActive
                         ? 'bg-primary/10 text-primary'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',

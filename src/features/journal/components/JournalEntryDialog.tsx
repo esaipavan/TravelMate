@@ -24,59 +24,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input }    from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button }   from '@/components/ui/button';
-import { Switch }   from '@/components/ui/switch';
-import { Label }    from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { journalEntrySchema, type JournalEntryRow, type JournalFormValues, type MoodEnum } from '../types';
+import {
+  journalEntrySchema,
+  type JournalEntryRow,
+  type JournalFormValues,
+  type MoodEnum,
+} from '../types';
 
 const MOODS: { value: MoodEnum; label: string; emoji: string }[] = [
-  { value: 'amazing',  label: 'Amazing',  emoji: '🤩' },
-  { value: 'good',     label: 'Good',     emoji: '😊' },
-  { value: 'okay',     label: 'Okay',     emoji: '😐' },
-  { value: 'bad',      label: 'Bad',      emoji: '😔' },
+  { value: 'amazing', label: 'Amazing', emoji: '🤩' },
+  { value: 'good', label: 'Good', emoji: '😊' },
+  { value: 'okay', label: 'Okay', emoji: '😐' },
+  { value: 'bad', label: 'Bad', emoji: '😔' },
   { value: 'terrible', label: 'Terrible', emoji: '😢' },
 ];
 
 const TODAY = new Date().toISOString().split('T')[0];
 
 const EMPTY_DEFAULTS: JournalFormValues = {
-  title:         '',
-  content:       '',
-  date:          TODAY,
+  title: '',
+  content: '',
+  date: TODAY,
   location_name: '',
-  mood:          '',
-  rating:        null,
-  is_favourite:  false,
-  is_public:     false,
+  mood: '',
+  rating: null,
+  is_favourite: false,
+  is_public: false,
 };
 
 interface Props {
-  open:          boolean;
-  onOpenChange:  (open: boolean) => void;
-  entry?:        JournalEntryRow | null;
-  onSave:        (
-    values:       JournalFormValues,
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  entry?: JournalEntryRow | null;
+  onSave: (
+    values: JournalFormValues,
     existingUrls: string[],
-    newFiles:     File[],
-    removedUrls:  string[],
+    newFiles: File[],
+    removedUrls: string[],
   ) => Promise<void>;
-  isPending:     boolean;
+  isPending: boolean;
 }
 
 export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPending }: Props) {
   const isEdit = !!entry;
 
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
-  const [removedUrls,  setRemovedUrls]  = useState<string[]>([]);
-  const [newFiles,     setNewFiles]     = useState<File[]>([]);
-  const [newPreviews,  setNewPreviews]  = useState<string[]>([]);
+  const [removedUrls, setRemovedUrls] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newPreviews, setNewPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<JournalFormValues>({
-    resolver:      zodResolver(journalEntrySchema),
+    resolver: zodResolver(journalEntrySchema),
     defaultValues: EMPTY_DEFAULTS,
   });
 
@@ -85,14 +90,14 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
 
     if (entry) {
       form.reset({
-        title:         entry.title         ?? '',
-        content:       entry.content       ?? '',
-        date:          entry.date,
+        title: entry.title ?? '',
+        content: entry.content ?? '',
+        date: entry.date,
         location_name: entry.location_name ?? '',
-        mood:          entry.mood          ?? '',
-        rating:        entry.rating,
-        is_favourite:  entry.is_favourite,
-        is_public:     entry.is_public,
+        mood: entry.mood ?? '',
+        rating: entry.rating,
+        is_favourite: entry.is_favourite,
+        is_public: entry.is_public,
       });
       setExistingUrls(entry.image_urls ?? []);
     } else {
@@ -111,8 +116,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
     setNewFiles((prev) => [...prev, ...files]);
     files.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) =>
-        setNewPreviews((prev) => [...prev, ev.target?.result as string]);
+      reader.onload = (ev) => setNewPreviews((prev) => [...prev, ev.target?.result as string]);
       reader.readAsDataURL(file);
     });
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -124,7 +128,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
   }
 
   function removeNew(idx: number) {
-    setNewFiles((p)    => p.filter((_, i) => i !== idx));
+    setNewFiles((p) => p.filter((_, i) => i !== idx));
     setNewPreviews((p) => p.filter((_, i) => i !== idx));
   }
 
@@ -145,7 +149,9 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
           <Form {...form}>
             <form
               id="journal-form"
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                void form.handleSubmit(onSubmit)(e);
+              }}
               className="space-y-5 px-6 py-4"
             >
               {/* Title */}
@@ -238,9 +244,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
                         <button
                           key={val}
                           type="button"
-                          onClick={() =>
-                            form.setValue('rating', ratingValue === val ? null : val)
-                          }
+                          onClick={() => form.setValue('rating', ratingValue === val ? null : val)}
                           className="focus:outline-none"
                         >
                           <Star

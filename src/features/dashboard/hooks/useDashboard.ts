@@ -5,6 +5,7 @@ import {
   getUpcomingTrips,
   getRecentExpenses,
   getBudgetVsActual,
+  getCurrentTrip,
 } from '../services/dashboard.service';
 
 const STALE = 5 * 60 * 1000;
@@ -44,6 +45,16 @@ export function useBudgetVsActual() {
   return useQuery({
     queryKey: ['dashboard', 'budget-vs-actual', userId],
     queryFn: () => getBudgetVsActual(userId!),
+    enabled: !!userId,
+    staleTime: STALE,
+  });
+}
+
+export function useCurrentTrip() {
+  const userId = useAuthStore((s) => s.user?.id);
+  return useQuery({
+    queryKey: ['dashboard', 'current-trip', userId],
+    queryFn: () => getCurrentTrip(userId!),
     enabled: !!userId,
     staleTime: STALE,
   });

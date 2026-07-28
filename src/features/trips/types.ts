@@ -6,6 +6,11 @@ export type TripUpdate = Database['public']['Tables']['trips']['Update'];
 
 export type TripStatus = Database['public']['Enums']['trip_status'];
 
+// Page-level filter / sort / view types shared by TripsPage and AdventureHero
+export type FilterStatus = TripStatus | 'upcoming' | 'all' | 'favourites';
+export type SortKey = 'date-asc' | 'date-desc' | 'created-desc' | 'name-asc';
+export type ViewMode = 'grid' | 'list';
+
 export interface TripFormValues {
   title: string;
   destination: string;

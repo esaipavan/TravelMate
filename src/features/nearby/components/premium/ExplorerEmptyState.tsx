@@ -1,0 +1,85 @@
+import { motion, useReducedMotion } from 'framer-motion';
+import { MapPin } from 'lucide-react';
+import { rv, FADE_VARIANTS, CARD_VARIANTS } from '@/lib/motion';
+
+const EXAMPLES = ['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA'];
+
+interface Props {
+  onExampleClick: (destination: string) => void;
+}
+
+export function ExplorerEmptyState({ onExampleClick }: Props) {
+  const reduced = useReducedMotion();
+
+  return (
+    <motion.div
+      variants={rv(FADE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+      className="flex flex-col items-center gap-8 py-16 text-center"
+    >
+      {/* Layered map icon */}
+      <motion.div
+        variants={rv(CARD_VARIANTS, reduced)}
+        initial="hidden"
+        animate="show"
+        className="relative"
+      >
+        <div className="absolute inset-0 rounded-3xl bg-indigo-500/10 blur-2xl" />
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-border/40 bg-card/60 shadow-xl backdrop-blur-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg">
+            <MapPin className="h-7 w-7" aria-hidden="true" />
+          </div>
+        </div>
+        {/* Decorative satellites */}
+        <div className="absolute -right-3 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-card/80 text-sm shadow-sm">
+          🍽️
+        </div>
+        <div className="absolute -left-3 bottom-2 flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-card/80 text-sm shadow-sm">
+          🏨
+        </div>
+        <div className="absolute -top-2 left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-border/60 bg-card/80 text-sm shadow-sm">
+          🎯
+        </div>
+      </motion.div>
+
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">Discover what's nearby</h2>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Search any destination to explore restaurants, hotels, attractions, hospitals and more —
+          all on an interactive map.
+        </p>
+      </div>
+
+      {/* Example destinations */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Try one of these
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => onExampleClick(ex)}
+              className="rounded-full border border-border/60 bg-muted/40 px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:border-indigo-400/50 hover:bg-indigo-500/5 hover:text-foreground"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature chips */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {['🗺️ Interactive Map', '⭐ Favorites', '🤖 AI Insights', '🧭 Travel Time'].map((f) => (
+          <span
+            key={f}
+            className="rounded-full border border-border/50 bg-muted/30 px-3 py-1 text-xs text-muted-foreground"
+          >
+            {f}
+          </span>
+        ))}
+      </div>
+    </motion.div>
+  );
+}

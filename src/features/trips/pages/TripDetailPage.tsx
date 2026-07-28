@@ -1,124 +1,49 @@
 import { useState } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Heart,
-  Pencil,
-  Trash2,
-  MapPin,
-  CalendarDays,
-  Wallet,
-  Receipt,
-  Map,
-  CheckSquare,
-  BookOpen,
-  FileDown,
-  FolderOpen,
-  Bot,
-} from 'lucide-react';
+import { useParams, Navigate, Link } from 'react-router-dom';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatDateRange, formatCurrency, tripDuration } from '@/utils/formatters';
-import { TripStatusBadge } from '../components/TripStatusBadge';
+import { TripDetailHero } from '../components/TripDetailHero';
+import { TripDetailSkeleton } from '../components/TripDetailSkeleton';
+import { TripStatsRow } from '../components/TripStatsRow';
+import { TripBudgetCard } from '../components/TripBudgetCard';
+import { TripNotesCard } from '../components/TripNotesCard';
+import { TripSubNavGrid } from '../components/TripSubNavGrid';
+import { TripAIPanel } from '../components/TripAIPanel';
 import { EditTripDialog } from '../components/EditTripDialog';
 import { DeleteTripDialog } from '../components/DeleteTripDialog';
 import { useTrip, useToggleFavourite } from '../hooks/useTrips';
+import { rv, PAGE_VARIANTS } from '@/lib/motion';
 
-interface SubFeatureCard {
-  label: string;
-  description: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-function buildCards(tripId: string): SubFeatureCard[] {
-  return [
-    {
-      label: 'Budget',
-      description: 'Set budgets and track spending by category',
-      href: `/trips/${tripId}/budget`,
-      icon: Wallet,
-    },
-    {
-      label: 'Expenses',
-      description: 'Log and review every transaction',
-      href: `/trips/${tripId}/expenses`,
-      icon: Receipt,
-    },
-    {
-      label: 'Itinerary',
-      description: 'Day-by-day plan for your trip',
-      href: `/trips/${tripId}/itinerary`,
-      icon: Map,
-    },
-    {
-      label: 'Checklist',
-      description: 'Packing lists and to-dos',
-      href: `/trips/${tripId}/checklist`,
-      icon: CheckSquare,
-    },
-    {
-      label: 'Journal',
-      description: 'Memories, notes, and photos',
-      href: `/trips/${tripId}/journal`,
-      icon: BookOpen,
-    },
-    {
-      label: 'Export',
-      description: 'Download a PDF or CSV summary',
-      href: `/trips/${tripId}/export`,
-      icon: FileDown,
-    },
-    {
-      label: 'Documents',
-      description: 'Passports, bookings, and attachments',
-      href: `/trips/${tripId}/documents`,
-      icon: FolderOpen,
-    },
-    {
-      label: 'AI Assistant',
-      description: 'Get recommendations and answers',
-      href: `/assistant?tripId=${tripId}`,
-      icon: Bot,
-    },
-  ];
-}
-
-function TripDetailSkeleton() {
+/* ── Section entrance wrapper ─────────────────────────────────── */
+function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const reduced = useReducedMotion();
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-9 w-9 rounded-md" />
-        <div className="space-y-1.5">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-      </div>
-      <Skeleton className="h-40 w-full rounded-xl" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-lg" />
-        ))}
-      </div>
-    </div>
+    <motion.div
+      initial={reduced ? {} : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-48px' }}
+      transition={reduced ? { duration: 0 } : { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
+/* ── TripDetailPage ───────────────────────────────────────────── */
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: trip, isLoading, isError } = useTrip(id!);
   const { mutate: toggleFav, isPending: isFavPending } = useToggleFavourite();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const reduced = useReducedMotion();
 
+  /* ── Loading ── */
   if (isLoading) return <TripDetailSkeleton />;
-  if (isError || !trip) return <Navigate to="/trips" replace />;
 
-  const duration = tripDuration(trip.start_date, trip.end_date);
-  const cards = buildCards(trip.id);
+  /* ── Error / not found ── */
+  if (isError || !trip) return <Navigate to="/trips" replace />;
 
   function handleFavToggle() {
     toggleFav(
@@ -132,124 +57,93 @@ export default function TripDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header row */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" asChild>
-          <Link to="/trips">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <PageHeader title={trip.title} description={trip.destination}>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleFavToggle}
-              disabled={isFavPending}
-              aria-label={trip.is_favourite ? 'Remove from favourites' : 'Add to favourites'}
-            >
-              <Heart
-                className={`h-4 w-4 transition-colors ${
-                  trip.is_favourite ? 'fill-red-500 text-red-500' : ''
-                }`}
-              />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Edit</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="h-4 w-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Delete</span>
-            </Button>
-          </div>
-        </PageHeader>
-      </div>
+    <AnimatePresence>
+      <motion.div
+        className="pb-28"
+        variants={rv(PAGE_VARIANTS, reduced)}
+        initial="hidden"
+        animate="show"
+      >
+        {/* ── Cinematic hero (full-bleed) ── */}
+        <TripDetailHero
+          trip={trip}
+          onEdit={() => setEditOpen(true)}
+          onDelete={() => setDeleteOpen(true)}
+          onFavToggle={handleFavToggle}
+          isFavPending={isFavPending}
+        />
 
-      {/* Trip hero card */}
-      <Card className="overflow-hidden">
-        <div
-          className="relative h-44 bg-gradient-to-br from-primary/40 via-primary/20 to-primary/5 sm:h-52"
-          style={
-            trip.cover_image_url
-              ? {
-                  backgroundImage: `url(${trip.cover_image_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }
-              : undefined
-          }
+        {/* ── Content sections ── */}
+        <div className="mt-5 space-y-5">
+          {/* Stats chips row */}
+          <Section delay={0.05}>
+            <TripStatsRow trip={trip} />
+          </Section>
+
+          {/* Budget + Notes/Map row */}
+          <Section delay={0.1}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TripBudgetCard trip={trip} />
+              <TripNotesCard trip={trip} />
+            </div>
+          </Section>
+
+          {/* Sub-feature navigation grid */}
+          <Section delay={0.14}>
+            <TripSubNavGrid tripId={trip.id} />
+          </Section>
+
+          {/* AI Recommendations */}
+          <Section delay={0.18}>
+            <TripAIPanel trip={trip} />
+          </Section>
+        </div>
+
+        {/* ── Floating edit FAB ── */}
+        <motion.div
+          className="fixed bottom-28 right-4 z-40 lg:bottom-6 lg:right-6"
+          initial={reduced ? {} : { scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.5, type: 'spring', damping: 16, stiffness: 220 }}
         >
-          {trip.cover_image_url && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          )}
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-            <TripStatusBadge trip={trip} />
-          </div>
-        </div>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              {trip.destination}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-              {formatDateRange(trip.start_date, trip.end_date)}
-              <span className="text-muted-foreground/60">·</span>
-              {duration} day{duration !== 1 ? 's' : ''}
-            </span>
-            {trip.total_budget != null && (
-              <span className="flex items-center gap-1.5 font-medium text-foreground">
-                <Wallet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                {formatCurrency(trip.total_budget, trip.currency)}
-              </span>
-            )}
-          </div>
-          {trip.notes && (
-            <p className="mt-3 text-sm text-muted-foreground">{trip.notes}</p>
-          )}
-        </CardContent>
-      </Card>
+          <div className="flex flex-col items-end gap-2">
+            {/* New expense shortcut */}
+            <motion.div
+              initial={reduced ? {} : { scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.62, type: 'spring', damping: 18, stiffness: 220 }}
+            >
+              <Link
+                to={`/trips/${trip.id}/expenses`}
+                aria-label="Add expense"
+                className="flex h-10 items-center gap-2 rounded-full border border-border/60 bg-card px-3 text-sm font-medium text-foreground shadow-float transition-shadow hover:shadow-card"
+              >
+                <Plus className="h-4 w-4 shrink-0 text-primary" />
+                <span className="hidden sm:inline">Add expense</span>
+              </Link>
+            </motion.div>
 
-      {/* Sub-feature navigation grid */}
-      <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-          Trip tools
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cards.map(({ label, description, href, icon: Icon }) => (
-            <Link key={label} to={href}>
-              <Card className="h-full transition-all hover:border-primary/40 hover:shadow-sm">
-                <CardContent className="flex flex-col gap-2.5 p-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold leading-tight">{label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
+            {/* Primary edit FAB */}
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              aria-label="Edit trip"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand text-white shadow-glow transition-shadow hover:shadow-[0_12px_36px_-8px_rgba(99,102,241,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+          </div>
+        </motion.div>
 
-      {/* Dialogs */}
-      <EditTripDialog trip={trip} open={editOpen} onOpenChange={setEditOpen} />
-      <DeleteTripDialog
-        tripId={trip.id}
-        tripTitle={trip.title}
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-      />
-    </div>
+        {/* ── Dialogs ── */}
+        <EditTripDialog trip={trip} open={editOpen} onOpenChange={setEditOpen} />
+        <DeleteTripDialog
+          tripId={trip.id}
+          tripTitle={trip.title}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+        />
+      </motion.div>
+    </AnimatePresence>
   );
 }

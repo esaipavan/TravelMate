@@ -9,8 +9,8 @@ import {
 import type { ItineraryItemInsert, ItineraryItemUpdate } from '../types';
 
 function invalidate(qc: ReturnType<typeof useQueryClient>, tripId: string) {
-  qc.invalidateQueries({ queryKey: ['itinerary', tripId] });
-  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  void qc.invalidateQueries({ queryKey: ['itinerary', tripId] });
+  void qc.invalidateQueries({ queryKey: ['dashboard'] });
 }
 
 export function useItineraryData(tripId: string) {
@@ -33,8 +33,7 @@ export function useCreateItem(tripId: string) {
 export function useUpdateItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ItineraryItemUpdate }) =>
-      updateItem(id, data),
+    mutationFn: ({ id, data }: { id: string; data: ItineraryItemUpdate }) => updateItem(id, data),
     onSuccess: () => invalidate(qc, tripId),
   });
 }
@@ -50,8 +49,7 @@ export function useDeleteItem(tripId: string) {
 export function useReorderItems(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (updates: { id: string; order_index: number }[]) =>
-      reorderItems(updates),
+    mutationFn: (updates: { id: string; order_index: number }[]) => reorderItems(updates),
     onSuccess: () => invalidate(qc, tripId),
   });
 }

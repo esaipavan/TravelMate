@@ -7,43 +7,40 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     { data: tripBudgets },
     { data: expenseRows },
     { data: profileRow },
+    { data: tripDates },
   ] = await Promise.all([
-    supabase
-      .from('trips')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId),
+    supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     supabase
       .from('trips')
       .select('total_budget')
       .eq('user_id', userId)
       .not('total_budget', 'is', null),
+    supabase.from('expenses').select('amount').eq('user_id', userId),
+    supabase.from('profiles').select('home_currency').eq('id', userId).single(),
     supabase
-      .from('expenses')
-      .select('amount')
-      .eq('user_id', userId),
-    supabase
-      .from('profiles')
-      .select('home_currency')
-      .eq('id', userId)
-      .single(),
+      .from('trips')
+      .select('start_date, end_date')
+      .eq('user_id', userId)
+      .neq('status', 'cancelled'),
   ]);
 
-  const totalBudget = (tripBudgets ?? []).reduce(
-    (sum, t) => sum + (t.total_budget ?? 0),
-    0,
-  );
-  const totalExpenses = (expenseRows ?? []).reduce(
-    (sum, e) => sum + (e.amount ?? 0),
-    0,
-  );
-  const homeCurrency =
-    (profileRow as { home_currency: string } | null)?.home_currency ?? 'INR';
+  const totalBudget = (tripBudgets ?? []).reduce((sum, t) => sum + (t.total_budget ?? 0), 0);
+  const totalExpenses = (expenseRows ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0);
+  const homeCurrency = (profileRow as { home_currency: string } | null)?.home_currency ?? 'INR';
+
+  const travelDays = (tripDates ?? []).reduce((acc, t) => {
+    const start = new Date(t.start_date + 'T00:00:00').getTime();
+    const end = new Date(t.end_date + 'T00:00:00').getTime();
+    const days = Math.max(0, Math.round((end - start) / 86_400_000) + 1);
+    return acc + days;
+  }, 0);
 
   return {
     totalTrips: totalTrips ?? 0,
     totalBudget,
     totalExpenses,
     homeCurrency,
+    travelDays,
   };
 }
 
@@ -75,10 +72,7 @@ export async function getRecentExpenses(userId: string): Promise<RecentExpense[]
 
   const tripIds = [...new Set(expenses.map((e) => e.trip_id))];
 
-  const { data: trips } = await supabase
-    .from('trips')
-    .select('id, title')
-    .in('id', tripIds);
+  const { data: trips } = await supabase.from('trips').select('id, title').in('id', tripIds);
 
   const tripMap = new Map((trips ?? []).map((t) => [t.id, t.title]));
 
@@ -92,6 +86,25 @@ export async function getRecentExpenses(userId: string): Promise<RecentExpense[]
     trip_id: e.trip_id,
     trip_title: tripMap.get(e.trip_id) ?? null,
   }));
+}
+
+export async function getCurrentTrip(userId: string): Promise<UpcomingTrip | null> {
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+    .from('trips')
+    .select(
+      'id, title, destination, start_date, end_date, status, cover_image_url, currency, total_budget',
+    )
+    .eq('user_id', userId)
+    .neq('status', 'cancelled')
+    .lte('start_date', today)
+    .gte('end_date', today)
+    .order('start_date', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as UpcomingTrip | null;
 }
 
 export async function getBudgetVsActual(userId: string): Promise<BudgetVsActualItem[]> {

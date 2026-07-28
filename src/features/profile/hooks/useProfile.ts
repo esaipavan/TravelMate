@@ -6,7 +6,10 @@ import { queryClient as appQueryClient } from '@/lib/queryClient';
 import { getTrips } from '@/features/trips/services/trips.service';
 import { getDocuments } from '@/features/documents/services/documents.service';
 import { getReminders } from '@/features/reminders/services/reminders.service';
-import { getAllExpenses, getAllJournalEntries } from '@/features/analytics/services/analytics.service';
+import {
+  getAllExpenses,
+  getAllJournalEntries,
+} from '@/features/analytics/services/analytics.service';
 import {
   getProfile,
   updateProfile,
@@ -24,9 +27,9 @@ export function useProfile() {
   const uid = user?.id ?? '';
 
   return useQuery({
-    queryKey:  ['profile', uid],
-    queryFn:   () => getProfile(uid),
-    enabled:   !!uid,
+    queryKey: ['profile', uid],
+    queryFn: () => getProfile(uid),
+    enabled: !!uid,
     staleTime: 5 * 60_000,
   });
 }
@@ -36,11 +39,11 @@ export function useProfile() {
 export function useUpdateProfile() {
   const { user } = useAuthStore();
   const uid = user?.id ?? '';
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
 
   return useMutation({
     mutationFn: (update: ProfileUpdate) => updateProfile(uid, update),
-    onSuccess:  (updated) => {
+    onSuccess: (updated) => {
       qc.setQueryData(['profile', uid], updated);
       toast.success('Profile updated');
     },
@@ -53,7 +56,7 @@ export function useUpdateProfile() {
 export function useUploadAvatar() {
   const { user } = useAuthStore();
   const uid = user?.id ?? '';
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
 
   return useMutation({
     mutationFn: (file: File) => uploadAvatar(uid, file),
@@ -71,7 +74,7 @@ export function useUploadAvatar() {
 export function useRemoveAvatar() {
   const { user } = useAuthStore();
   const uid = user?.id ?? '';
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
 
   return useMutation({
     mutationFn: (currentUrl: string) => removeAvatar(currentUrl),
@@ -95,7 +98,7 @@ export function useChangePassword() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => toast.success('Password updated'),
-    onError:   (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 
@@ -153,11 +156,11 @@ export function useExportData() {
   return useMutation({
     mutationFn: () => exportUserData(uid),
     onSuccess: (data) => {
-      const json   = JSON.stringify(data, null, 2);
-      const blob   = new Blob([json], { type: 'application/json' });
-      const url    = URL.createObjectURL(blob);
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      anchor.href     = url;
+      anchor.href = url;
       anchor.download = 'travelmate-data.json';
       anchor.click();
       URL.revokeObjectURL(url);
@@ -175,7 +178,7 @@ export function useDeleteUploadedFiles() {
     mutationFn: () => deleteUserFiles(uid),
     onSuccess: async () => {
       await updateProfile(uid, { avatar_url: null });
-      appQueryClient.invalidateQueries({ queryKey: ['profile', uid] });
+      void appQueryClient.invalidateQueries({ queryKey: ['profile', uid] });
       toast.success('Uploaded files deleted');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -188,18 +191,43 @@ export function useProfileStats() {
   const { user } = useAuthStore();
   const uid = user?.id ?? '';
 
-  const { data: trips          = [] } = useQuery({ queryKey: ['trips',     uid], queryFn: () => getTrips(uid),              enabled: !!uid, staleTime: 5 * 60_000 });
-  const { data: documents      = [] } = useQuery({ queryKey: ['documents', uid], queryFn: () => getDocuments(uid),          enabled: !!uid, staleTime: 5 * 60_000 });
-  const { data: reminders      = [] } = useQuery({ queryKey: ['reminders', uid], queryFn: () => getReminders(uid),          enabled: !!uid, staleTime: 5 * 60_000 });
-  const { data: expenses       = [] } = useQuery({ queryKey: ['analytics', uid, 'expenses'], queryFn: () => getAllExpenses(uid),       enabled: !!uid, staleTime: 5 * 60_000 });
-  const { data: journalEntries = [] } = useQuery({ queryKey: ['analytics', uid, 'journal'],  queryFn: () => getAllJournalEntries(uid), enabled: !!uid, staleTime: 5 * 60_000 });
+  const { data: trips = [] } = useQuery({
+    queryKey: ['trips', uid],
+    queryFn: () => getTrips(uid),
+    enabled: !!uid,
+    staleTime: 5 * 60_000,
+  });
+  const { data: documents = [] } = useQuery({
+    queryKey: ['documents', uid],
+    queryFn: () => getDocuments(uid),
+    enabled: !!uid,
+    staleTime: 5 * 60_000,
+  });
+  const { data: reminders = [] } = useQuery({
+    queryKey: ['reminders', uid],
+    queryFn: () => getReminders(uid),
+    enabled: !!uid,
+    staleTime: 5 * 60_000,
+  });
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['analytics', uid, 'expenses'],
+    queryFn: () => getAllExpenses(uid),
+    enabled: !!uid,
+    staleTime: 5 * 60_000,
+  });
+  const { data: journalEntries = [] } = useQuery({
+    queryKey: ['analytics', uid, 'journal'],
+    queryFn: () => getAllJournalEntries(uid),
+    enabled: !!uid,
+    staleTime: 5 * 60_000,
+  });
 
   return {
-    totalTrips:       trips.length,
+    totalTrips: trips.length,
     countriesVisited: new Set(trips.map((t) => t.country_code ?? t.destination)).size,
-    journalEntries:   journalEntries.length,
-    documentsStored:  documents.length,
-    reminders:        reminders.length,
-    totalExpenses:    expenses.reduce((s, e) => s + e.amount, 0),
+    journalEntries: journalEntries.length,
+    documentsStored: documents.length,
+    reminders: reminders.length,
+    totalExpenses: expenses.reduce((s, e) => s + e.amount, 0),
   };
 }

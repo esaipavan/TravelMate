@@ -3,14 +3,25 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/store/auth.store';
@@ -25,12 +36,12 @@ import {
 
 const passwordSchema = z
   .object({
-    new_password:     z.string().min(8, 'Password must be at least 8 characters'),
+    new_password: z.string().min(8, 'Password must be at least 8 characters'),
     confirm_password: z.string(),
   })
   .refine((v) => v.new_password === v.confirm_password, {
     message: 'Passwords do not match',
-    path:    ['confirm_password'],
+    path: ['confirm_password'],
   });
 
 const emailSchema = z.object({
@@ -38,7 +49,7 @@ const emailSchema = z.object({
 });
 
 type PasswordValues = z.infer<typeof passwordSchema>;
-type EmailValues    = z.infer<typeof emailSchema>;
+type EmailValues = z.infer<typeof emailSchema>;
 
 // ── Sub-forms ─────────────────────────────────────────────────────────────────
 
@@ -46,7 +57,7 @@ function ChangePasswordForm() {
   const { mutate, isPending } = useChangePassword();
 
   const form = useForm<PasswordValues>({
-    resolver:      zodResolver(passwordSchema),
+    resolver: zodResolver(passwordSchema),
     defaultValues: { new_password: '', confirm_password: '' },
   });
 
@@ -58,7 +69,12 @@ function ChangePasswordForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          void form.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-3"
+      >
         <h3 className="text-sm font-semibold">Change Password</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField
@@ -97,11 +113,11 @@ function ChangePasswordForm() {
 }
 
 function UpdateEmailForm() {
-  const { user }              = useAuthStore();
+  const { user } = useAuthStore();
   const { mutate, isPending } = useUpdateEmail();
 
   const form = useForm<EmailValues>({
-    resolver:      zodResolver(emailSchema),
+    resolver: zodResolver(emailSchema),
     defaultValues: { new_email: '' },
   });
 
@@ -113,12 +129,17 @@ function UpdateEmailForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          void form.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-3"
+      >
         <h3 className="text-sm font-semibold">Update Email</h3>
         <p className="text-xs text-muted-foreground">
           Current: <span className="font-medium text-foreground">{user?.email ?? '—'}</span>
         </p>
-        <div className="flex gap-2 items-end">
+        <div className="flex items-end gap-2">
           <FormField
             control={form.control}
             name="new_email"
@@ -145,8 +166,8 @@ function UpdateEmailForm() {
 
 export function AccountSection() {
   const [deleteInput, setDeleteInput] = useState('');
-  const signOutAll  = useSignOutAll();
-  const deleteAcct  = useDeleteAccount();
+  const signOutAll = useSignOutAll();
+  const deleteAcct = useDeleteAccount();
 
   return (
     <div className="space-y-6">
@@ -165,7 +186,7 @@ export function AccountSection() {
       <Separator />
 
       {/* Sign out all devices */}
-      <div className="rounded-xl border bg-card p-5 space-y-3">
+      <div className="space-y-3 rounded-xl border bg-card p-5">
         <h3 className="text-sm font-semibold">Sign Out from All Devices</h3>
         <p className="text-xs text-muted-foreground">
           Ends all active sessions, including this one. You will be redirected to the login page.
@@ -183,14 +204,16 @@ export function AccountSection() {
       <Separator />
 
       {/* Delete account */}
-      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+      <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-5">
         <h3 className="text-sm font-semibold text-destructive">Delete Account</h3>
         <p className="text-xs text-muted-foreground">
           Permanently deletes your account and all associated data. This action cannot be undone.
         </p>
         <AlertDialog onOpenChange={() => setDeleteInput('')}>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">Delete My Account</Button>
+            <Button variant="destructive" size="sm">
+              Delete My Account
+            </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
