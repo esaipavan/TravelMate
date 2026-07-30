@@ -43,7 +43,7 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
         >
           <div className="relative h-44 overflow-hidden rounded-2xl">
             <DestinationImage
-              src={theme.imageUrl}
+              src={trip.cover_image_url ?? theme.imageUrl}
               alt={trip.destination}
               fallbackAccent={theme.accent}
             />

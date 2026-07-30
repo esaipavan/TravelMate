@@ -266,7 +266,7 @@ const IMAGES: Record<string, string> = {
   ladakh: 'photo-1546517379-b35f0b5c7da8',
 
   // ── Japan ──────────────────────────────────────────────────────────────────
-  kyoto: 'photo-1528360983277-13d401cdc186',
+  kyoto: 'photo-1545569341-9eb8b30979d9',
   tokyo: 'photo-1540959733332-eab4deabeeaf',
   japan: 'photo-1540959733332-eab4deabeeaf', // country-level: uses Tokyo skyline
 
@@ -327,7 +327,7 @@ const FALLBACKS = [
   'photo-1488646953014-85cb44e25828', // beach overhead
   'photo-1500530855697-b586d89ba3ee', // European cobblestone street
   'photo-1436491865332-7a61a109cc05', // airplane wing above clouds
-  'photo-1504280390367-361c6d9f38f4', // mountain tent / camping
+  'photo-1506905925346-21bda4d32df4', // alpine mountain lake
   'photo-1549366021-9f761d450615', // alpine lake
   'photo-1502791451862-7bd8c1df43a7', // city skyline at night
   'photo-1507003211169-0a1dd7228f2d', // solo backpacker traveller

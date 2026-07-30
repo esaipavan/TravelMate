@@ -1,5 +1,15 @@
+import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles, Sun, CloudRain, TrendingUp, TrendingDown, Lightbulb, Plane } from 'lucide-react';
+import {
+  Sparkles,
+  Sun,
+  CloudRain,
+  TrendingUp,
+  TrendingDown,
+  Lightbulb,
+  Plane,
+  ArrowRight,
+} from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
@@ -162,6 +172,16 @@ export function AIInsightsPanel() {
             </motion.div>
           );
         })}
+      </div>
+
+      <div className="mt-4 border-t border-border/50 pt-3">
+        <Link
+          to="/assistant"
+          className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+        >
+          Chat with AI companion
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+        </Link>
       </div>
     </motion.section>
   );

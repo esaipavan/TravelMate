@@ -10,7 +10,7 @@ import { TravelStats } from '../components/TravelStats';
 
 export default function DashboardPage() {
   return (
-    <div className="relative space-y-8 pb-20">
+    <div className="relative space-y-6 pb-20">
       <DashboardBackground />
 
       <TripCommandHero />

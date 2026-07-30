@@ -12,6 +12,7 @@ import { AlertBanner } from './AlertBanner';
 import { RecommendationCard } from './RecommendationCard';
 import { BudgetCoach } from './BudgetCoach';
 import { PackingCoach } from './PackingCoach';
+import { CompanionChat } from './CompanionChat';
 
 interface Props {
   companion: CompanionData;
@@ -131,6 +132,9 @@ export function CompanionDashboard({ companion, trip, intel }: Props) {
           </div>
         )}
       </div>
+
+      {/* Persistent chat */}
+      <CompanionChat trip={trip} />
     </div>
   );
 }
