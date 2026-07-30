@@ -171,9 +171,9 @@ export function TripCommandHero() {
       initial="hidden"
       animate="show"
     >
-      {/* Background image */}
+      {/* Background image — prefer the URL stored in the DB so all pages agree */}
       <DestinationImage
-        src={theme.imageUrl}
+        src={displayTrip?.cover_image_url ?? theme.imageUrl}
         alt={destination || 'Travel destination'}
         fallbackAccent={theme.accent}
       />

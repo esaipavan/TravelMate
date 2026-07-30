@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Camera } from 'lucide-react';
@@ -17,6 +17,7 @@ interface MemoryCardProps {
 function MemoryCard({ trip, reduced }: MemoryCardProps) {
   const theme = useMemo(() => resolveDestinationTheme(trip.destination), [trip.destination]);
   const imageUrl = trip.cover_image_url ?? theme.imageUrl;
+  const [imgError, setImgError] = useState(false);
   const year = trip.end_date.slice(0, 4);
   const endFmt = format(new Date(trip.end_date + 'T00:00:00'), 'MMM yyyy');
   const days = tripDuration(trip.start_date, trip.end_date);
@@ -34,13 +35,25 @@ function MemoryCard({ trip, reduced }: MemoryCardProps) {
         className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <div className="relative h-36 overflow-hidden rounded-2xl bg-muted">
-          <img
-            src={imageUrl}
-            alt={trip.destination}
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ filter: 'saturate(0.85)' }}
-            loading="lazy"
-          />
+          {imgError ? (
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(135deg, ${theme.accent}50 0%, ${theme.secondary}30 100%)`,
+              }}
+              role="img"
+              aria-label={trip.destination}
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt={trip.destination}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ filter: 'saturate(0.85)' }}
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
+          )}
 
           {/* Warm memory overlay */}
           <div

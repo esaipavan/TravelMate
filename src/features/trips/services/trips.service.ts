@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import type { TripRow, TripInsert, TripUpdate } from '../types';
 
 export async function getTrips(userId: string): Promise<TripRow[]> {
@@ -47,6 +48,7 @@ export async function duplicateTrip(trip: TripRow): Promise<TripRow> {
       title: `${trip.title} (Copy)`,
       destination: trip.destination,
       country_code: trip.country_code,
+      cover_image_url: trip.cover_image_url ?? resolveDestinationImageUrl(trip.destination),
       start_date: trip.start_date,
       end_date: trip.end_date,
       currency: trip.currency,

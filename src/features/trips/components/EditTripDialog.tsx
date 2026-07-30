@@ -1,12 +1,8 @@
 import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TripForm } from './TripForm';
 import { useUpdateTrip } from '../hooks/useTrips';
+import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import type { TripRow, TripFormValues } from '../types';
 
 interface EditTripDialogProps {
@@ -20,6 +16,9 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
 
   async function handleSubmit(values: TripFormValues) {
     try {
+      const destinationChanged = values.destination !== trip.destination;
+      const needsCoverUpdate = destinationChanged || trip.cover_image_url === null;
+
       await mutateAsync({
         id: trip.id,
         data: {
@@ -32,6 +31,9 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
           status: values.status,
           notes: values.notes || null,
           is_public: values.is_public,
+          ...(needsCoverUpdate && {
+            cover_image_url: resolveDestinationImageUrl(values.destination),
+          }),
         },
       });
       toast.success('Trip updated.');

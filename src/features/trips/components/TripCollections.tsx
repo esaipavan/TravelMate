@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -129,6 +129,7 @@ interface MiniCardProps {
 function MiniCard({ trip, reduced }: MiniCardProps) {
   const theme = useMemo(() => resolveDestinationTheme(trip.destination), [trip.destination]);
   const imageUrl = trip.cover_image_url ?? theme.imageUrl;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <motion.div
@@ -143,12 +144,24 @@ function MiniCard({ trip, reduced }: MiniCardProps) {
         className="block overflow-hidden rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <div className="relative h-24 bg-muted">
-          <img
-            src={imageUrl}
-            alt={trip.destination}
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-          />
+          {imgError ? (
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(135deg, ${theme.accent}50 0%, ${theme.secondary}30 100%)`,
+              }}
+              role="img"
+              aria-label={trip.destination}
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt={trip.destination}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
+          )}
           <div
             className="absolute inset-0"
             style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)' }}
