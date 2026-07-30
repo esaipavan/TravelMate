@@ -8,6 +8,7 @@ import { queryClient } from '@/lib/queryClient';
 import { AuthInitializer } from '@/components/providers/AuthInitializer';
 import { ThemeInitializer } from '@/components/providers/ThemeInitializer';
 import { PWAUpdatePrompt } from '@/components/pwa/PWAUpdatePrompt';
+import { ErrorReporter } from '@/components/providers/ErrorReporter';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ export function Providers({ children }: ProvidersProps) {
           <AuthInitializer />
           <ThemeInitializer />
           <PWAUpdatePrompt />
+          <ErrorReporter />
           {children}
           <Toaster richColors position="top-right" />
           {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

@@ -171,7 +171,7 @@ export default function MemoriesPage() {
   const { data: expenseData, isLoading: expenseLoading } = useExpenseData(tripId!);
 
   const isLoading = tripLoading || journalLoading || itineraryLoading || expenseLoading;
-  const expenses = expenseData?.expenses ?? [];
+  const expenses = useMemo(() => expenseData?.expenses ?? [], [expenseData]);
 
   const stats = useMemo(
     () => (trip ? buildStats(trip, entries, itinerary, expenses) : null),

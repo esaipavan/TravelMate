@@ -21,7 +21,7 @@ import { PRIORITY_CONFIG, getEffectiveStatus } from '../types';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface Props {
-  reminders:  ReminderRow[];
+  reminders: ReminderRow[];
   onDayClick: (date: Date, reminders: ReminderRow[]) => void;
 }
 
@@ -29,10 +29,10 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
   const [current, setCurrent] = useState(() => new Date());
 
   const monthStart = startOfMonth(current);
-  const monthEnd   = endOfMonth(current);
-  const calStart   = startOfWeek(monthStart);
-  const calEnd     = endOfWeek(monthEnd);
-  const days       = eachDayOfInterval({ start: calStart, end: calEnd });
+  const monthEnd = endOfMonth(current);
+  const calStart = startOfWeek(monthStart);
+  const calEnd = endOfWeek(monthEnd);
+  const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   function remindersForDay(day: Date): ReminderRow[] {
     const key = format(day, 'yyyy-MM-dd');
@@ -75,10 +75,7 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
       {/* Weekday labels */}
       <div className="grid grid-cols-7 border-b">
         {WEEKDAYS.map((d) => (
-          <div
-            key={d}
-            className="py-2 text-center text-xs font-medium text-muted-foreground"
-          >
+          <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">
             {d}
           </div>
         ))}
@@ -88,8 +85,8 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
       <div className="grid grid-cols-7">
         {days.map((day, i) => {
           const dayReminders = remindersForDay(day);
-          const inMonth      = isSameMonth(day, current);
-          const today        = isToday(day);
+          const inMonth = isSameMonth(day, current);
+          const today = isToday(day);
 
           return (
             <button
@@ -102,9 +99,7 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
             >
               <span
                 className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                  today
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground'
+                  today ? 'bg-primary text-primary-foreground' : 'text-foreground'
                 }`}
               >
                 {format(day, 'd')}
@@ -114,12 +109,13 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
               {dayReminders.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-0.5">
                   {dayReminders.slice(0, 3).map((r) => {
-                    const status  = getEffectiveStatus(r);
-                    const dotCls  = status === 'completed'
-                      ? 'bg-emerald-500'
-                      : status === 'overdue'
-                      ? 'bg-destructive'
-                      : PRIORITY_CONFIG[r.priority].dotClass;
+                    const status = getEffectiveStatus(r);
+                    const dotCls =
+                      status === 'completed'
+                        ? 'bg-emerald-500'
+                        : status === 'overdue'
+                          ? 'bg-destructive'
+                          : PRIORITY_CONFIG[r.priority].dotClass;
                     return (
                       <span
                         key={r.id}
@@ -129,7 +125,7 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
                     );
                   })}
                   {dayReminders.length > 3 && (
-                    <span className="text-[10px] text-muted-foreground leading-none">
+                    <span className="text-[10px] leading-none text-muted-foreground">
                       +{dayReminders.length - 3}
                     </span>
                   )}
@@ -143,10 +139,10 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 border-t px-4 py-2 text-xs text-muted-foreground">
         {[
-          { cls: 'bg-destructive',    label: 'Overdue / High' },
-          { cls: 'bg-amber-500',      label: 'Medium' },
+          { cls: 'bg-destructive', label: 'Overdue / High' },
+          { cls: 'bg-amber-500', label: 'Medium' },
           { cls: 'bg-muted-foreground', label: 'Low' },
-          { cls: 'bg-emerald-500',    label: 'Completed' },
+          { cls: 'bg-emerald-500', label: 'Completed' },
         ].map(({ cls, label }) => (
           <span key={label} className="flex items-center gap-1">
             <span className={`h-2 w-2 rounded-full ${cls}`} />
@@ -161,10 +157,10 @@ export function ReminderCalendar({ reminders, onDayClick }: Props) {
 // ── Day detail panel ──────────────────────────────────────────────────────────
 
 interface DayDetailProps {
-  date:      Date;
+  date: Date;
   reminders: ReminderRow[];
-  onEdit:    (r: ReminderRow) => void;
-  onToggle:  (id: string, complete: boolean) => void;
+  onEdit: (r: ReminderRow) => void;
+  onToggle: (id: string, complete: boolean) => void;
 }
 
 export function DayDetail({ date, reminders, onEdit, onToggle }: DayDetailProps) {
@@ -175,13 +171,10 @@ export function DayDetail({ date, reminders, onEdit, onToggle }: DayDetailProps)
       </div>
       <div className="divide-y">
         {reminders.map((r) => {
-          const status   = getEffectiveStatus(r);
+          const status = getEffectiveStatus(r);
           const complete = status === 'completed';
           return (
-            <div
-              key={r.id}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30"
-            >
+            <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30">
               <button
                 type="button"
                 onClick={() => onToggle(r.id, !complete)}
@@ -189,17 +182,24 @@ export function DayDetail({ date, reminders, onEdit, onToggle }: DayDetailProps)
                   complete ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
                 }`}
               >
-                {complete && <span className="text-white text-[10px]">✓</span>}
+                {complete && <span className="text-[10px] text-white">✓</span>}
               </button>
               <div className="min-w-0 flex-1">
-                <p className={`truncate text-sm font-medium ${complete ? 'line-through text-muted-foreground' : ''}`}>
+                <p
+                  className={`truncate text-sm font-medium ${complete ? 'text-muted-foreground line-through' : ''}`}
+                >
                   {r.title}
                 </p>
                 {r.reminder_time && (
                   <p className="text-xs text-muted-foreground">{r.reminder_time.slice(0, 5)}</p>
                 )}
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onEdit(r)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => onEdit(r)}
+              >
                 <span className="text-xs">✏️</span>
               </Button>
             </div>
@@ -212,4 +212,5 @@ export function DayDetail({ date, reminders, onEdit, onToggle }: DayDetailProps)
 
 // ── Helper to check if two dates represent the same day ─────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { isSameDay, parseISO };

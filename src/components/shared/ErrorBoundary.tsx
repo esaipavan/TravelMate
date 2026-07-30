@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { reportError } from '@/lib/error-reporter';
 
 interface Props {
   children: ReactNode;
@@ -24,7 +25,15 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: { componentStack: string }) {
     if (import.meta.env.DEV) {
       console.error('ErrorBoundary caught:', error, info);
+      return;
     }
+    reportError({
+      title: `React Error: ${error.message}`,
+      description: [error.message, error.stack ?? '', info.componentStack]
+        .filter(Boolean)
+        .join('\n\n'),
+      severity: 'high',
+    });
   }
 
   handleReset = () => {

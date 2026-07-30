@@ -1,4 +1,7 @@
+import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProfile } from '../hooks/useProfile';
@@ -6,9 +9,11 @@ import { AccountSection } from '../components/AccountSection';
 import { PreferencesSection } from '../components/PreferencesSection';
 import { NotificationsSection } from '../components/NotificationsSection';
 import { PrivacySection } from '../components/PrivacySection';
+import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 
 export default function SettingsPage() {
   const { data: profile, isLoading } = useProfile();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
     <div className="space-y-6 pb-10">
@@ -65,6 +70,34 @@ export default function SettingsPage() {
           <PrivacySection />
         </TabsContent>
       </Tabs>
+
+      {/* Danger zone — visually separated from normal settings */}
+      <section
+        aria-labelledby="danger-zone-heading"
+        className="mt-10 rounded-2xl border border-destructive/25 bg-destructive/5 p-6"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="danger-zone-heading" className="text-sm font-semibold text-destructive">
+              Danger Zone
+            </h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Permanently delete your account and all associated data. This cannot be undone.
+            </p>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+            className="shrink-0"
+          >
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+            Delete account
+          </Button>
+        </div>
+      </section>
+
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 }

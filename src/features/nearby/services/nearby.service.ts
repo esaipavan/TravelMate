@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
