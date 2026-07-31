@@ -176,7 +176,7 @@ export default function DocumentsPage() {
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold text-foreground">Travel Vault</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Travel Vault</h1>
           <p className="truncate text-sm text-muted-foreground">
             {currentTrip
               ? currentTrip.title
@@ -187,7 +187,7 @@ export default function DocumentsPage() {
         <Button
           onClick={openUpload}
           disabled={!!tripId && tripsLoading}
-          className="shrink-0 gap-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-600 hover:to-violet-600"
+          className="bg-gradient-premium shrink-0 gap-1.5 text-white hover:opacity-90"
         >
           <Upload className="h-3.5 w-3.5" aria-hidden="true" />
           Upload Document

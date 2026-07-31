@@ -1,0 +1,59 @@
+name: Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Preview Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Build (preview)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_GEOAPIFY_API_KEY: ${{ secrets.VITE_GEOAPIFY_API_KEY }}
+          VITE_AI_PROVIDER: groq
+          VITE_APP_NAME: TravelMate (Preview)
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
+
+      - name: Comment build size
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const sizes = execSync('du -sh dist/assets/*.js 2>/dev/null | sort -hr | head -10').toString();
+            const body = `### 📦 Preview Build — chunk sizes (top 10)\n\`\`\`\n${sizes}\`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });

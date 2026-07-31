@@ -1,12 +1,18 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
+import { rv, PAGE_VARIANTS } from '@/lib/motion';
 import { Globe2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { useTrip } from '@/features/trips/hooks/useTrips';
+import { useWeather } from '@/features/weather/hooks/useWeather';
 import { useDestinationData } from '../hooks/useDestinationData';
 import { DestinationHero } from '../components/DestinationHero';
-import { MapPreview } from '../components/MapPreview';
 import { WeatherSection } from '../components/WeatherSection';
+import { DestinationMap } from '../components/DestinationMap';
+import { NearbyExplorer } from '../components/NearbyExplorer';
+import { SmartRecommendations } from '../components/SmartRecommendations';
 import { AttractionsSection } from '../components/AttractionsSection';
 import { FoodSection } from '../components/FoodSection';
 import { TransportSection } from '../components/TransportSection';
@@ -37,19 +43,46 @@ function PageSkeleton() {
 }
 
 export default function DestinationIntelPage() {
+  const reduced = useReducedMotion();
   const { id: tripId } = useParams<{ id: string }>();
 
-  const { data: trip, isLoading: tripLoading, isError: tripError } = useTrip(tripId!);
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+    refetch: refetchTrip,
+  } = useTrip(tripId!);
   const { data: intel, isLoading: intelLoading } = useDestinationData(trip?.destination);
+  const { data: weatherData, isLoading: weatherLoading } = useWeather(trip?.destination ?? '');
 
   const isLoading = tripLoading || (!!trip && intelLoading);
 
-  if (tripError) return <Navigate to="/trips" replace />;
+  if (tripError)
+    return (
+      <ErrorState
+        title="Couldn't load trip"
+        message="We ran into a problem loading this trip's details."
+        onRetry={() => void refetchTrip()}
+      />
+    );
   if (isLoading) return <PageSkeleton />;
-  if (!trip || !intel) return <PageSkeleton />;
+  if (!trip) return <Navigate to="/trips" replace />;
+  if (!intel)
+    return (
+      <ErrorState
+        title="No destination data"
+        message="We couldn't find intelligence data for this destination."
+        onRetry={() => void refetchTrip()}
+      />
+    );
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      className="space-y-10"
+      variants={rv(PAGE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+    >
       {/* Back + breadcrumb */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="shrink-0" aria-label="Back to trip" asChild>
@@ -76,32 +109,38 @@ export default function DestinationIntelPage() {
         endDate={trip.end_date}
       />
 
-      {/* Map placeholder */}
-      <MapPreview overview={intel.overview} />
+      {/* Interactive map with nearby markers */}
+      <DestinationMap destination={trip.destination} />
 
-      {/* Weather */}
-      <WeatherSection weather={intel.weather} />
+      {/* Real weather data */}
+      <WeatherSection
+        weather={weatherData}
+        isLoading={weatherLoading}
+        seasonNote={intel.weather.seasonNote}
+        travelTips={intel.weather.recommendations}
+      />
 
-      {/* Attractions */}
+      {/* AI smart recommendations */}
+      <SmartRecommendations trip={trip} overview={intel.overview} />
+
+      {/* Nearby places list (same TanStack Query cache as DestinationMap — no extra API call) */}
+      <NearbyExplorer destination={trip.destination} />
+
+      {/* Existing curated sections */}
       <AttractionsSection
         attractions={intel.attractions}
         destination={intel.overview.destination}
       />
 
-      {/* Food & Drink */}
       <FoodSection food={intel.food} destination={intel.overview.destination} />
 
-      {/* Local Transport */}
       <TransportSection transport={intel.transport} destination={intel.overview.destination} />
 
-      {/* Safety */}
       <SafetySection safety={intel.safety} destination={intel.overview.destination} />
 
-      {/* Cost Guide */}
       <CostGuideSection cost={intel.cost} destination={intel.overview.destination} />
 
-      {/* Packing Checklist */}
       <PackingChecklist checklist={intel.checklist} destination={intel.overview.destination} />
-    </div>
+    </motion.div>
   );
 }

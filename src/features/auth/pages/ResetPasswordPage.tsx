@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Lock } from 'lucide-react';
+import { Eye, EyeOff, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { passwordSchema } from '@/utils/validators';
 import { supabase } from '@/lib/supabase';
 import { updatePassword } from '../services/auth.service';
@@ -31,11 +32,19 @@ const resetSchema = z
   });
 
 type ResetFormValues = z.infer<typeof resetSchema>;
-
 type PageState = 'loading' | 'ready' | 'error';
+
+const SPRING = { type: 'spring', damping: 26, stiffness: 90 } as const;
+const card = {
+  hidden: { opacity: 0, y: 28, scale: 0.96 },
+  visible: { opacity: 1, y: 0, scale: 1 },
+};
+const item = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
+const list = { visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } };
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pageState, setPageState] = useState<PageState>('loading');
@@ -48,25 +57,16 @@ export default function ResetPasswordPage() {
   const { isSubmitting } = form.formState;
 
   useEffect(() => {
-    // Supabase fires PASSWORD_RECOVERY when the user arrives via the email link.
-    // supabase-js detects the token in the URL hash automatically (detectSessionInUrl: true).
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setPageState('ready');
-      }
+      if (event === 'PASSWORD_RECOVERY') setPageState('ready');
     });
 
-    // Fallback: if the user already has a session when this page loads (e.g. navigated
-    // back after the event already fired), mark as ready immediately.
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setPageState('ready');
-      }
+      if (session) setPageState('ready');
     });
 
-    // If nothing marks it ready within 4 seconds, the link is invalid or expired.
     const timeout = setTimeout(() => {
       setPageState((current) => (current === 'loading' ? 'error' : current));
     }, 4000);
@@ -91,130 +91,159 @@ export default function ResetPasswordPage() {
 
   if (pageState === 'loading') {
     return (
-      <Card className="w-full shadow-lg">
-        <CardHeader className="space-y-1 pb-4 text-center">
-          <CardTitle className="text-2xl">Verifying link…</CardTitle>
-          <CardDescription>Please wait while we verify your reset link.</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 text-center">
+        <LoadingSpinner size="md" label="Verifying your reset link…" />
+        <p className="text-sm text-muted-foreground">Verifying your reset link…</p>
+      </div>
     );
   }
 
   if (pageState === 'error') {
     return (
-      <Card className="w-full shadow-lg">
-        <CardHeader className="space-y-1 pb-4 text-center">
-          <CardTitle className="text-2xl">Link expired</CardTitle>
-          <CardDescription>
+      <div className="space-y-5 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+          <Lock className="h-6 w-6 text-destructive" aria-hidden />
+        </div>
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Link expired</h1>
+          <p className="text-sm text-muted-foreground">
             This password reset link is invalid or has expired. Reset links are valid for 1 hour.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button variant="outline" onClick={() => navigate('/forgot-password')}>
-            Request a new link
-          </Button>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => navigate('/forgot-password')}>
+          Request a new link
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card className="w-full shadow-lg">
-      <CardHeader className="space-y-1 pb-4 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-          <Lock className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <CardTitle className="text-2xl">Set new password</CardTitle>
-        <CardDescription>Choose a strong password for your account.</CardDescription>
-      </CardHeader>
+    <motion.div
+      variants={reduced ? {} : card}
+      initial="hidden"
+      animate="visible"
+      transition={{ ...SPRING, delay: 0.05 }}
+    >
+      <motion.div
+        variants={reduced ? {} : list}
+        initial="hidden"
+        animate="visible"
+        className="space-y-6"
+      >
+        <motion.div variants={item} transition={SPRING} className="space-y-1.5 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-brand shadow-glow">
+            <Lock className="h-5 w-5 text-primary-foreground" aria-hidden />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Set new password</h1>
+          <p className="text-sm text-muted-foreground">
+            Choose a strong password for your account.
+          </p>
+        </motion.div>
 
-      <CardContent>
-        <Form {...form}>
-          <form
-            onSubmit={(e) => {
-              void form.handleSubmit(onSubmit)(e);
-            }}
-            className="space-y-4"
-            noValidate
+        <motion.div variants={item} transition={SPRING}>
+          <Form {...form}>
+            <form
+              onSubmit={(e) => {
+                void form.handleSubmit(onSubmit)(e);
+              }}
+              className="space-y-4"
+              noValidate
+            >
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">New password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          disabled={isSubmitting}
+                          className="h-11 rounded-xl pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold">Confirm new password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showConfirm ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          disabled={isSubmitting}
+                          className="h-11 rounded-xl pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                        >
+                          {showConfirm ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <p className="text-xs text-muted-foreground">
+                At least 8 characters with one uppercase letter and one number.
+              </p>
+
+              <Button
+                type="submit"
+                className="h-11 w-full rounded-xl font-semibold shadow-glow"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating…' : 'Update password'}
+              </Button>
+            </form>
+          </Form>
+        </motion.div>
+
+        <motion.div variants={item} transition={SPRING} className="text-center">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New password</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        autoComplete="new-password"
-                        disabled={isSubmitting}
-                        className="pr-10"
-                        {...field}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        tabIndex={-1}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm new password</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showConfirm ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        autoComplete="new-password"
-                        disabled={isSubmitting}
-                        className="pr-10"
-                        {...field}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirm((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        tabIndex={-1}
-                        aria-label={showConfirm ? 'Hide password' : 'Show password'}
-                      >
-                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <p className="text-xs text-muted-foreground">
-              At least 8 characters with one uppercase letter and one number.
-            </p>
-
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Updating…' : 'Update password'}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            Back to sign in
+          </Link>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }

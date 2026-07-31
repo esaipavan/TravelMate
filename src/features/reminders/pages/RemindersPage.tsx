@@ -1,13 +1,22 @@
 import { useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { rv, PAGE_VARIANTS } from '@/lib/motion';
 import { parseISO, addDays, isAfter } from 'date-fns';
 import {
-  Bell, Plus, Search, SlidersHorizontal, X,
-  LayoutGrid, List, CalendarDays, AlertTriangle,
+  Bell,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+  LayoutGrid,
+  List,
+  CalendarDays,
+  AlertTriangle,
 } from 'lucide-react';
-import { Button }   from '@/components/ui/button';
-import { Input }    from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Label }    from '@/components/ui/label';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -35,10 +44,10 @@ import {
   useSnoozeReminder,
   useDeleteReminder,
 } from '../hooks/useReminders';
-import { useNotifications }  from '../hooks/useNotifications';
-import { ReminderStats }     from '../components/ReminderStats';
+import { useNotifications } from '../hooks/useNotifications';
+import { ReminderStats } from '../components/ReminderStats';
 import { ReminderCard, ReminderListItem } from '../components/ReminderCard';
-import { ReminderDialog }    from '../components/ReminderDialog';
+import { ReminderDialog } from '../components/ReminderDialog';
 import { ReminderCalendar, DayDetail } from '../components/ReminderCalendar';
 import {
   REMINDER_TYPES,
@@ -56,10 +65,14 @@ function PageSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52 rounded-xl" />)}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-52 rounded-xl" />
+        ))}
       </div>
     </div>
   );
@@ -68,58 +81,54 @@ function PageSkeleton() {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS: ReminderFilters = {
-  search:    '',
-  tripId:    '',
-  type:      '',
-  priority:  '',
-  status:    '',
-  upcoming:  false,
+  search: '',
+  tripId: '',
+  type: '',
+  priority: '',
+  status: '',
+  upcoming: false,
   sortOrder: 'date',
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RemindersPage() {
+  const reduced = useReducedMotion();
   const { data: reminders = [], isLoading } = useReminders();
-  const { data: trips     = [] }            = useReminderTrips();
+  const { data: trips = [] } = useReminderTrips();
 
-  const createMutation  = useCreateReminder();
-  const updateMutation  = useUpdateReminder();
+  const createMutation = useCreateReminder();
+  const updateMutation = useUpdateReminder();
   const completeMutation = useMarkComplete();
-  const snoozeMutation  = useSnoozeReminder();
-  const deleteMutation  = useDeleteReminder();
+  const snoozeMutation = useSnoozeReminder();
+  const deleteMutation = useDeleteReminder();
 
   useNotifications(reminders);
 
-  const [dialogOpen,   setDialogOpen]   = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editReminder, setEditReminder] = useState<ReminderRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReminderRow | null>(null);
-  const [filters,      setFilters]      = useState<ReminderFilters>(DEFAULT_FILTERS);
-  const [showFilters,  setShowFilters]  = useState(false);
-  const [view,         setView]         = useState<ReminderView>('card');
-  const [selectedDay,  setSelectedDay]  = useState<{ date: Date; items: ReminderRow[] } | null>(null);
+  const [filters, setFilters] = useState<ReminderFilters>(DEFAULT_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+  const [view, setView] = useState<ReminderView>('card');
+  const [selectedDay, setSelectedDay] = useState<{ date: Date; items: ReminderRow[] } | null>(null);
 
-  const tripMap = useMemo(
-    () => Object.fromEntries(trips.map((t) => [t.id, t.title])),
-    [trips],
-  );
+  const tripMap = useMemo(() => Object.fromEntries(trips.map((t) => [t.id, t.title])), [trips]);
 
   // ── Filtered / sorted list ──────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const now7 = addDays(new Date(), 7);
-    let result  = [...reminders];
+    let result = [...reminders];
 
     if (filters.search) {
       const q = filters.search.toLowerCase();
       result = result.filter(
-        (r) =>
-          r.title.toLowerCase().includes(q) ||
-          (r.description ?? '').toLowerCase().includes(q),
+        (r) => r.title.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q),
       );
     }
 
     if (filters.tripId) result = result.filter((r) => r.trip_id === filters.tripId);
-    if (filters.type)   result = result.filter((r) => r.type    === filters.type);
+    if (filters.type) result = result.filter((r) => r.type === filters.type);
     if (filters.priority) result = result.filter((r) => r.priority === filters.priority);
 
     if (filters.status) {
@@ -139,11 +148,16 @@ export default function RemindersPage() {
 
     result.sort((a, b) => {
       switch (filters.sortOrder) {
-        case 'newest':   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'oldest':   return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'date':     return a.reminder_date.localeCompare(b.reminder_date);
-        case 'priority': return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-        default:         return 0;
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'date':
+          return a.reminder_date.localeCompare(b.reminder_date);
+        case 'priority':
+          return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+        default:
+          return 0;
       }
     });
 
@@ -151,8 +165,12 @@ export default function RemindersPage() {
   }, [reminders, filters]);
 
   const hasActiveFilter =
-    !!filters.search || !!filters.tripId || !!filters.type ||
-    !!filters.priority || !!filters.status || filters.upcoming;
+    !!filters.search ||
+    !!filters.tripId ||
+    !!filters.type ||
+    !!filters.priority ||
+    !!filters.status ||
+    filters.upcoming;
 
   const overdueCount = useMemo(
     () => reminders.filter((r) => getEffectiveStatus(r) === 'overdue').length,
@@ -192,11 +210,13 @@ export default function RemindersPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Reminders"
-        description="Stay on top of your travel tasks and deadlines"
-      >
+    <motion.div
+      className="space-y-6"
+      variants={rv(PAGE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+    >
+      <PageHeader title="Reminders" description="Stay on top of your travel tasks and deadlines">
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
           New Reminder
@@ -216,7 +236,7 @@ export default function RemindersPage() {
               {overdueCount} overdue {overdueCount === 1 ? 'reminder' : 'reminders'} — take action.
               <button
                 type="button"
-                className="ml-auto underline-offset-2 hover:underline text-xs"
+                className="ml-auto text-xs underline-offset-2 hover:underline"
                 onClick={() => setFilters((f) => ({ ...f, status: 'overdue' }))}
               >
                 Show only overdue
@@ -229,7 +249,7 @@ export default function RemindersPage() {
             <div className="flex gap-2">
               {/* Search */}
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
                   placeholder="Search reminders…"
@@ -240,11 +260,13 @@ export default function RemindersPage() {
 
               {/* View toggles */}
               <div className="flex rounded-md border">
-                {([
-                  { v: 'card'     as ReminderView, icon: LayoutGrid },
-                  { v: 'list'     as ReminderView, icon: List },
-                  { v: 'calendar' as ReminderView, icon: CalendarDays },
-                ] as const).map(({ v, icon: Icon }) => (
+                {(
+                  [
+                    { v: 'card' as ReminderView, icon: LayoutGrid },
+                    { v: 'list' as ReminderView, icon: List },
+                    { v: 'calendar' as ReminderView, icon: CalendarDays },
+                  ] as const
+                ).map(({ v, icon: Icon }) => (
                   <button
                     key={v}
                     type="button"
@@ -289,7 +311,9 @@ export default function RemindersPage() {
                   <Label className="shrink-0 text-xs text-muted-foreground">Type</Label>
                   <Select
                     value={filters.type || '_all'}
-                    onValueChange={(v) => setFilters((f) => ({ ...f, type: v === '_all' ? '' : v }))}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, type: v === '_all' ? '' : v }))
+                    }
                   >
                     <SelectTrigger className="h-8 w-40">
                       <SelectValue />
@@ -310,7 +334,9 @@ export default function RemindersPage() {
                   <Label className="shrink-0 text-xs text-muted-foreground">Priority</Label>
                   <Select
                     value={filters.priority || '_all'}
-                    onValueChange={(v) => setFilters((f) => ({ ...f, priority: v === '_all' ? '' : v }))}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, priority: v === '_all' ? '' : v }))
+                    }
                   >
                     <SelectTrigger className="h-8 w-32">
                       <SelectValue />
@@ -329,7 +355,9 @@ export default function RemindersPage() {
                   <Label className="shrink-0 text-xs text-muted-foreground">Status</Label>
                   <Select
                     value={filters.status || '_all'}
-                    onValueChange={(v) => setFilters((f) => ({ ...f, status: v === '_all' ? '' : v }))}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, status: v === '_all' ? '' : v }))
+                    }
                   >
                     <SelectTrigger className="h-8 w-36">
                       <SelectValue />
@@ -349,7 +377,9 @@ export default function RemindersPage() {
                     <Label className="shrink-0 text-xs text-muted-foreground">Trip</Label>
                     <Select
                       value={filters.tripId || '_all'}
-                      onValueChange={(v) => setFilters((f) => ({ ...f, tripId: v === '_all' ? '' : v }))}
+                      onValueChange={(v) =>
+                        setFilters((f) => ({ ...f, tripId: v === '_all' ? '' : v }))
+                      }
                     >
                       <SelectTrigger className="h-8 w-44">
                         <SelectValue />
@@ -357,7 +387,9 @@ export default function RemindersPage() {
                       <SelectContent>
                         <SelectItem value="_all">All trips</SelectItem>
                         {trips.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.title}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -412,7 +444,7 @@ export default function RemindersPage() {
 
           {/* Empty — no reminders */}
           {reminders.length === 0 && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-20 text-center">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-20 text-center">
               <Bell className="h-10 w-10 text-muted-foreground opacity-40" />
               <div className="space-y-1">
                 <p className="font-medium">No reminders yet</p>
@@ -429,7 +461,7 @@ export default function RemindersPage() {
 
           {/* Filter empty */}
           {reminders.length > 0 && filtered.length === 0 && view !== 'calendar' && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-16 text-center">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center">
               <Search className="h-8 w-8 text-muted-foreground opacity-40" />
               <p className="font-medium">No reminders match your filters</p>
               <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_FILTERS)}>
@@ -515,7 +547,9 @@ export default function RemindersPage() {
       {/* Delete confirmation */}
       <AlertDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -535,7 +569,6 @@ export default function RemindersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 }
-

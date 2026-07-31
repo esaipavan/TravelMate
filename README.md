@@ -14,12 +14,14 @@ A production-grade, full-stack travel management platform — fast, secure, and 
 
 <br />
 
+![Version](https://img.shields.io/badge/Version-2.0.0-4F46E5?style=flat-square)
 ![React](https://img.shields.io/badge/React_18-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite_5-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/esaipavan/travel-planner/ci.yml?label=CI&style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 </div>
@@ -36,18 +38,21 @@ Sign in with Google or an email/password account. All data is fully isolated per
 
 ## ✨ Features
 
-| | Feature | Description |
-|:--:|:--|:--|
-| 🧳 | **Trip Management** | Create trips with destination, dates, budget, and status |
-| 🗺️ | **Itinerary Builder** | Day-by-day planner with drag-and-drop reordering |
-| 💸 | **Expense Tracking** | Log expenses by category with budget vs. actual insights |
-| 📄 | **Document Management** | Store travel documents with expiry tracking |
-| ⏰ | **Reminders** | Card, list, and calendar views |
-| 📔 | **Travel Journal** | Trip diary with moods, ratings, and photos |
-| 🌦️ | **Weather & Nearby** | 7-day forecasts and nearby place search |
-| 💱 | **Currency Converter** | Real-time exchange rates |
-| 🤖 | **AI Assistant** | Provider-agnostic AI chat via a Supabase Edge Function |
-| 📊 | **Analytics** | KPIs, charts, and insights across all trips |
+|     | Feature                      | Description                                                                                                                                                   |
+| :-: | :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🧳  | **Trip Management**          | Create trips with destination, dates, budget, cover images, and status                                                                                        |
+| 🗺️  | **Itinerary Builder**        | Day-by-day planner with drag-and-drop reordering                                                                                                              |
+| 💸  | **Expense Tracking**         | Log expenses by category with budget vs. actual insights and analytics                                                                                        |
+| 📄  | **Document Vault**           | Store travel documents with expiry tracking and AI health overview                                                                                            |
+| ⏰  | **Reminders**                | Card, list, and calendar views with repeat patterns and snooze                                                                                                |
+| 📔  | **Travel Journal**           | Trip diary with moods, star ratings, photos, and location tagging                                                                                             |
+| 🌦️  | **Weather & Nearby**         | 7-day forecasts and Geoapify-powered nearby place search                                                                                                      |
+| 💱  | **Currency Converter**       | Real-time exchange rates (30+ currencies via Frankfurter)                                                                                                     |
+| 🤖  | **AI Travel Concierge**      | 8-tab AI assistant: morning briefs, budget coaching, itinerary optimiser, packing, food guide, safety, journal — provider-agnostic via Supabase Edge Function |
+| 🌍  | **Destination Intelligence** | Country profiles, attractions, food, transport, safety, cost guides                                                                                           |
+| 👥  | **Collaboration**            | Shared trip access with role-based permissions (owner/editor/viewer)                                                                                          |
+| 📊  | **Analytics**                | 8 KPI cards and 6 chart types across all trips                                                                                                                |
+| 📸  | **Memories**                 | Photo gallery across all journal entries                                                                                                                      |
 
 ---
 
@@ -66,8 +71,8 @@ Sign in with Google or an email/password account. All data is fully isolated per
 
 > _Add screenshots from the live deployment to showcase the app._
 
-| Dashboard | Trip Detail | Analytics |
-|:--:|:--:|:--:|
+|   Dashboard   |  Trip Detail  |   Analytics   |
+| :-----------: | :-----------: | :-----------: |
 | _coming soon_ | _coming soon_ | _coming soon_ |
 
 ---
@@ -117,19 +122,43 @@ VITE_APP_NAME=TravelMate
 VITE_AI_PROVIDER=groq
 ```
 
-Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required. AI provider API keys are stored only as Supabase Edge Function secrets and must never appear in `.env.local` or the frontend bundle.
+| Variable                 | Required    | Purpose                                                                              |
+| ------------------------ | ----------- | ------------------------------------------------------------------------------------ |
+| `VITE_SUPABASE_URL`      | ✅          | Supabase project URL                                                                 |
+| `VITE_SUPABASE_ANON_KEY` | ✅          | Supabase anon key (safe for browser; RLS enforces access)                            |
+| `VITE_GEOAPIFY_API_KEY`  | Recommended | Geoapify Places API key — free tier (3k req/day); Nearby feature disabled without it |
+| `VITE_AI_PROVIDER`       | Optional    | Display label only (`groq` / `gemini` / `openrouter`). Defaults to `groq`.           |
+| `VITE_APP_NAME`          | Optional    | App display name. Defaults to `TravelMate`.                                          |
+
+AI provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`) are **never stored in `.env.local`** — they are set exclusively as Supabase Edge Function secrets via `supabase secrets set`.
 
 ---
 
 ## 📜 Scripts
 
 ```bash
-npm run dev        # Start dev server
-npm run build      # Production build
-npm run preview    # Preview production build
-npm run lint       # ESLint
-npm run type-check # TypeScript check
+npm run dev        # Start dev server (port 5173)
+npm run build      # tsc + Vite production build
+npm run preview    # Preview production build locally
+npm run lint       # ESLint (zero-warning tolerance)
+npm run type-check # TypeScript strict check (no emit)
+npm run lint:fix   # ESLint with auto-fix
+npm run format     # Prettier over src/**/*.{ts,tsx,css}
+npm run analyze    # Build + open bundle visualiser
 ```
+
+### GitHub Actions CI/CD
+
+Three workflows are included in `.github/workflows/`:
+
+| Workflow      | Trigger                        | Steps                                      |
+| ------------- | ------------------------------ | ------------------------------------------ |
+| `ci.yml`      | Push / PR to `main`, `develop` | lint → type-check → build                  |
+| `release.yml` | Push tag `v*.*.*`              | lint → type-check → build → GitHub Release |
+| `preview.yml` | Pull Request                   | build → PR comment with chunk sizes        |
+
+Add these repository secrets in **GitHub → Settings → Secrets → Actions**:
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GEOAPIFY_API_KEY`, `VITE_APP_URL`
 
 ---
 

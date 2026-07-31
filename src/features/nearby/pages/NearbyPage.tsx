@@ -14,7 +14,7 @@ import { ExplorerCategoryBar } from '../components/premium/ExplorerCategoryBar';
 import { ExplorerSkeleton } from '../components/premium/ExplorerSkeleton';
 import { ExplorerEmptyState } from '../components/premium/ExplorerEmptyState';
 import { NearbyPlaceCard } from '../components/premium/NearbyPlaceCard';
-import { ExplorerMap } from '../components/premium/ExplorerMap';
+import { InteractiveMap } from '@/components/shared/InteractiveMap';
 import { PlaceDetailPanel } from '../components/premium/PlaceDetailPanel';
 import { AIExplorerPanel } from '../components/premium/AIExplorerPanel';
 
@@ -253,7 +253,7 @@ export default function NearbyPage() {
               {/* ── Right column: Map + detail panel ──────────────────────── */}
               <div className="relative flex-1">
                 {/* Map */}
-                <ExplorerMap
+                <InteractiveMap
                   centerLat={data.lat}
                   centerLon={data.lon}
                   radiusM={data.radiusM}

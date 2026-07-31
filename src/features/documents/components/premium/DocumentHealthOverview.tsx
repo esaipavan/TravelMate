@@ -3,7 +3,7 @@ import { FileText, Layers, AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { getExpiryStatus, type TravelDocumentRow } from '../../types';
-import { useCountUp } from '../../hooks/useCountUp';
+import { useCountUp } from '@/hooks/useCountUp';
 
 interface Props {
   documents: TravelDocumentRow[];
@@ -109,16 +109,22 @@ export function DocumentHealthOverview({ documents, isLoaded }: Props) {
       label: 'Expiring Soon',
       value: expiringSoon,
       icon: AlertTriangle,
-      gradient: expiringSoon > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
-      accent: expiringSoon > 0 ? 'bg-amber-500/10' : 'bg-slate-500/5',
+      gradient:
+        expiringSoon > 0
+          ? 'from-amber-500 to-orange-500'
+          : 'from-muted-foreground/60 to-muted-foreground/80',
+      accent: expiringSoon > 0 ? 'bg-amber-500/10' : 'bg-muted/30',
       alertWhen: expiringSoon > 0,
     },
     {
       label: 'Expired',
       value: expired,
       icon: XCircle,
-      gradient: expired > 0 ? 'from-rose-500 to-pink-600' : 'from-slate-400 to-slate-500',
-      accent: expired > 0 ? 'bg-rose-500/10' : 'bg-slate-500/5',
+      gradient:
+        expired > 0
+          ? 'from-rose-500 to-pink-600'
+          : 'from-muted-foreground/60 to-muted-foreground/80',
+      accent: expired > 0 ? 'bg-rose-500/10' : 'bg-muted/30',
       alertWhen: expired > 0,
     },
   ];

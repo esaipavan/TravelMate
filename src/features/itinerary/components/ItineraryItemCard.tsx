@@ -12,29 +12,43 @@ interface Props {
 }
 
 const CATEGORY_META: Record<ItineraryCategory, { emoji: string; label: string; color: string }> = {
-  transport:     { emoji: '✈️', label: 'Transport',     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-  accommodation: { emoji: '🏨', label: 'Accommodation', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-  activity:      { emoji: '🎯', label: 'Activity',      color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-  food:          { emoji: '🍽️', label: 'Food',          color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
-  other:         { emoji: '📌', label: 'Other',         color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' },
+  transport: {
+    emoji: '✈️',
+    label: 'Transport',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  },
+  accommodation: {
+    emoji: '🏨',
+    label: 'Accommodation',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  },
+  activity: {
+    emoji: '🎯',
+    label: 'Activity',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  },
+  food: {
+    emoji: '🍽️',
+    label: 'Food',
+    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  },
+  other: { emoji: '📌', label: 'Other', color: 'bg-muted text-muted-foreground' },
 };
 
 const STATUS_META: Record<ItemStatus, { label: string; color: string }> = {
-  planned:   { label: 'Planned',   color: 'text-muted-foreground' },
+  planned: { label: 'Planned', color: 'text-muted-foreground' },
   confirmed: { label: 'Confirmed', color: 'text-blue-600 dark:text-blue-400' },
   completed: { label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400' },
   cancelled: { label: 'Cancelled', color: 'text-destructive line-through' },
 };
 
 export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle }: Props) {
-  const cat    = CATEGORY_META[item.category];
+  const cat = CATEGORY_META[item.category];
   const status = STATUS_META[item.status];
 
   const startTime = item.start_time ? item.start_time.slice(0, 5) : null;
-  const endTime   = item.end_time   ? item.end_time.slice(0, 5)   : null;
-  const timeLabel = startTime
-    ? endTime ? `${startTime} – ${endTime}` : startTime
-    : null;
+  const endTime = item.end_time ? item.end_time.slice(0, 5) : null;
+  const timeLabel = startTime ? (endTime ? `${startTime} – ${endTime}` : startTime) : null;
 
   return (
     <div className="group flex items-start gap-3 rounded-lg border bg-card p-3 transition-shadow hover:shadow-sm">
@@ -44,7 +58,7 @@ export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle
         </div>
       )}
 
-      <span className="mt-0.5 text-xl leading-none shrink-0" role="img" aria-label={cat.label}>
+      <span className="mt-0.5 shrink-0 text-xl leading-none" role="img" aria-label={cat.label}>
         {cat.emoji}
       </span>
 

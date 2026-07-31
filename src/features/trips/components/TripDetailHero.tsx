@@ -116,7 +116,7 @@ const STATUS_LABEL: Record<string, { label: string; dot: string }> = {
   active: { label: 'Live now', dot: 'bg-emerald-400 animate-pulse' },
   upcoming: { label: 'Upcoming', dot: 'bg-blue-400' },
   planning: { label: 'Planning', dot: 'bg-amber-400' },
-  completed: { label: 'Completed', dot: 'bg-slate-400' },
+  completed: { label: 'Completed', dot: 'bg-muted-foreground/60' },
   cancelled: { label: 'Cancelled', dot: 'bg-red-400' },
 };
 

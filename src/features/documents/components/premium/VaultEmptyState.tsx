@@ -26,7 +26,7 @@ export function VaultEmptyState({ onUploadClick }: Props) {
       >
         <div className="absolute inset-0 rounded-3xl bg-indigo-500/10 blur-2xl" />
         <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-border/40 bg-card/60 shadow-xl backdrop-blur-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg">
+          <div className="bg-gradient-premium flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg">
             <ShieldCheck className="h-7 w-7" aria-hidden="true" />
           </div>
         </div>
@@ -46,7 +46,7 @@ export function VaultEmptyState({ onUploadClick }: Props) {
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Button
           onClick={onUploadClick}
-          className="gap-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:from-indigo-600 hover:to-violet-600"
+          className="bg-gradient-premium gap-2 text-white hover:opacity-90"
         >
           <Upload className="h-4 w-4" aria-hidden="true" />
           Upload your first document

@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import {
 import { emailSchema, passwordSchema } from '@/utils/validators';
 import { APP_NAME } from '@/utils/constants';
 import { signUp } from '../services/auth.service';
+import { EmailSentState } from '../components/EmailSentState';
 
 const registerSchema = z
   .object({
@@ -32,52 +33,6 @@ const registerSchema = z
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
-
-// ── Success state ─────────────────────────────────────────────────────────────
-
-function EmailSentState({ email }: { email: string }) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    headingRef.current?.focus();
-  }, []);
-
-  return (
-    <div className="space-y-6 text-center">
-      <div
-        aria-hidden="true"
-        className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20"
-      >
-        <Mail className="h-6 w-6 text-primary" />
-      </div>
-
-      <div className="space-y-1.5">
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="text-2xl font-bold tracking-tight outline-none"
-        >
-          Check your email
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          We sent a verification link to{' '}
-          <span className="font-medium text-foreground">{email}</span>
-        </p>
-      </div>
-
-      <div className="space-y-1.5 rounded-lg border bg-muted/40 p-4 text-left text-sm text-muted-foreground">
-        <p>Click the link in the email to verify your account and get started.</p>
-        <p>Didn't receive it? Check your spam or junk folder.</p>
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Already verified?{' '}
-        <Link to="/login" className="font-medium text-primary hover:underline">
-          Sign in
-        </Link>
-      </p>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 

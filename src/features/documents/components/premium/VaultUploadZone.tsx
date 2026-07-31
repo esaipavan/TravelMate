@@ -48,7 +48,7 @@ export function VaultUploadZone({ onUploadClick }: Props) {
 
       {/* Header */}
       <div className="mb-4 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+        <div className="bg-gradient-premium flex h-8 w-8 items-center justify-center rounded-lg text-white">
           <ShieldCheck className="h-[15px] w-[15px]" aria-hidden="true" />
         </div>
         <div>

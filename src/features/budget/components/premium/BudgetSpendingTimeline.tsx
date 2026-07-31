@@ -111,7 +111,7 @@ export function BudgetSpendingTimeline({
       className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/60 p-5 backdrop-blur-sm"
     >
       <div className="mb-4 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+        <div className="bg-gradient-premium flex h-8 w-8 items-center justify-center rounded-lg text-white">
           <CalendarDays className="h-[15px] w-[15px]" aria-hidden="true" />
         </div>
         <div>

@@ -6,6 +6,7 @@ export type Database = {
       profiles: {
         Row: {
           id: string;
+          email: string | null;
           full_name: string | null;
           avatar_url: string | null;
           home_currency: string;
@@ -657,6 +658,117 @@ export type Database = {
           },
         ];
       };
+      trip_members: {
+        Row: {
+          id: string;
+          trip_id: string;
+          user_id: string;
+          role: Database['public']['Enums']['trip_member_role'];
+          invited_by: string | null;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          user_id: string;
+          role?: Database['public']['Enums']['trip_member_role'];
+          invited_by?: string | null;
+          joined_at?: string;
+        };
+        Update: {
+          role?: Database['public']['Enums']['trip_member_role'];
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_members_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trip_members_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      trip_invitations: {
+        Row: {
+          id: string;
+          trip_id: string;
+          invited_by: string;
+          invited_email: string;
+          role: Database['public']['Enums']['trip_member_role'];
+          status: Database['public']['Enums']['invitation_status'];
+          token: string;
+          expires_at: string;
+          created_at: string;
+          accepted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          invited_by: string;
+          invited_email: string;
+          role?: Database['public']['Enums']['trip_member_role'];
+          status?: Database['public']['Enums']['invitation_status'];
+          token?: string;
+          expires_at?: string;
+          created_at?: string;
+          accepted_at?: string | null;
+        };
+        Update: {
+          role?: Database['public']['Enums']['trip_member_role'];
+          status?: Database['public']['Enums']['invitation_status'];
+          accepted_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_invitations_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      trip_activity_logs: {
+        Row: {
+          id: string;
+          trip_id: string;
+          user_id: string | null;
+          action: string;
+          entity_type: string | null;
+          entity_id: string | null;
+          description: string;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          user_id?: string | null;
+          action: string;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          description: string;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: 'trip_activity_logs_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -672,9 +784,45 @@ export type Database = {
         Args: Record<string, never>;
         Returns: void;
       };
+      is_trip_member: {
+        Args: { p_trip_id: string };
+        Returns: boolean;
+      };
+      is_trip_editor: {
+        Args: { p_trip_id: string };
+        Returns: boolean;
+      };
+      get_trip_member_role: {
+        Args: { p_trip_id: string };
+        Returns: string | null;
+      };
+      get_invitation_by_token: {
+        Args: { p_token: string };
+        Returns: Array<{
+          id: string;
+          trip_id: string;
+          invited_email: string;
+          role: Database['public']['Enums']['trip_member_role'];
+          status: Database['public']['Enums']['invitation_status'];
+          expires_at: string;
+          trip_title: string;
+          trip_destination: string;
+          invited_by_name: string | null;
+        }>;
+      };
+      accept_invitation: {
+        Args: { p_token: string };
+        Returns: string;
+      };
+      decline_invitation: {
+        Args: { p_token: string };
+        Returns: void;
+      };
     };
     Enums: {
       user_role_enum: 'user' | 'admin' | 'super_admin';
+      trip_member_role: 'editor' | 'viewer';
+      invitation_status: 'pending' | 'accepted' | 'declined' | 'expired';
       trip_status: 'planning' | 'active' | 'completed' | 'cancelled';
       expense_category:
         | 'hotel'

@@ -2,11 +2,12 @@ import { supabase } from '@/lib/supabase';
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import type { TripRow, TripInsert, TripUpdate } from '../types';
 
-export async function getTrips(userId: string): Promise<TripRow[]> {
+export async function getTrips(_userId: string): Promise<TripRow[]> {
+  // RLS now returns both owned trips and shared trips (via trip_members policy).
+  // The userId parameter is kept for API compatibility but is no longer used as a filter.
   const { data, error } = await supabase
     .from('trips')
     .select('*')
-    .eq('user_id', userId)
     .order('start_date', { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];

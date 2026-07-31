@@ -159,7 +159,7 @@ export function PlaceDetailPanel({ place, isFavorite, onFavorite, onClose, class
 
           <Button
             size="sm"
-            className="flex-1 gap-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-xs text-white hover:from-indigo-600 hover:to-violet-600"
+            className="bg-gradient-premium flex-1 gap-1.5 text-xs text-white hover:opacity-90"
             asChild
           >
             <a href={routeUrl} target="_blank" rel="noopener noreferrer">

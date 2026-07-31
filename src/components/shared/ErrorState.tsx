@@ -25,15 +25,15 @@ export function ErrorState({
     <motion.div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center gap-4 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-12 text-center',
+        'flex flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-12 text-center',
         className,
       )}
       variants={rv(CARD_VARIANTS, reduced)}
       initial="hidden"
       animate="show"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10">
-        <AlertTriangle className="h-6 w-6 text-rose-500" aria-hidden />
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+        <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
       </div>
 
       <div className="space-y-1.5">

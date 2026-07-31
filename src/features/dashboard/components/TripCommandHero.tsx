@@ -221,7 +221,7 @@ export function TripCommandHero() {
               to="/trips/new"
               className={cn(
                 'inline-flex shrink-0 items-center gap-2 rounded-2xl px-5 py-3',
-                'bg-white text-sm font-semibold text-gray-900 shadow-lg',
+                'bg-card text-sm font-semibold text-foreground shadow-lg',
                 'transition-transform hover:scale-[1.03] active:scale-[0.97]',
               )}
             >

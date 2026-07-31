@@ -1,99 +1,57 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/store/auth.store';
-import { memberInitials } from '../utils/settlement';
+/**
+ * Bridge hook: maps the collaboration feature's CollabMember shape
+ * to the TripMember interface expected by the expenses feature.
+ * Replaces the previous localStorage-only implementation.
+ */
+import { useTripMembers } from '@/features/collaboration/hooks/useTripMembers';
+import type { CollabMember } from '@/features/collaboration/types';
 import type { TripMember, MemberRole } from '../utils/settlement';
 
 export type { TripMember, MemberRole };
 
-function storageKey(tripId: string): string {
-  return `tm-group-${tripId}`;
-}
-
-function loadFromStorage(tripId: string): TripMember[] | null {
-  try {
-    const raw = localStorage.getItem(storageKey(tripId));
-    if (raw) return JSON.parse(raw) as TripMember[];
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-function persist(tripId: string, members: TripMember[]): void {
-  try {
-    localStorage.setItem(storageKey(tripId), JSON.stringify(members));
-  } catch {
-    /* ignore */
-  }
+function toTripMember(m: CollabMember): TripMember {
+  const role: MemberRole = m.role === 'owner' ? 'owner' : m.role === 'editor' ? 'editor' : 'viewer';
+  return {
+    id: m.userId,
+    name: m.name,
+    email: m.email,
+    initials: m.initials,
+    role,
+    isOwner: m.isOwner,
+    avatarUrl: m.avatarUrl,
+  };
 }
 
 interface UseGroupMembersResult {
   members: TripMember[];
   ownerMemberId: string;
+  isLoading: boolean;
+  // These are no-ops kept for API compatibility with the expenses feature.
+  // Real mutations go through the collaboration feature's hooks.
   addMember: (name: string, email?: string) => void;
   removeMember: (id: string) => void;
   updateRole: (id: string, role: MemberRole) => void;
 }
 
 export function useGroupMembers(tripId: string): UseGroupMembersResult {
-  const user = useAuthStore((s) => s.user);
+  const { data: collabMembers = [], isLoading } = useTripMembers(tripId);
 
-  const [members, setMembers] = useState<TripMember[]>(() => {
-    const userId = user?.id ?? '';
-    const stored = loadFromStorage(tripId);
-    // Use stored data only if the first member (owner) still matches the logged-in user
-    if (stored && stored.length > 0 && stored[0]?.id === userId) return stored;
+  const ownerId = collabMembers.find((m) => m.isOwner)?.userId ?? '';
+  const members: TripMember[] = collabMembers.map(toTripMember);
 
-    if (!userId) return [];
-    const meta = user?.user_metadata as Record<string, unknown> | undefined;
-    const name =
-      (typeof meta?.['full_name'] === 'string' ? meta['full_name'] : null) ??
-      user?.email?.split('@')[0] ??
-      'You';
-    const avatarUrl = typeof meta?.['avatar_url'] === 'string' ? meta['avatar_url'] : null;
-    return [
-      {
-        id: userId,
-        name,
-        email: user?.email ?? '',
-        initials: memberInitials(name),
-        role: 'owner',
-        isOwner: true,
-        avatarUrl,
-      },
-    ];
-  });
-
-  useEffect(() => {
-    persist(tripId, members);
-  }, [tripId, members]);
-
-  const addMember = useCallback((name: string, email = '') => {
-    const newMember: TripMember = {
-      id: `m-${Date.now()}`,
-      name: name.trim(),
-      email: email.trim(),
-      initials: memberInitials(name.trim()),
-      role: 'editor',
-      isOwner: false,
-      avatarUrl: null,
-    };
-    setMembers((prev) => [...prev, newMember]);
-  }, []);
-
-  const removeMember = useCallback((id: string) => {
-    setMembers((prev) => prev.filter((m) => m.isOwner || m.id !== id));
-  }, []);
-
-  const updateRole = useCallback((id: string, role: MemberRole) => {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role } : m)));
-  }, []);
+  const noop = () => {
+    /* mutations are handled by the collaboration feature */
+  };
 
   return {
     members,
-    ownerMemberId: user?.id ?? '',
-    addMember,
-    removeMember,
-    updateRole,
+    ownerMemberId: ownerId,
+    isLoading,
+    addMember: noop,
+    removeMember: noop,
+    updateRole: noop,
   };
 }
+
+export { useTripRole } from '@/features/collaboration/hooks/useTripRole';
+export type { EffectiveRole } from '@/features/collaboration/types';

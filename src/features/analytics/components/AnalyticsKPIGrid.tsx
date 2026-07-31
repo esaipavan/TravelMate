@@ -13,7 +13,7 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, rg, HOVER, REDUCED_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
-import { useCountUp } from '../hooks/useCountUp';
+import { useCountUp } from '@/hooks/useCountUp';
 
 interface KPIs {
   totalTrips: number;

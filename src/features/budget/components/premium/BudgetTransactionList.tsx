@@ -31,7 +31,7 @@ const CAT_CHIP: Record<string, string> = {
   fuel: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   taxi: 'bg-teal-500/10   text-teal-600   dark:text-teal-400',
   emergency: 'bg-red-500/10    text-red-600    dark:text-red-400',
-  misc: 'bg-slate-500/10  text-slate-600  dark:text-slate-400',
+  misc: 'bg-muted/50 text-muted-foreground',
 };
 
 function dateLabel(dateStr: string): string {

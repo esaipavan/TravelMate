@@ -28,7 +28,7 @@ function AnalyticsEmptyState() {
       animate="show"
       className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-card/40 px-6 py-20 text-center backdrop-blur-sm"
     >
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg">
+      <div className="bg-gradient-premium mb-6 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg">
         <BarChart2 className="h-7 w-7" aria-hidden="true" />
       </div>
       <h2 className="text-xl font-bold text-foreground">No trips yet</h2>

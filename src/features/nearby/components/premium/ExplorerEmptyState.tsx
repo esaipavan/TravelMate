@@ -27,7 +27,7 @@ export function ExplorerEmptyState({ onExampleClick }: Props) {
       >
         <div className="absolute inset-0 rounded-3xl bg-indigo-500/10 blur-2xl" />
         <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-border/40 bg-card/60 shadow-xl backdrop-blur-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg">
+          <div className="bg-gradient-premium flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg">
             <MapPin className="h-7 w-7" aria-hidden="true" />
           </div>
         </div>

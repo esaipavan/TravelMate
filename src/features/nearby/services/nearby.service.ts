@@ -130,7 +130,7 @@ async function fetchGeoapifyPlaces(
   lon: number,
   radiusM: number,
 ): Promise<GeoapifyResponse> {
-  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY as string | undefined;
+  const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
   if (!apiKey) {
     throw new Error('Nearby Places service is unavailable. Please try again later.');
   }

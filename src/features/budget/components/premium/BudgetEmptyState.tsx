@@ -24,7 +24,7 @@ export function BudgetEmptyState({ tripId, onOpenAI, hasTrip }: Props) {
         initial={reduced ? {} : { scale: 0.8, opacity: 0 }}
         animate={reduced ? {} : { scale: 1, opacity: 1 }}
         transition={{ type: 'spring', damping: 20, stiffness: 200, delay: 0.1 }}
-        className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg"
+        className="bg-gradient-premium mb-6 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg"
       >
         <Wallet className="h-7 w-7" aria-hidden="true" />
       </motion.div>

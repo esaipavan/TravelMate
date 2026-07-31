@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useParams, Navigate } from 'react-router-dom';
+import { rv, PAGE_VARIANTS } from '@/lib/motion';
 import { ArrowLeft, PlusCircle, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { formatCurrency } from '@/utils/formatters';
 import { EXPENSE_CATEGORIES } from '@/utils/constants';
 import { useExpenseData } from '../hooks/useExpenses';
@@ -24,12 +27,12 @@ function ExpenseSkeleton() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-lg" />
+          <Skeleton key={i} className="h-28 rounded-xl" />
         ))}
       </div>
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-lg" />
+          <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
       </div>
     </div>
@@ -52,8 +55,9 @@ function sortExpenses(list: ExpenseRow[], sort: SortKey): ExpenseRow[] {
 }
 
 export default function ExpensesPage() {
+  const reduced = useReducedMotion();
   const { id: tripId } = useParams<{ id: string }>();
-  const { data, isLoading, isError } = useExpenseData(tripId!);
+  const { data, isLoading, isError, refetch } = useExpenseData(tripId!);
 
   const { members, ownerMemberId, addMember, removeMember, updateRole } = useGroupMembers(tripId!);
 
@@ -90,7 +94,15 @@ export default function ExpensesPage() {
   }, [expenses, category, search, dateFrom, dateTo, sort]);
 
   if (isLoading) return <ExpenseSkeleton />;
-  if (isError || !data) return <Navigate to="/trips" replace />;
+  if (isError)
+    return (
+      <ErrorState
+        title="Couldn't load expenses"
+        message="We ran into a problem loading this trip's expenses."
+        onRetry={() => void refetch()}
+      />
+    );
+  if (!data) return <Navigate to="/trips" replace />;
 
   const hasActiveFilters = search !== '' || category !== 'all' || dateFrom !== '' || dateTo !== '';
 
@@ -120,7 +132,12 @@ export default function ExpensesPage() {
   const activeSpent = category !== 'all' ? filtered.reduce((s, e) => s + e.amount, 0) : 0;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      variants={rv(PAGE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+    >
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button
@@ -230,7 +247,7 @@ export default function ExpensesPage() {
 
           {/* Expense list */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-16 text-center">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center">
               <ReceiptText className="h-10 w-10 text-muted-foreground opacity-40" />
               <div className="space-y-1">
                 <p className="font-medium">
@@ -319,6 +336,6 @@ export default function ExpensesPage() {
           if (!open) setDeleteTarget(null);
         }}
       />
-    </div>
+    </motion.div>
   );
 }

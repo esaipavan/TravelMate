@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { rv, SECTION_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import { getTripStatus } from '@/utils/tripStatus';
-import { useDestinationData } from '@/features/destination-intel/hooks/useDestinationData';
-import { useTripList, useCompanion } from '../hooks/useCompanion';
+import { useTripList } from '../hooks/useCompanion';
 import { TripSelector } from '../components/TripSelector';
-import { CompanionDashboard } from '../components/CompanionDashboard';
+import { ConciergeDashboard } from '../components/ConciergeDashboard';
 import type { TripRow } from '@/features/trips/types';
 
 function pickDefaultTrip(trips: TripRow[]): string | null {
@@ -24,19 +23,6 @@ function pickDefaultTrip(trips: TripRow[]): string | null {
     .sort((a, b) => b.end_date.localeCompare(a.end_date));
   if (completed.length > 0) return completed[0].id;
   return null;
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading AI companion">
-      <Skeleton className="h-36 w-full rounded-2xl" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function EmptyTrips() {
@@ -67,25 +53,6 @@ function EmptyTrips() {
   );
 }
 
-function CompanionContent({ tripId, trip }: { tripId: string; trip: TripRow }) {
-  const { data: companion, isLoading, isError } = useCompanion(tripId);
-  const { data: intel } = useDestinationData(trip.destination);
-
-  if (isLoading) return <DashboardSkeleton />;
-  if (isError || !companion) {
-    return (
-      <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-center">
-        <p className="text-sm font-medium text-destructive">Failed to load AI recommendations.</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Check your connection and try refreshing the page.
-        </p>
-      </div>
-    );
-  }
-
-  return <CompanionDashboard companion={companion} trip={trip} intel={intel ?? null} />;
-}
-
 export default function AssistantPage() {
   const reduced = useReducedMotion();
   const { data: trips, isLoading: tripsLoading } = useTripList();
@@ -113,13 +80,11 @@ export default function AssistantPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">
-            AI Travel Companion
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Travel Companion</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Contextual travel intelligence — weather, budget, packing, and local insights tailored to
-          your trip.
+          Your AI concierge — morning briefs, budget coaching, itinerary optimisation, packing, food
+          picks, safety advisories, and a personal travel journal.
         </p>
       </motion.div>
 
@@ -138,7 +103,7 @@ export default function AssistantPage() {
 
           {/* Companion dashboard */}
           {selectedTrip ? (
-            <CompanionContent tripId={selectedTrip.id} trip={selectedTrip} />
+            <ConciergeDashboard trip={selectedTrip} />
           ) : (
             <motion.div
               className="py-12 text-center"

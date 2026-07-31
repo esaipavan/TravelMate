@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useParams, Navigate, Link } from 'react-router-dom';
+import { rv, PAGE_VARIANTS } from '@/lib/motion';
 import { Plus, Search, BookOpen, SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { useTrip } from '@/features/trips/hooks/useTrips';
 import {
   useJournalEntries,
@@ -67,11 +70,12 @@ const DEFAULT_FILTERS: JournalFilters = {
 };
 
 export default function JournalPage() {
+  const reduced = useReducedMotion();
   const { id: tripId } = useParams<{ id: string }>();
   const safeId = tripId ?? '';
 
   const { data: trip } = useTrip(safeId);
-  const { data: entries = [], isLoading, isError } = useJournalEntries(safeId);
+  const { data: entries = [], isLoading, isError, refetch } = useJournalEntries(safeId);
 
   const createMutation = useCreateJournalEntry(safeId);
   const updateMutation = useUpdateJournalEntry(safeId);
@@ -174,10 +178,22 @@ export default function JournalPage() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   // ── Render ──────────────────────────────────────────────────────────────────
-  if (isError) return <Navigate to="/trips" replace />;
+  if (isError)
+    return (
+      <ErrorState
+        title="Couldn't load journal"
+        message="We ran into a problem loading this trip's journal entries."
+        onRetry={() => void refetch()}
+      />
+    );
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      variants={rv(PAGE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+    >
       <div className="flex items-start gap-3">
         <Button
           variant="ghost"
@@ -316,7 +332,7 @@ export default function JournalPage() {
 
           {/* Empty state — no entries at all */}
           {entries.length === 0 && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-20 text-center">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-20 text-center">
               <BookOpen className="h-10 w-10 text-muted-foreground opacity-40" />
               <div className="space-y-1">
                 <p className="font-medium">No journal entries yet</p>
@@ -333,7 +349,7 @@ export default function JournalPage() {
 
           {/* Empty state — filters too strict */}
           {entries.length > 0 && filtered.length === 0 && (
-            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-16 text-center">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center">
               <Search className="h-8 w-8 text-muted-foreground opacity-40" />
               <p className="font-medium">No entries match your filters</p>
               <Button variant="outline" size="sm" onClick={clearFilters}>
@@ -401,6 +417,6 @@ export default function JournalPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 }

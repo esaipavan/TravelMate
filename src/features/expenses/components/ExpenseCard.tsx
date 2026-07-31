@@ -22,7 +22,7 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   emergency: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   fuel: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   taxi: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
-  misc: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  misc: 'bg-muted text-muted-foreground',
 };
 
 export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Props) {
