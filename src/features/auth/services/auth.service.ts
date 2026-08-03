@@ -12,17 +12,13 @@ export async function signIn(email: string, password: string): Promise<void> {
   if (error) throw new Error(mapAuthError(error));
 }
 
-export async function signUp(
-  email: string,
-  password: string,
-  fullName: string,
-): Promise<void> {
+export async function signUp(email: string, password: string, fullName: string): Promise<void> {
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${getAppUrl()}/dashboard`,
+      emailRedirectTo: `${getAppUrl()}/onboarding`,
     },
   });
   if (error) throw new Error(mapAuthError(error));

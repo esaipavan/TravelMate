@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 import { PageLoader } from '@/components/shared/LoadingSpinner';
 import { getOAuthReturnTo } from '../services/auth.service';
+import { isOnboardingComplete } from '@/features/onboarding/hooks/useOnboarding';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();
@@ -13,7 +14,12 @@ export default function OAuthCallbackPage() {
 
     if (user) {
       const returnTo = getOAuthReturnTo();
-      navigate(returnTo, { replace: true });
+      // New users (no onboarding completed) go to the wizard regardless of returnTo
+      if (!isOnboardingComplete() && returnTo === '/dashboard') {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate(returnTo, { replace: true });
+      }
     } else {
       navigate('/login', { replace: true });
     }

@@ -114,13 +114,16 @@ const router = createBrowserRouter([
     ),
   },
 
-  // Onboarding — standalone, no layout wrapper
+  // Onboarding — requires auth so the email-verify redirect lands correctly;
+  // the page itself redirects to /dashboard if onboarding is already complete.
   {
     path: '/onboarding',
     element: (
-      <Wrap>
-        <OnboardingPage />
-      </Wrap>
+      <RequireAuth>
+        <Wrap>
+          <OnboardingPage />
+        </Wrap>
+      </RequireAuth>
     ),
   },
 

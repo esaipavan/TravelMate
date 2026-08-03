@@ -1,3 +1,4 @@
+import { WelcomeChecklist } from '../components/WelcomeChecklist';
 import { DashboardBackground } from '../components/DashboardBackground';
 import { TripCommandHero } from '../components/TripCommandHero';
 import { PremiumQuickActions } from '../components/PremiumQuickActions';
@@ -14,6 +15,8 @@ export default function DashboardPage() {
       <DashboardBackground />
 
       <TripCommandHero />
+
+      <WelcomeChecklist />
 
       <PremiumQuickActions />
 
