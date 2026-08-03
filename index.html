@@ -2,24 +2,114 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- ── Viewport & theme ──────────────────────────────────────────── -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0EA5E9" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="TravelMate" />
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- ── Primary SEO ───────────────────────────────────────────────── -->
+    <title>TravelMate — AI-Powered Travel Planner</title>
     <meta
       name="description"
-      content="Plan trips, track expenses, and explore the world — all in one place."
+      content="Plan trips, track expenses, manage documents, and get AI-powered travel insights — all in one beautifully crafted app. Free forever, open source."
     />
-    <title>TravelMate</title>
+    <meta
+      name="keywords"
+      content="travel planner, trip planning, expense tracker, travel budget, AI travel assistant, itinerary builder, travel app, PWA"
+    />
+    <meta name="author" content="Sai Pavan Etikala" />
+    <link rel="canonical" href="https://travelmate.vercel.app/" />
+
+    <!-- Google Search Console: paste verification code here when ready -->
+    <!-- <meta name="google-site-verification" content="YOUR_CODE" /> -->
+
+    <!-- ── Open Graph ─────────────────────────────────────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TravelMate" />
+    <meta property="og:title" content="TravelMate — AI-Powered Travel Planner" />
+    <meta
+      property="og:description"
+      content="Plan trips, track expenses, manage documents, and get AI-powered travel insights — all in one beautifully crafted app. Free forever, open source."
+    />
+    <meta property="og:url" content="https://travelmate.vercel.app/" />
+    <meta property="og:image" content="https://travelmate.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="TravelMate dashboard showing trip cards and AI insights" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X Card ──────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TravelMate — AI-Powered Travel Planner" />
+    <meta
+      name="twitter:description"
+      content="Plan trips, track expenses, and get AI travel insights. Free forever, open source."
+    />
+    <meta name="twitter:image" content="https://travelmate.vercel.app/og-image.png" />
+    <meta name="twitter:creator" content="@esaipavan" />
+
+    <!-- ── Robots ─────────────────────────────────────────────────────── -->
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+
+    <!-- ── Favicons & PWA ─────────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TravelMate" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="TravelMate" />
+
+    <!-- ── Fonts ──────────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- ── JSON-LD Structured Data ───────────────────────────────────── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "TravelMate",
+        "url": "https://travelmate.vercel.app",
+        "description": "AI-powered travel planner. Plan trips, track expenses, manage documents, and get intelligent travel insights.",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Sai Pavan Etikala",
+          "url": "https://github.com/esaipavan"
+        },
+        "featureList": [
+          "AI Travel Concierge with 8 intelligent modules",
+          "Day-by-day itinerary builder with drag-and-drop",
+          "Expense tracking with 30+ live currency rates",
+          "Travel journal with AI narrative generation",
+          "Real-time weather forecasts via Open-Meteo",
+          "Collaboration with role-based access",
+          "Document vault with expiry tracking",
+          "Analytics dashboard with 6 chart types"
+        ]
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <p style="font-family:sans-serif;text-align:center;padding:2rem;color:#374151;">
+        TravelMate requires JavaScript. Please enable it in your browser settings.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

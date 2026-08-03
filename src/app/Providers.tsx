@@ -9,6 +9,7 @@ import { AuthInitializer } from '@/components/providers/AuthInitializer';
 import { ThemeInitializer } from '@/components/providers/ThemeInitializer';
 import { PWAUpdatePrompt } from '@/components/pwa/PWAUpdatePrompt';
 import { ErrorReporter } from '@/components/providers/ErrorReporter';
+import { Analytics } from '@/components/providers/Analytics';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -29,6 +30,7 @@ export function Providers({ children }: ProvidersProps) {
           <ThemeInitializer />
           <PWAUpdatePrompt />
           <ErrorReporter />
+          <Analytics />
           {children}
           <Toaster richColors position="top-right" />
           {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

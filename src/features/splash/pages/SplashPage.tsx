@@ -22,6 +22,14 @@ import {
   Users,
   Wallet,
   Star,
+  UserPlus,
+  ChevronDown,
+  Github,
+  Check,
+  Smartphone,
+  Shield,
+  Zap,
+  Globe2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { PageLoader } from '@/components/shared/LoadingSpinner';
@@ -50,7 +58,7 @@ const FEATURES: FeatureDef[] = [
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: 'AI Concierge',
-    desc: '8 intelligent modules — morning brief, budget advisor, itinerary optimizer, packing assistant, food guide, safety advisor, AI journal, and live chat. All routed through a Supabase Edge Function. Zero client-side API keys.',
+    desc: '8 intelligent modules — morning brief, budget advisor, itinerary optimizer, packing assistant, food guide, safety advisor, AI journal, and live chat. Zero client-side API keys.',
     accent: 'rgba(99,102,241,0.8)',
     wide: true,
   },
@@ -130,20 +138,79 @@ const MARQUEE_ITEMS = [
   'TypeScript Strict',
 ];
 
+const HOW_IT_WORKS = [
+  {
+    step: '01',
+    icon: <UserPlus className="h-6 w-6" />,
+    title: 'Create your account',
+    desc: 'Sign up in seconds with email or Google. No credit card, no trial period — free forever.',
+    accent: 'rgba(99,102,241,0.8)',
+  },
+  {
+    step: '02',
+    icon: <MapPin className="h-6 w-6" />,
+    title: 'Add your first trip',
+    desc: 'Name your destination, set your dates, and invite your travel companions. Everything syncs in real time.',
+    accent: 'rgba(16,185,129,0.8)',
+  },
+  {
+    step: '03',
+    icon: <Sparkles className="h-6 w-6" />,
+    title: 'Plan with AI at your side',
+    desc: 'Let the AI Concierge optimise your itinerary, suggest packing lists, forecast your budget, and give local insights.',
+    accent: 'rgba(139,92,246,0.8)',
+  },
+] as const;
+
+const FAQ_ITEMS = [
+  {
+    q: 'Is TravelMate really free?',
+    a: 'Yes — completely free, forever. TravelMate is open source and has no premium tier. All 13+ modules, the AI Concierge, and real-time collaboration are included at no cost.',
+  },
+  {
+    q: 'What AI models power the concierge?',
+    a: 'TravelMate routes all AI requests through a Supabase Edge Function and supports Groq (Llama 3.3), Google Gemini, and OpenRouter. Zero API keys are ever exposed in the browser.',
+  },
+  {
+    q: 'Does it work offline?',
+    a: "Yes. TravelMate is a Progressive Web App (PWA) with a Workbox service worker that caches assets and your most recent trip data. You can install it on your phone's home screen and use core features without an internet connection.",
+  },
+  {
+    q: 'Is my travel data secure?',
+    a: 'All data is stored in Supabase with Row-Level Security (RLS) enforced at the database level — you can only ever read or modify your own trips. Storage buckets for documents and photos enforce the same policy.',
+  },
+  {
+    q: 'Can I collaborate with other travellers?',
+    a: 'Absolutely. Invite anyone to a trip with owner, editor, or viewer roles. Changes appear in real time via Supabase Realtime, and an activity feed tracks who did what.',
+  },
+  {
+    q: 'Which currencies are supported?',
+    a: 'TravelMate tracks 30+ currencies with live rates via the Frankfurter API (updated daily). You can log expenses in any currency and view your budget converted to your home currency.',
+  },
+  {
+    q: 'Can I export my trip data?',
+    a: 'Yes. The Export module generates a PDF of your full itinerary, budget summary, and expense log using @react-pdf/renderer — ready to share or print before you travel.',
+  },
+  {
+    q: 'How do I install it on my phone?',
+    a: 'Open TravelMate in Chrome or Safari on your phone, then tap the browser menu and select "Add to Home Screen". The app installs instantly with a native-app experience and offline support.',
+  },
+] as const;
+
 // Globe city coords [lat, lon]
 const CITIES: [number, number][] = [
-  [35.68, 139.69], // Tokyo
-  [48.86, 2.35], // Paris
-  [40.71, -74.01], // New York
-  [25.2, 55.27], // Dubai
-  [-33.87, 151.21], // Sydney
-  [51.51, -0.13], // London
-  [-8.34, 115.09], // Bali
-  [41.9, 12.5], // Rome
-  [-22.9, -43.17], // Rio
-  [13.75, 100.52], // Bangkok
-  [1.35, 103.82], // Singapore
-  [55.75, 37.62], // Moscow
+  [35.68, 139.69],
+  [48.86, 2.35],
+  [40.71, -74.01],
+  [25.2, 55.27],
+  [-33.87, 151.21],
+  [51.51, -0.13],
+  [-8.34, 115.09],
+  [41.9, 12.5],
+  [-22.9, -43.17],
+  [13.75, 100.52],
+  [1.35, 103.82],
+  [55.75, 37.62],
 ];
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
@@ -231,7 +298,6 @@ function Globe({ reduced }: { reduced: boolean }) {
     const tick = (time: number) => {
       ctx.clearRect(0, 0, SIZE, SIZE);
 
-      // Atmosphere glow
       const atm = ctx.createRadialGradient(cx, cy, R * 0.78, cx, cy, R * 1.22);
       atm.addColorStop(0, 'rgba(99,102,241,0)');
       atm.addColorStop(0.65, 'rgba(99,102,241,0.06)');
@@ -241,7 +307,6 @@ function Globe({ reduced }: { reduced: boolean }) {
       ctx.arc(cx, cy, R * 1.22, 0, Math.PI * 2);
       ctx.fill();
 
-      // Latitude grid
       for (let lat = -75; lat <= 75; lat += 15) {
         let prev: { x: number; y: number; z: number } | null = null;
         for (let lon = 0; lon <= 360; lon += 4) {
@@ -259,7 +324,6 @@ function Globe({ reduced }: { reduced: boolean }) {
         }
       }
 
-      // Longitude grid
       for (let lon = 0; lon < 360; lon += 18) {
         for (let lat = -87; lat < 87; lat += 4) {
           const p1 = project(lat, lon);
@@ -274,7 +338,6 @@ function Globe({ reduced }: { reduced: boolean }) {
         }
       }
 
-      // Flight arcs
       for (const arc of arcs) {
         arc.p = (arc.p + arc.speed) % 1;
         const [lat1, lon1] = CITIES[arc.from];
@@ -305,7 +368,6 @@ function Globe({ reduced }: { reduced: boolean }) {
           }
         }
 
-        // Head comet
         const hpt = gcPoint(lat1, lon1, lat2, lon2, arc.p);
         const hp = project(hpt.lat, hpt.lon);
         if (hp.z > 0.1) {
@@ -323,7 +385,6 @@ function Globe({ reduced }: { reduced: boolean }) {
         }
       }
 
-      // Destination markers
       const pulse = 0.55 + 0.45 * Math.sin(time * 0.002);
       for (let i = 0; i < CITIES.length; i++) {
         const [lat, lon] = CITIES[i];
@@ -332,14 +393,12 @@ function Globe({ reduced }: { reduced: boolean }) {
         const beat = 0.5 + 0.5 * Math.sin(time * 0.0018 + i * 1.1);
         const alpha = p.z * 0.95;
 
-        // Ring pulse
         ctx.strokeStyle = `rgba(165,180,252,${alpha * beat * 0.5 * pulse})`;
         ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 6 + beat * 4, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Glow
         const dg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 11);
         dg.addColorStop(0, `rgba(129,140,248,${alpha * 0.75})`);
         dg.addColorStop(1, 'rgba(129,140,248,0)');
@@ -348,14 +407,12 @@ function Globe({ reduced }: { reduced: boolean }) {
         ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
         ctx.fill();
 
-        // Core
         ctx.fillStyle = `rgba(224,231,255,${alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Limb glow (edge of sphere)
       const limb = ctx.createRadialGradient(cx, cy, R * 0.72, cx, cy, R);
       limb.addColorStop(0, 'rgba(99,102,241,0)');
       limb.addColorStop(1, 'rgba(99,102,241,0.14)');
@@ -501,12 +558,12 @@ function LandingNav() {
           {APP_NAME}
         </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex">
+        <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main navigation">
           {(
             [
               ['#features', 'Features'],
-              ['#stats', 'Built with'],
-              ['#cta', 'Get started'],
+              ['#how-it-works', 'How it works'],
+              ['#faq', 'FAQ'],
             ] as [string, string][]
           ).map(([href, label]) => (
             <a
@@ -531,7 +588,7 @@ function LandingNav() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-500/50 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/50"
           >
             Get started
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -626,7 +683,6 @@ function FeatureCard({ f, i, reduced }: { f: FeatureDef; i: number; reduced: boo
         f.wide ? 'col-span-2' : '',
       ].join(' ')}
     >
-      {/* Gradient border */}
       <div
         className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
@@ -637,14 +693,10 @@ function FeatureCard({ f, i, reduced }: { f: FeatureDef; i: number; reduced: boo
         className="absolute inset-[1px] rounded-[14px]"
         style={{ background: 'rgba(10,10,20,0.95)' }}
       />
-
-      {/* Static border */}
       <div
         className="absolute inset-0 rounded-2xl"
         style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
       />
-
-      {/* Content */}
       <div className="relative z-10 p-6">
         {f.wide && (
           <div
@@ -666,6 +718,795 @@ function FeatureCard({ f, i, reduced }: { f: FeatureDef; i: number; reduced: boo
   );
 }
 
+// ─── HowItWorks ───────────────────────────────────────────────────────────────
+
+function HowItWorks({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <section id="how-it-works" className="px-5 py-24">
+      <div className="mx-auto max-w-6xl">
+        <div ref={ref} className="mb-14 text-center">
+          <motion.div
+            initial={reduced ? {} : { opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#818cf8' }}
+            >
+              How it works
+            </span>
+            <h2 className="text-[38px] font-black tracking-[-0.03em] text-white">
+              Up and running in minutes
+            </h2>
+            <p
+              className="mx-auto mt-3 max-w-md text-[15px]"
+              style={{ color: 'rgba(248,250,252,0.4)' }}
+            >
+              No complex setup. Just sign up, create a trip, and let the AI do the heavy lifting.
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="relative">
+          {/* Connector line — desktop only */}
+          <div
+            aria-hidden="true"
+            className="absolute left-1/2 top-[52px] hidden h-px w-2/3 -translate-x-1/2 lg:block"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(99,102,241,0.3) 20%, rgba(99,102,241,0.3) 80%, transparent)',
+            }}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {HOW_IT_WORKS.map((step, i) => (
+              <motion.div
+                key={step.step}
+                initial={reduced ? {} : { opacity: 0, y: 28 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.15, type: 'spring', damping: 22, stiffness: 80 }}
+                className="relative flex flex-col items-center gap-5 rounded-2xl p-7 text-center"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                {/* Step number badge */}
+                <div
+                  className="relative flex h-[52px] w-[52px] items-center justify-center rounded-2xl"
+                  style={{
+                    background: `${step.accent.replace('0.8', '0.12')}`,
+                    border: `1px solid ${step.accent.replace('0.8', '0.25')}`,
+                  }}
+                >
+                  <span style={{ color: step.accent.replace('0.8', '1') }}>{step.icon}</span>
+                  <span
+                    className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white"
+                    style={{ background: 'rgba(99,102,241,0.9)' }}
+                  >
+                    {i + 1}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-[16px] font-bold text-white">{step.title}</h3>
+                  <p className="text-[13px] leading-relaxed text-white/45">{step.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust badges */}
+        <motion.div
+          initial={reduced ? {} : { opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.5, type: 'spring', damping: 20 }}
+          className="mt-12 flex flex-wrap items-center justify-center gap-6"
+        >
+          {[
+            { icon: <Shield className="h-3.5 w-3.5" />, label: 'Supabase RLS security' },
+            { icon: <Zap className="h-3.5 w-3.5" />, label: 'PWA — works offline' },
+            { icon: <Globe2 className="h-3.5 w-3.5" />, label: '30+ currencies' },
+            { icon: <Smartphone className="h-3.5 w-3.5" />, label: 'Install on any device' },
+            { icon: <Github className="h-3.5 w-3.5" />, label: 'Open source on GitHub' },
+          ].map(({ icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 text-[12px] font-medium"
+              style={{ color: 'rgba(248,250,252,0.35)' }}
+            >
+              <span style={{ color: '#818cf8' }}>{icon}</span>
+              {label}
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ProductShowcase ──────────────────────────────────────────────────────────
+
+const SHOWCASE_TABS = [
+  {
+    label: 'Dashboard',
+    accent: '#6366f1',
+    content: {
+      heading: 'Your travel command centre',
+      desc: 'See all upcoming trips, live weather, AI-generated insights, and budget health at a glance.',
+      mockup: 'dashboard',
+    },
+  },
+  {
+    label: 'AI Concierge',
+    accent: '#8b5cf6',
+    content: {
+      heading: 'AI that thinks like a travel expert',
+      desc: 'Ask anything. Get itinerary suggestions, packing lists, safety briefings, and local food tips — powered by Groq, Gemini, or OpenRouter.',
+      mockup: 'ai',
+    },
+  },
+  {
+    label: 'Expenses',
+    accent: '#f59e0b',
+    content: {
+      heading: 'Never go over budget again',
+      desc: 'Log expenses in any currency, view live conversion rates, and get category-level alerts before you overspend.',
+      mockup: 'expenses',
+    },
+  },
+  {
+    label: 'Itinerary',
+    accent: '#10b981',
+    content: {
+      heading: 'Build perfect day-by-day plans',
+      desc: 'Drag-and-drop activities, set reminders, invite collaborators, and export a polished PDF — all without leaving the app.',
+      mockup: 'itinerary',
+    },
+  },
+] as const;
+
+function DashboardMockup() {
+  return (
+    <div className="flex h-full flex-col gap-3 p-4">
+      {/* Header bar */}
+      <div className="flex items-center justify-between">
+        <div className="h-3 w-24 rounded-full bg-white/10" />
+        <div className="flex gap-1.5">
+          <div className="h-3 w-3 rounded-full bg-white/10" />
+          <div className="h-3 w-3 rounded-full bg-white/10" />
+        </div>
+      </div>
+      {/* Trip cards */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: 'Tokyo', status: 'Upcoming', color: '#6366f1' },
+          { label: 'Bali', status: 'Planning', color: '#10b981' },
+        ].map(({ label, status, color }) => (
+          <div
+            key={label}
+            className="rounded-xl p-3"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+            <div className="mb-1.5 h-2 w-8 rounded-full" style={{ background: color + '60' }} />
+            <div className="mb-0.5 text-[11px] font-bold text-white">{label}</div>
+            <div className="text-[9px]" style={{ color }}>
+              {status}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Weather widget */}
+      <div
+        className="rounded-xl p-3"
+        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        <div className="mb-1 text-[9px] uppercase tracking-widest text-white/30">
+          Weather · Tokyo
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="text-[20px] font-black text-white">24°C</div>
+          <div className="flex gap-1">
+            {[16, 20, 18, 22, 19].map((t, i) => (
+              <div key={i} className="flex flex-col items-center gap-0.5">
+                <div
+                  className="w-2 rounded-full"
+                  style={{ height: `${t / 2}px`, background: 'rgba(99,102,241,0.5)' }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* AI insights row */}
+      <div className="flex gap-2">
+        {['Budget on track', 'Flight in 3 days'].map((tip) => (
+          <div
+            key={tip}
+            className="flex flex-1 items-center gap-1.5 rounded-lg px-2 py-1.5"
+            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+          >
+            <div className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+            <span className="text-[9px] text-indigo-300">{tip}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AIMockup() {
+  return (
+    <div className="flex h-full flex-col gap-2 p-4">
+      <div className="mb-1 text-[9px] uppercase tracking-widest text-white/30">AI Concierge</div>
+      {/* Chat messages */}
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-end">
+          <div
+            className="max-w-[70%] rounded-2xl rounded-tr-sm px-3 py-2 text-[10px] text-white"
+            style={{ background: 'rgba(99,102,241,0.6)' }}
+          >
+            Best street food in Tokyo?
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px]"
+            style={{ background: 'rgba(139,92,246,0.3)' }}
+          >
+            <Sparkles className="h-3 w-3 text-violet-300" aria-hidden="true" />
+          </div>
+          <div
+            className="rounded-2xl rounded-tl-sm px-3 py-2 text-[10px] text-white/70"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+            Try Tsukiji Outer Market for fresh sushi, Shibuya for ramen, and Harajuku crêpes…
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <div
+            className="max-w-[70%] rounded-2xl rounded-tr-sm px-3 py-2 text-[10px] text-white"
+            style={{ background: 'rgba(99,102,241,0.6)' }}
+          >
+            Add these to my itinerary
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'rgba(139,92,246,0.3)' }}
+          >
+            <Sparkles className="h-3 w-3 text-violet-300" aria-hidden="true" />
+          </div>
+          <div
+            className="rounded-2xl rounded-tl-sm px-3 py-2 text-[10px]"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
+            <div className="flex items-center gap-1.5 text-white/70">
+              <Check className="h-3 w-3 text-emerald-400" aria-hidden="true" />3 items added to Day
+              2 itinerary
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExpensesMockup() {
+  const cats = [
+    { label: 'Hotels', pct: 42, color: '#f59e0b' },
+    { label: 'Food', pct: 26, color: '#10b981' },
+    { label: 'Transport', pct: 18, color: '#6366f1' },
+    { label: 'Activities', pct: 14, color: '#f43f5e' },
+  ];
+  return (
+    <div className="flex h-full flex-col gap-3 p-4">
+      <div className="text-[9px] uppercase tracking-widest text-white/30">Budget · Tokyo Trip</div>
+      {/* Donut stand-in */}
+      <div className="flex items-center gap-4">
+        <div
+          className="relative h-16 w-16 shrink-0 rounded-full"
+          style={{
+            background: `conic-gradient(#f59e0b 0% 42%, #10b981 42% 68%, #6366f1 68% 86%, #f43f5e 86% 100%)`,
+          }}
+        >
+          <div
+            className="absolute inset-2 rounded-full"
+            style={{ background: 'rgba(10,10,20,0.95)' }}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          {cats.map(({ label, pct, color }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+              <span className="text-[10px] text-white/50">{label}</span>
+              <span className="ml-auto text-[10px] font-semibold text-white/70">{pct}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Recent expenses */}
+      <div className="flex flex-col gap-1.5">
+        {[
+          { name: 'Shinjuku Hotel', amt: '¥18,400', cat: 'Hotels' },
+          { name: 'Ramen Ichiran', amt: '¥1,200', cat: 'Food' },
+        ].map(({ name, amt, cat }) => (
+          <div
+            key={name}
+            className="flex items-center justify-between rounded-lg px-2.5 py-1.5"
+            style={{ background: 'rgba(255,255,255,0.03)' }}
+          >
+            <div>
+              <div className="text-[10px] font-medium text-white">{name}</div>
+              <div className="text-[9px] text-white/30">{cat}</div>
+            </div>
+            <div className="text-[10px] font-semibold text-white/70">{amt}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ItineraryMockup() {
+  const days = [
+    { day: 'Day 1', items: ['Arrive Narita', 'Shinjuku check-in', 'Omoide Yokocho dinner'] },
+    { day: 'Day 2', items: ['Tsukiji Market', 'Harajuku crêpes', 'Shibuya crossing'] },
+  ];
+  return (
+    <div className="flex h-full flex-col gap-3 p-4">
+      <div className="text-[9px] uppercase tracking-widest text-white/30">Itinerary · Tokyo</div>
+      {days.map(({ day, items }) => (
+        <div key={day}>
+          <div className="mb-1.5 text-[10px] font-bold text-white/60">{day}</div>
+          <div className="flex flex-col gap-1">
+            {items.map((item) => (
+              <div
+                key={item}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: '#6366f1' }}
+                />
+                <span className="text-[10px] text-white/60">{item}</span>
+                <div
+                  className="ml-auto h-2 w-2 cursor-grab rounded-sm opacity-30"
+                  style={{ background: 'rgba(255,255,255,0.3)' }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProductShowcase({ reduced }: { reduced: boolean }) {
+  const [active, setActive] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  const tab = SHOWCASE_TABS[active];
+
+  return (
+    <section className="px-5 py-24">
+      <div className="mx-auto max-w-6xl">
+        <div ref={ref} className="mb-12 text-center">
+          <motion.div
+            initial={reduced ? {} : { opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#818cf8' }}
+            >
+              Product tour
+            </span>
+            <h2 className="text-[38px] font-black tracking-[-0.03em] text-white">
+              See it in action
+            </h2>
+            <p
+              className="mx-auto mt-3 max-w-md text-[15px]"
+              style={{ color: 'rgba(248,250,252,0.4)' }}
+            >
+              Every module is purpose-built for the way real travellers think and plan.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="mb-8 flex flex-wrap justify-center gap-2">
+          {SHOWCASE_TABS.map(({ label, accent }, i) => (
+            <button
+              key={label}
+              onClick={() => setActive(i)}
+              className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              style={
+                active === i
+                  ? {
+                      background: accent + '22',
+                      border: `1px solid ${accent}55`,
+                      color: accent,
+                    }
+                  : {
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'rgba(255,255,255,0.45)',
+                    }
+              }
+              aria-pressed={active === i}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Showcase card */}
+        <motion.div
+          key={active}
+          initial={reduced ? {} : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 24, stiffness: 100 }}
+          className="grid gap-8 overflow-hidden rounded-3xl lg:grid-cols-[1fr_1.1fr]"
+          style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+          }}
+        >
+          {/* Text side */}
+          <div className="flex flex-col justify-center gap-4 px-8 py-10">
+            <div
+              className="text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: tab.accent }}
+            >
+              {tab.label}
+            </div>
+            <h3 className="text-[26px] font-bold leading-tight tracking-tight text-white">
+              {tab.content.heading}
+            </h3>
+            <p className="text-[15px] leading-relaxed" style={{ color: 'rgba(248,250,252,0.5)' }}>
+              {tab.content.desc}
+            </p>
+            <Link
+              to="/register"
+              className="mt-2 inline-flex w-fit items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
+              style={{ color: tab.accent }}
+            >
+              Try it free
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+
+          {/* Mockup side — browser chrome */}
+          <div
+            className="relative overflow-hidden"
+            style={{ background: 'rgba(6,6,15,0.7)', minHeight: '280px' }}
+          >
+            {/* Browser chrome bar */}
+            <div
+              className="flex items-center gap-1.5 px-4 py-2.5"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              aria-hidden="true"
+            >
+              {['rgba(244,63,94,0.6)', 'rgba(245,158,11,0.6)', 'rgba(16,185,129,0.6)'].map((c) => (
+                <div key={c} className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />
+              ))}
+              <div
+                className="ml-2 h-4 flex-1 rounded-full text-center text-[8px] leading-4 text-white/20"
+                style={{ background: 'rgba(255,255,255,0.04)', maxWidth: '160px' }}
+              >
+                travelmate.vercel.app
+              </div>
+            </div>
+
+            {/* Screen content */}
+            <div className="h-[240px] overflow-hidden">
+              {tab.content.mockup === 'dashboard' && <DashboardMockup />}
+              {tab.content.mockup === 'ai' && <AIMockup />}
+              {tab.content.mockup === 'expenses' && <ExpensesMockup />}
+              {tab.content.mockup === 'itinerary' && <ItineraryMockup />}
+            </div>
+
+            {/* Bottom gradient fade */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-12"
+              aria-hidden="true"
+              style={{ background: 'linear-gradient(to top, rgba(6,6,15,0.9), transparent)' }}
+            />
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+function FAQSection({ reduced }: { reduced: boolean }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <section id="faq" className="px-5 py-24">
+      <div className="mx-auto max-w-3xl">
+        <div ref={ref} className="mb-12 text-center">
+          <motion.div
+            initial={reduced ? {} : { opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#818cf8' }}
+            >
+              FAQ
+            </span>
+            <h2 className="text-[38px] font-black tracking-[-0.03em] text-white">
+              Common questions
+            </h2>
+          </motion.div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {FAQ_ITEMS.map(({ q, a }, i) => {
+            const isOpen = open === i;
+            return (
+              <motion.div
+                key={i}
+                initial={reduced ? {} : { opacity: 0, y: 12 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.05, type: 'spring', damping: 22 }}
+                className="overflow-hidden rounded-2xl"
+                style={{
+                  background: isOpen ? 'rgba(99,102,241,0.06)' : 'rgba(255,255,255,0.02)',
+                  border: isOpen
+                    ? '1px solid rgba(99,102,241,0.2)'
+                    : '1px solid rgba(255,255,255,0.06)',
+                  transition: 'background 0.2s, border-color 0.2s',
+                }}
+              >
+                <button
+                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  aria-expanded={isOpen}
+                >
+                  <span className="text-[15px] font-semibold text-white">{q}</span>
+                  <motion.span
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="shrink-0"
+                    aria-hidden="true"
+                  >
+                    <ChevronDown className="h-4 w-4 text-white/40" />
+                  </motion.span>
+                </button>
+
+                {isOpen && (
+                  <motion.div
+                    initial={reduced ? {} : { opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="px-6 pb-5"
+                  >
+                    <p
+                      className="text-[14px] leading-relaxed"
+                      style={{ color: 'rgba(248,250,252,0.5)' }}
+                    >
+                      {a}
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Still have questions? */}
+        <motion.div
+          initial={reduced ? {} : { opacity: 0, y: 12 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.45, type: 'spring', damping: 22 }}
+          className="mt-10 rounded-2xl px-8 py-6 text-center"
+          style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <p className="mb-1 text-[15px] font-semibold text-white">Still have questions?</p>
+          <p className="mb-4 text-[13px]" style={{ color: 'rgba(248,250,252,0.4)' }}>
+            Open an issue or start a discussion on GitHub.
+          </p>
+          <a
+            href="https://github.com/esaipavan/TravelMate/issues"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors hover:opacity-80"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(248,250,252,0.7)',
+            }}
+          >
+            <Github className="h-3.5 w-3.5" aria-hidden="true" />
+            Open an issue
+          </a>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+
+const FOOTER_LINKS = {
+  Product: [
+    { label: 'Features', href: '#features' },
+    { label: 'How it works', href: '#how-it-works' },
+    { label: 'FAQ', href: '#faq' },
+    { label: 'Get started', href: '/register' },
+  ],
+  Resources: [
+    { label: 'Sign in', href: '/login' },
+    { label: 'Create account', href: '/register' },
+    { label: 'GitHub', href: 'https://github.com/esaipavan/TravelMate', external: true },
+    {
+      label: 'Report a bug',
+      href: 'https://github.com/esaipavan/TravelMate/issues',
+      external: true,
+    },
+  ],
+  Stack: [
+    { label: 'React 18', href: 'https://react.dev', external: true },
+    { label: 'Supabase', href: 'https://supabase.com', external: true },
+    { label: 'Tailwind CSS', href: 'https://tailwindcss.com', external: true },
+    { label: 'Framer Motion', href: 'https://framer.com/motion', external: true },
+  ],
+} as const;
+
+function SiteFooter() {
+  return (
+    <footer
+      className="px-5 pb-10 pt-16"
+      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      aria-label="Site footer"
+    >
+      <div className="mx-auto max-w-6xl">
+        {/* Top grid */}
+        <div className="mb-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Brand column */}
+          <div className="col-span-1 flex flex-col gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600">
+                <Plane className="h-4 w-4 text-white" aria-hidden="true" />
+              </div>
+              <span className="font-bold text-white">{APP_NAME}</span>
+            </div>
+            <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(248,250,252,0.35)' }}>
+              AI-powered travel planning for the modern explorer. Free forever, open source.
+            </p>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/esaipavan/TravelMate"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="TravelMate on GitHub"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/10"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <Github className="h-3.5 w-3.5 text-white/50" aria-hidden="true" />
+              </a>
+              <a
+                href="https://github.com/esaipavan/TravelMate"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:text-white"
+                style={{ color: 'rgba(248,250,252,0.4)' }}
+              >
+                <Star className="h-3 w-3" aria-hidden="true" />
+                Star on GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Link columns */}
+          {(
+            Object.entries(FOOTER_LINKS) as [
+              string,
+              readonly { label: string; href: string; external?: boolean }[],
+            ][]
+          ).map(([section, links]) => (
+            <div key={section} className="flex flex-col gap-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/30">
+                {section}
+              </p>
+              {links.map(({ label, href, external }) =>
+                external ? (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[13px] transition-colors hover:text-white"
+                    style={{ color: 'rgba(248,250,252,0.4)' }}
+                  >
+                    {label}
+                  </a>
+                ) : href.startsWith('#') ? (
+                  <a
+                    key={label}
+                    href={href}
+                    className="text-[13px] transition-colors hover:text-white"
+                    style={{ color: 'rgba(248,250,252,0.4)' }}
+                  >
+                    {label}
+                  </a>
+                ) : (
+                  <Link
+                    key={label}
+                    to={href}
+                    className="text-[13px] transition-colors hover:text-white"
+                    style={{ color: 'rgba(248,250,252,0.4)' }}
+                  >
+                    {label}
+                  </Link>
+                ),
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom bar */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-4 pt-6"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          <p className="text-[12px]" style={{ color: 'rgba(248,250,252,0.2)' }}>
+            © {new Date().getFullYear()} {APP_NAME} · Built by Sai Pavan Etikala
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {['React 18', 'TypeScript', 'Supabase', 'Tailwind', 'Vercel'].map((t) => (
+              <span
+                key={t}
+                className="rounded-full px-2.5 py-0.5 text-[10px] font-medium"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  color: 'rgba(248,250,252,0.2)',
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 // ─── LandingPage ──────────────────────────────────────────────────────────────
 
 function LandingPage({ reduced }: { reduced: boolean }) {
@@ -674,12 +1515,22 @@ function LandingPage({ reduced }: { reduced: boolean }) {
       className="dark min-h-screen overflow-x-hidden"
       style={{ background: '#06060F', color: '#F8FAFC' }}
     >
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to content
+      </a>
+
       <CursorGlow />
       <LandingNav />
 
       {/* ════════════════════════════════ HERO ════════════════════════════════ */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pb-8 pt-20">
-        {/* Deep space background */}
+      <section
+        id="main-content"
+        aria-label="Hero"
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pb-8 pt-20"
+      >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div
             className="absolute left-1/2 top-1/2 h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -693,10 +1544,10 @@ function LandingPage({ reduced }: { reduced: boolean }) {
               background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)',
             }}
           />
-          {/* Star field */}
           {Array.from({ length: 60 }, (_, i) => (
             <span
               key={i}
+              aria-hidden="true"
               className="absolute rounded-full bg-white"
               style={{
                 left: `${(i * 37 + 11) % 100}%`,
@@ -710,9 +1561,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
         </div>
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
-          {/* Left — text */}
           <motion.div variants={reduced ? {} : stagger} initial="hidden" animate="show">
-            {/* Badge */}
             <motion.div custom={0} variants={reduced ? {} : blurUp}>
               <div
                 className="mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold"
@@ -722,12 +1571,14 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                   color: '#a5b4fc',
                 }}
               >
-                <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
-                v2.0.0 · Production Ready
+                <span
+                  className="h-2 w-2 animate-pulse rounded-full bg-indigo-400"
+                  aria-hidden="true"
+                />
+                v2.0.0 · Production Ready · Open Source
               </div>
             </motion.div>
 
-            {/* Headline — word by word */}
             <h1 className="mb-6 text-5xl font-black leading-[1.06] tracking-[-0.04em] lg:text-[68px]">
               {['Travel', 'smarter'].map((w, i) => (
                 <motion.span
@@ -762,7 +1613,6 @@ function LandingPage({ reduced }: { reduced: boolean }) {
               </motion.span>
             </h1>
 
-            {/* Sub */}
             <motion.p
               custom={5}
               variants={reduced ? {} : blurUp}
@@ -770,10 +1620,9 @@ function LandingPage({ reduced }: { reduced: boolean }) {
               style={{ color: 'rgba(248,250,252,0.48)' }}
             >
               Plan trips, track expenses, manage documents, and get AI-powered insights — all in one
-              beautifully crafted app built with React 18 and Supabase.
+              beautifully crafted app. Free forever.
             </motion.p>
 
-            {/* CTAs */}
             <motion.div
               custom={6}
               variants={reduced ? {} : blurUp}
@@ -789,7 +1638,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                 }}
               >
                 Start for free
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MagneticButton>
               <a
                 href="https://github.com/esaipavan/TravelMate"
@@ -802,12 +1651,11 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                   color: 'rgba(248,250,252,0.7)',
                 }}
               >
-                <Star className="h-4 w-4" />
+                <Star className="h-4 w-4" aria-hidden="true" />
                 Star on GitHub
               </a>
             </motion.div>
 
-            {/* Pills */}
             <motion.div
               custom={7}
               variants={reduced ? {} : blurUp}
@@ -830,23 +1678,25 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                     color: 'rgba(248,250,252,0.55)',
                   }}
                 >
-                  <span className="h-2 w-2 rounded-full" style={{ background: c }} />
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: c }}
+                    aria-hidden="true"
+                  />
                   {label}
                 </span>
               ))}
             </motion.div>
           </motion.div>
 
-          {/* Right — Globe */}
           <motion.div
             initial={reduced ? {} : { opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             className="relative hidden lg:block"
+            aria-hidden="true"
           >
-            {/* Glow behind globe */}
             <div
-              aria-hidden="true"
               className="absolute inset-0 rounded-full"
               style={{
                 background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 72%)',
@@ -859,7 +1709,6 @@ function LandingPage({ reduced }: { reduced: boolean }) {
           </motion.div>
         </div>
 
-        {/* Scroll cue */}
         {!reduced && (
           <motion.div
             animate={{ y: [0, 9, 0], opacity: [0.3, 0.6, 0.3] }}
@@ -882,6 +1731,9 @@ function LandingPage({ reduced }: { reduced: boolean }) {
 
       {/* ═══════════════════════════════ MARQUEE ══════════════════════════════ */}
       <Marquee reduced={reduced} />
+
+      {/* ══════════════════════════════ HOW IT WORKS ══════════════════════════ */}
+      <HowItWorks reduced={reduced} />
 
       {/* ══════════════════════════════ FEATURES ══════════════════════════════ */}
       <section id="features" className="px-5 py-24">
@@ -906,7 +1758,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                 className="mx-auto mt-3 max-w-md text-[15px]"
                 style={{ color: 'rgba(248,250,252,0.4)' }}
               >
-                13+ modules built for the way real travelers think, plan, and explore.
+                13+ modules built for the way real travellers think, plan, and explore.
               </p>
             </motion.div>
           </div>
@@ -921,6 +1773,9 @@ function LandingPage({ reduced }: { reduced: boolean }) {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════ PRODUCT SHOWCASE ═════════════════════════ */}
+      <ProductShowcase reduced={reduced} />
 
       {/* ════════════════════════════════ STATS ═══════════════════════════════ */}
       <section id="stats" className="px-5 py-20">
@@ -942,6 +1797,9 @@ function LandingPage({ reduced }: { reduced: boolean }) {
           <StatsRow />
         </div>
       </section>
+
+      {/* ════════════════════════════════  FAQ  ═══════════════════════════════ */}
+      <FAQSection reduced={reduced} />
 
       {/* ════════════════════════════════  CTA  ═══════════════════════════════ */}
       <section id="cta" className="px-5 py-24">
@@ -967,7 +1825,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                 className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em]"
                 style={{ color: '#a5b4fc' }}
               >
-                Open source · Free to use
+                Open source · Free forever
               </p>
               <h2 className="mb-3 text-4xl font-black tracking-[-0.03em] text-white">
                 Ready to travel smarter?
@@ -976,7 +1834,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                 className="mx-auto mb-9 max-w-md text-[16px]"
                 style={{ color: 'rgba(248,250,252,0.5)' }}
               >
-                TravelMate v2.0 is live, open source, and completely free to explore.
+                {APP_NAME} is live, open source, and completely free to explore.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link
@@ -988,7 +1846,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                   }}
                 >
                   Get started free
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link
                   to="/login"
@@ -1007,34 +1865,7 @@ function LandingPage({ reduced }: { reduced: boolean }) {
       </section>
 
       {/* ══════════════════════════════ FOOTER ════════════════════════════════ */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} className="px-5 py-8">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 font-semibold text-white">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-600">
-              <Plane className="h-3 w-3 text-white" />
-            </div>
-            {APP_NAME}
-            <span style={{ color: 'rgba(248,250,252,0.2)' }}>v2.0.0</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {['React 18', 'TypeScript', 'Supabase', 'Tailwind CSS', 'Vercel'].map((t) => (
-              <span
-                key={t}
-                className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                style={{
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'rgba(248,250,252,0.25)',
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-          <p className="text-[13px]" style={{ color: 'rgba(248,250,252,0.2)' }}>
-            By Sai Pavan Etikala
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
