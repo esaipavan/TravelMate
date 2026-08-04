@@ -30,7 +30,7 @@ A production-grade, full-stack travel management platform — fast, secure, and 
 
 ## 🌐 Live Demo
 
-**[👉 Open the live app](https://travel-planner-saipavans-projects-32f9b141.vercel.app)**
+**[👉 Open the live app]((https://travel-planner-eight-sandy.vercel.app))**
 
 Sign in with Google or an email/password account. All data is fully isolated per user via Supabase Row Level Security.
 
