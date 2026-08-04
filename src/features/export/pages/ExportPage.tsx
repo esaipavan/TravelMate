@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { track } from '@/lib/analytics';
 import { ArrowLeft, Download, FileSpreadsheet, FileText, Printer, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
@@ -431,6 +432,7 @@ export default function ExportPage() {
       } else {
         openPrintView(trip, budgetData, expenseData, itineraryData, checklistData);
       }
+      track('export_downloaded', { format, trip_destination: trip.destination ?? '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Export failed');
     } finally {

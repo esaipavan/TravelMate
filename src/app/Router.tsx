@@ -57,6 +57,7 @@ const AdminAnalyticsPage = lazy(() => import('@/features/admin/pages/UserAnalyti
 const AdminFeedbackPage = lazy(() => import('@/features/admin/pages/FeedbackPage'));
 const AdminBugsPage = lazy(() => import('@/features/admin/pages/BugReportsPage'));
 const AdminFlagsPage = lazy(() => import('@/features/admin/pages/FeatureFlagsPage'));
+const AdminFounderPage = lazy(() => import('@/features/admin/pages/FounderDashboardPage'));
 const AdminHealthPage = lazy(() => import('@/features/admin/pages/ApiHealthPage'));
 const AdminAIPage = lazy(() => import('@/features/admin/pages/AIUsagePage'));
 
@@ -486,6 +487,14 @@ const router = createBrowserRouter([
         element: (
           <Wrap>
             <AdminBugsPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: 'founder',
+        element: (
+          <Wrap>
+            <AdminFounderPage />
           </Wrap>
         ),
       },

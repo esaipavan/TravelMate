@@ -190,7 +190,7 @@ export async function getFeatureAdoption(): Promise<FeatureAdoption[]> {
     supabase.from('expenses').select('user_id').limit(1000),
     supabase.from('journal_entries').select('user_id').limit(1000),
     supabase.from('reminders').select('user_id').limit(1000),
-    supabase.from('documents').select('user_id').limit(1000),
+    supabase.from('travel_documents').select('user_id').limit(1000),
   ]);
 
   const total = usersRes.count ?? 1;

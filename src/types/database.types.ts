@@ -537,6 +537,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      analytics_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string;
+          event: string;
+          properties: Json;
+          page_path: string | null;
+          device_type: string | null;
+          browser: string | null;
+          os: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          session_id: string;
+          event: string;
+          properties?: Json;
+          page_path?: string | null;
+          device_type?: string | null;
+          browser?: string | null;
+          os?: string | null;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       bug_reports: {
         Row: {
           id: string;
@@ -802,6 +830,46 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      get_active_user_counts: {
+        Args: Record<string, never>;
+        Returns: Array<{ dau: number; wau: number; mau: number }>;
+      };
+      get_dau_trend: {
+        Args: { days_back?: number };
+        Returns: Array<{ trend_date: string; dau: number }>;
+      };
+      get_activation_rate: { Args: Record<string, never>; Returns: number };
+      get_retention: {
+        Args: Record<string, never>;
+        Returns: Array<{ day7_pct: number; day30_pct: number }>;
+      };
+      get_funnel_counts: {
+        Args: Record<string, never>;
+        Returns: Array<{ step: string; user_count: number }>;
+      };
+      get_ai_summary: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          total_calls: number;
+          calls_today: number;
+          total_prompt_tokens: number;
+          total_completion_tokens: number;
+          avg_latency_ms: number;
+          success_rate: number;
+        }>;
+      };
+      get_top_destinations: {
+        Args: { lim?: number };
+        Returns: Array<{ destination: string; country_code: string | null; trip_count: number }>;
+      };
+      get_device_breakdown: {
+        Args: Record<string, never>;
+        Returns: Array<{ device_type: string; browser: string; user_count: number }>;
+      };
+      get_feature_adoption_v2: {
+        Args: Record<string, never>;
+        Returns: Array<{ feature: string; adopters: number; total_users: number; pct: number }>;
+      };
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;

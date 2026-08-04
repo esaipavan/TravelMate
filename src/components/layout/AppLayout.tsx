@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
@@ -7,10 +8,15 @@ import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { FeedbackWidget } from '@/features/feedback/components/FeedbackWidget';
 import { PAGE_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { useRouteFocus } from '@/hooks/useRouteFocus';
+import { track } from '@/lib/analytics';
 
 export function AppLayout() {
   const location = useLocation();
   const reduced = useReducedMotion();
+
+  useEffect(() => {
+    track('page_viewed', { page: location.pathname });
+  }, [location.pathname]);
 
   // Move keyboard focus to #main-content on every route change so screen
   // readers announce the new page without manual navigation.

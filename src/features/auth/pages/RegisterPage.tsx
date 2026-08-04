@@ -21,6 +21,7 @@ import { emailSchema, passwordSchema } from '@/utils/validators';
 import { APP_NAME } from '@/utils/constants';
 import { signUp } from '../services/auth.service';
 import { EmailSentState } from '../components/EmailSentState';
+import { track } from '@/lib/analytics';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ export default function RegisterPage() {
   async function onSubmit(values: RegisterFormValues) {
     try {
       await signUp(values.email, values.password, values.fullName);
+      track('signed_up', { method: 'email' });
       setRegEmail(values.email);
       setSubmitted(true);
     } catch (err) {

@@ -25,6 +25,7 @@ import { createTrip } from '@/features/trips/services/trips.service';
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import { useOnboarding, isOnboardingComplete } from '../hooks/useOnboarding';
 import type { TravelerType, OnboardingDates } from '../types';
+import { track } from '@/lib/analytics';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1331,6 +1332,7 @@ export default function OnboardingPage() {
   const userName = metaStr('full_name') ?? metaStr('name') ?? user?.email?.split('@')[0] ?? 'there';
 
   function skipAll() {
+    track('onboarding_skipped', { at_step: state.step });
     complete();
     navigate('/dashboard', { replace: true });
   }
@@ -1349,9 +1351,19 @@ export default function OnboardingPage() {
     goBack();
   }
 
+  const STEP_NAMES = [
+    'traveler_type',
+    'destination',
+    'itinerary_preview',
+    'trip_creation',
+    'feature_tour',
+  ] as const;
+
   function handleAdvance(step: number, dataUpdate?: Parameters<typeof advance>[0]) {
     setDir(1);
+    track('onboarding_step_completed', { step, step_name: STEP_NAMES[step] });
     if (step === TOTAL_STEPS - 1) {
+      track('onboarding_completed', { traveler_type: state.data.travelerType ?? null });
       complete(dataUpdate);
     } else {
       advance(dataUpdate);

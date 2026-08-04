@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  BarChart2,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -258,6 +259,7 @@ export default function AdminDashboardPage() {
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
+            { to: '/admin/founder', label: 'Growth', icon: BarChart2, color: 'text-indigo-500' },
             { to: '/admin/users', label: 'Users', icon: Users, color: 'text-primary' },
             {
               to: '/admin/feedback',
