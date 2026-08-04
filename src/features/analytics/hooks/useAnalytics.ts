@@ -18,42 +18,75 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   const { user } = useAuthStore();
   const uid = user?.id ?? '';
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
-    queryKey:  ['trips', uid],
-    queryFn:   () => getTrips(uid),
-    enabled:   !!uid,
+  const {
+    data: trips = [],
+    isLoading: tripsLoading,
+    isError: tripsError,
+    refetch: refetchTrips,
+  } = useQuery({
+    queryKey: ['trips', uid],
+    queryFn: () => getTrips(uid),
+    enabled: !!uid,
     staleTime: 5 * 60_000,
   });
 
-  const { data: expenses = [], isLoading: expLoading } = useQuery({
-    queryKey:  [...ANA_KEY(uid), 'expenses'],
-    queryFn:   () => getAllExpenses(uid),
-    enabled:   !!uid,
+  const {
+    data: expenses = [],
+    isLoading: expLoading,
+    isError: expError,
+    refetch: refetchExp,
+  } = useQuery({
+    queryKey: [...ANA_KEY(uid), 'expenses'],
+    queryFn: () => getAllExpenses(uid),
+    enabled: !!uid,
     staleTime: 2 * 60_000,
   });
 
-  const { data: journalEntries = [], isLoading: journalLoading } = useQuery({
-    queryKey:  [...ANA_KEY(uid), 'journal'],
-    queryFn:   () => getAllJournalEntries(uid),
-    enabled:   !!uid,
+  const {
+    data: journalEntries = [],
+    isLoading: journalLoading,
+    isError: journalError,
+    refetch: refetchJournal,
+  } = useQuery({
+    queryKey: [...ANA_KEY(uid), 'journal'],
+    queryFn: () => getAllJournalEntries(uid),
+    enabled: !!uid,
     staleTime: 5 * 60_000,
   });
 
-  const { data: documents = [], isLoading: docsLoading } = useQuery({
-    queryKey:  ['documents', uid],
-    queryFn:   () => getDocuments(uid),
-    enabled:   !!uid,
+  const {
+    data: documents = [],
+    isLoading: docsLoading,
+    isError: docsError,
+    refetch: refetchDocs,
+  } = useQuery({
+    queryKey: ['documents', uid],
+    queryFn: () => getDocuments(uid),
+    enabled: !!uid,
     staleTime: 5 * 60_000,
   });
 
-  const { data: reminders = [], isLoading: remLoading } = useQuery({
-    queryKey:  ['reminders', uid],
-    queryFn:   () => getReminders(uid),
-    enabled:   !!uid,
+  const {
+    data: reminders = [],
+    isLoading: remLoading,
+    isError: remError,
+    refetch: refetchRem,
+  } = useQuery({
+    queryKey: ['reminders', uid],
+    queryFn: () => getReminders(uid),
+    enabled: !!uid,
     staleTime: 2 * 60_000,
   });
 
   const isLoading = tripsLoading || expLoading || journalLoading || docsLoading || remLoading;
+  const isError = tripsError || expError || journalError || docsError || remError;
+  const refetch = () => {
+    void refetchTrips();
+    void refetchExp();
+    void refetchJournal();
+    void refetchDocs();
+    void refetchRem();
+  };
 
   // ── Apply trip-level filters ───────────────────────────────────────────────
   const filteredTrips = useMemo(() => {
@@ -69,20 +102,17 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
           (t.country_code ?? '').toLowerCase().includes(c),
       );
     }
-    if (filters.dateFrom) result = result.filter((t) => t.end_date   >= filters.dateFrom);
-    if (filters.dateTo)   result = result.filter((t) => t.start_date <= filters.dateTo);
+    if (filters.dateFrom) result = result.filter((t) => t.end_date >= filters.dateFrom);
+    if (filters.dateTo) result = result.filter((t) => t.start_date <= filters.dateTo);
     return result;
   }, [trips, filters]);
 
-  const filteredTripIds = useMemo(
-    () => new Set(filteredTrips.map((t) => t.id)),
-    [filteredTrips],
-  );
+  const filteredTripIds = useMemo(() => new Set(filteredTrips.map((t) => t.id)), [filteredTrips]);
 
   const filteredExpenses = useMemo(() => {
     let result = expenses.filter((e) => filteredTripIds.has(e.trip_id));
     if (filters.dateFrom) result = result.filter((e) => e.date >= filters.dateFrom);
-    if (filters.dateTo)   result = result.filter((e) => e.date <= filters.dateTo);
+    if (filters.dateTo) result = result.filter((e) => e.date <= filters.dateTo);
     return result;
   }, [expenses, filteredTripIds, filters]);
 
@@ -114,27 +144,32 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
   // ── KPI cards ────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
-    const totalTrips     = filteredTrips.length;
-    const upcomingTrips  = filteredTrips.filter((t) => getTripStatus(t) === 'upcoming').length;
+    const totalTrips = filteredTrips.length;
+    const upcomingTrips = filteredTrips.filter((t) => getTripStatus(t) === 'upcoming').length;
     const completedTrips = filteredTrips.filter((t) => getTripStatus(t) === 'completed').length;
-    const countriesVisited = new Set(
-      filteredTrips.map((t) => t.country_code ?? t.destination),
-    ).size;
-    const totalBudget    = filteredTrips.reduce((s, t) => s + (t.total_budget ?? 0), 0);
-    const totalExpenses  = Array.from(expensesByTripId.values()).reduce((s, v) => s + v, 0);
+    const countriesVisited = new Set(filteredTrips.map((t) => t.country_code ?? t.destination))
+      .size;
+    const totalBudget = filteredTrips.reduce((s, t) => s + (t.total_budget ?? 0), 0);
+    const totalExpenses = Array.from(expensesByTripId.values()).reduce((s, v) => s + v, 0);
     const budgetRemaining = totalBudget - totalExpenses;
     // Avg Trip Cost = Total Budget ÷ Trip Count (shows '—' in KPICards when 0).
     const avgTripCost = totalTrips > 0 && totalBudget > 0 ? totalBudget / totalTrips : 0;
 
     return {
-      totalTrips, upcomingTrips, completedTrips, countriesVisited,
-      totalBudget, totalExpenses, budgetRemaining, avgTripCost,
+      totalTrips,
+      upcomingTrips,
+      completedTrips,
+      countriesVisited,
+      totalBudget,
+      totalExpenses,
+      budgetRemaining,
+      avgTripCost,
     };
   }, [filteredTrips, expensesByTripId]);
 
   // ── Chart: monthly expenses (last 12 months) ─────────────────────────────
   const monthlyExpenses = useMemo(() => {
-    const now    = new Date();
+    const now = new Date();
     const months = Array.from({ length: 12 }, (_, i) => {
       const d = subMonths(now, 11 - i);
       return { key: format(d, 'yyyy-MM'), label: format(d, 'MMM yy'), amount: 0 };
@@ -151,9 +186,9 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   const expenseByCategory = useMemo(() => {
     const map = new Map<string, { name: string; value: number; emoji: string }>();
     for (const e of filteredExpenses) {
-      const meta  = EXPENSE_CATEGORIES.find((c) => c.value === e.category);
+      const meta = EXPENSE_CATEGORIES.find((c) => c.value === e.category);
       const entry = map.get(e.category) ?? {
-        name:  meta?.label ?? e.category,
+        name: meta?.label ?? e.category,
         value: 0,
         emoji: meta?.emoji ?? '📦',
       };
@@ -166,21 +201,23 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   }, [filteredExpenses]);
 
   // ── Chart: budget vs actual (top 6 trips with budget set) ────────────────
-  const budgetVsActual = useMemo(() =>
-    filteredTrips
-      .filter((t) => t.total_budget && t.total_budget > 0)
-      .map((t) => {
-        const actual = expensesByTripId.get(t.id) ?? 0;
-        const title = t.title.length > 12 ? t.title.slice(0, 12) + '…' : t.title;
-        return { name: title, budget: t.total_budget ?? 0, actual: Math.round(actual) };
-      })
-      .sort((a, b) => b.budget - a.budget)
-      .slice(0, 6),
-  [filteredTrips, expensesByTripId]);
+  const budgetVsActual = useMemo(
+    () =>
+      filteredTrips
+        .filter((t) => t.total_budget && t.total_budget > 0)
+        .map((t) => {
+          const actual = expensesByTripId.get(t.id) ?? 0;
+          const title = t.title.length > 12 ? t.title.slice(0, 12) + '…' : t.title;
+          return { name: title, budget: t.total_budget ?? 0, actual: Math.round(actual) };
+        })
+        .sort((a, b) => b.budget - a.budget)
+        .slice(0, 6),
+    [filteredTrips, expensesByTripId],
+  );
 
   // ── Chart: trips started per month (last 12 months) ──────────────────────
   const tripsPerMonth = useMemo(() => {
-    const now    = new Date();
+    const now = new Date();
     const months = Array.from({ length: 12 }, (_, i) => {
       const d = subMonths(now, 11 - i);
       return { key: format(d, 'yyyy-MM'), label: format(d, 'MMM yy'), count: 0 };
@@ -198,7 +235,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const map = new Map<string, { total: number; count: number }>();
     for (const j of filteredJournal) {
       if (!j.rating) continue;
-      const dest  = j.location_name ?? 'Unknown';
+      const dest = j.location_name ?? 'Unknown';
       const entry = map.get(dest) ?? { total: 0, count: 0 };
       entry.total += j.rating;
       entry.count += 1;
@@ -216,7 +253,9 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
   // ── Chart: reminder status (all reminders, not trip-filtered) ────────────
   const reminderStatus = useMemo(() => {
-    let pending = 0, completed = 0, overdue = 0;
+    let pending = 0,
+      completed = 0,
+      overdue = 0;
     for (const r of reminders) {
       const s = getEffectiveStatus(r);
       if (s === 'completed') completed++;
@@ -224,9 +263,9 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       else pending++;
     }
     return [
-      { name: 'Pending',   value: pending,   color: '#3b82f6' },
+      { name: 'Pending', value: pending, color: '#3b82f6' },
       { name: 'Completed', value: completed, color: '#10b981' },
-      { name: 'Overdue',   value: overdue,   color: '#ef4444' },
+      { name: 'Overdue', value: overdue, color: '#ef4444' },
     ].filter((e) => e.value > 0);
   }, [reminders]);
 
@@ -235,7 +274,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     // Per-trip spending
     const tripSpending = filteredTrips
       .map((t) => ({
-        title:  t.title,
+        title: t.title,
         amount: expensesByTripId.get(t.id) ?? 0,
       }))
       .filter((t) => t.amount > 0);
@@ -272,9 +311,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       : 0;
 
     // Average journal rating
-    const ratings = filteredJournal
-      .map((j) => j.rating)
-      .filter((r): r is number => r !== null);
+    const ratings = filteredJournal.map((j) => j.rating).filter((r): r is number => r !== null);
     const avgJournalRating = ratings.length
       ? parseFloat((ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1))
       : 0;
@@ -290,11 +327,9 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     ).length;
 
     // Budget utilisation
-    const totalBudget  = filteredTrips.reduce((s, t) => s + (t.total_budget ?? 0), 0);
-    const totalSpent   = Array.from(expensesByTripId.values()).reduce((s, v) => s + v, 0);
-    const budgetUtilization = totalBudget > 0
-      ? Math.round((totalSpent / totalBudget) * 100)
-      : 0;
+    const totalBudget = filteredTrips.reduce((s, t) => s + (t.total_budget ?? 0), 0);
+    const totalSpent = Array.from(expensesByTripId.values()).reduce((s, v) => s + v, 0);
+    const budgetUtilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
     return {
       highestSpendingTrip,
@@ -310,6 +345,8 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
   return {
     isLoading,
+    isError,
+    refetch,
     trips,
     filteredTrips,
     filteredExpenses,

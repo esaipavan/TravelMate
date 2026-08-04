@@ -1,5 +1,6 @@
 ﻿import { useMemo } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Camera, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -165,7 +166,7 @@ export default function MemoriesPage() {
   const { id: tripId } = useParams<{ id: string }>();
   const reduced = useReducedMotion();
 
-  const { data: trip, isLoading: tripLoading, isError: tripError } = useTrip(tripId!);
+  const { data: trip, isLoading: tripLoading, isError: tripError, refetch } = useTrip(tripId!);
   const { data: entries = [], isLoading: journalLoading } = useJournalEntries(tripId!);
   const { data: itinerary, isLoading: itineraryLoading } = useItineraryData(tripId!);
   const { data: expenseData, isLoading: expenseLoading } = useExpenseData(tripId!);
@@ -183,7 +184,15 @@ export default function MemoriesPage() {
     [trip, entries, itinerary, expenses],
   );
 
-  if (tripError) return <Navigate to="/trips" replace />;
+  if (tripError)
+    return (
+      <ErrorState
+        title="Couldn't load memories"
+        message="We ran into a problem loading this trip's memories."
+        onRetry={() => void refetch()}
+      />
+    );
+
   if (isLoading || !trip) return <PageSkeleton />;
 
   return (

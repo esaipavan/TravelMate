@@ -111,7 +111,9 @@ export default function JournalPage() {
     }
 
     result.sort((a, b) => {
-      const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      // Append T00:00:00 to parse as local midnight, not UTC (avoids one-day shift in UTC+ zones)
+      const diff =
+        new Date(b.date + 'T00:00:00').getTime() - new Date(a.date + 'T00:00:00').getTime();
       return filters.sortOrder === 'newest' ? diff : -diff;
     });
 

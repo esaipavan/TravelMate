@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, Sparkles, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export default function BudgetPage() {
   const { id: tripId } = useParams<{ id: string }>();
   const reduced = useReducedMotion();
 
-  const { data: budgetData, isLoading: budgetLoading, isError } = useBudget(tripId!);
+  const { data: budgetData, isLoading: budgetLoading, isError, refetch } = useBudget(tripId!);
   const { data: expenseData, isLoading: expenseLoading } = useExpenseData(tripId!);
   const { data: trip } = useTrip(tripId!);
 
@@ -61,7 +62,17 @@ export default function BudgetPage() {
   }, [budgetData, days]);
 
   if (isLoading) return <BudgetWorkspaceSkeleton />;
-  if (isError || !budgetData) return <Navigate to="/trips" replace />;
+
+  if (isError)
+    return (
+      <ErrorState
+        title="Couldn't load budget"
+        message="We ran into a problem loading this trip's budget. Please try again."
+        onRetry={() => void refetch()}
+      />
+    );
+
+  if (!budgetData) return <Navigate to="/trips" replace />;
 
   const { items, summary, tripStartDate, tripEndDate } = budgetData;
   const expenses = expenseData?.expenses ?? [];

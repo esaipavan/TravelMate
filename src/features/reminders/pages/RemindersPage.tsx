@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { ErrorState } from '@/components/shared/ErrorState';
 import {
   useReminders,
   useReminderTrips,
@@ -94,7 +95,7 @@ const DEFAULT_FILTERS: ReminderFilters = {
 
 export default function RemindersPage() {
   const reduced = useReducedMotion();
-  const { data: reminders = [], isLoading } = useReminders();
+  const { data: reminders = [], isLoading, isError, refetch } = useReminders();
   const { data: trips = [] } = useReminderTrips();
 
   const createMutation = useCreateReminder();
@@ -225,6 +226,12 @@ export default function RemindersPage() {
 
       {isLoading ? (
         <PageSkeleton />
+      ) : isError ? (
+        <ErrorState
+          title="Couldn't load reminders"
+          message="We ran into a problem loading your reminders. Please try again."
+          onRetry={() => void refetch()}
+        />
       ) : (
         <>
           {reminders.length > 0 && <ReminderStats reminders={reminders} />}
@@ -266,29 +273,39 @@ export default function RemindersPage() {
                     { v: 'list' as ReminderView, icon: List },
                     { v: 'calendar' as ReminderView, icon: CalendarDays },
                   ] as const
-                ).map(({ v, icon: Icon }) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setView(v)}
-                    className={`flex h-9 w-9 items-center justify-center transition-colors first:rounded-l-md last:rounded-r-md ${
-                      view === v
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </button>
-                ))}
+                ).map(({ v, icon: Icon }) => {
+                  const labels: Record<ReminderView, string> = {
+                    card: 'Card view',
+                    list: 'List view',
+                    calendar: 'Calendar view',
+                  };
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setView(v)}
+                      aria-label={labels[v]}
+                      aria-pressed={view === v}
+                      className={`flex h-9 w-9 items-center justify-center transition-colors first:rounded-l-md last:rounded-r-md ${
+                        view === v
+                          ? 'bg-accent text-accent-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  );
+                })}
               </div>
 
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
                 size="icon"
                 onClick={() => setShowFilters((v) => !v)}
-                title="More filters"
+                aria-label="More filters"
+                aria-pressed={showFilters}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               </Button>
 
               {hasActiveFilter && (
@@ -296,9 +313,9 @@ export default function RemindersPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setFilters(DEFAULT_FILTERS)}
-                  title="Clear filters"
+                  aria-label="Clear filters"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </Button>
               )}
             </div>
@@ -421,6 +438,7 @@ export default function RemindersPage() {
                 <button
                   type="button"
                   onClick={() => setFilters((f) => ({ ...f, upcoming: !f.upcoming }))}
+                  aria-pressed={filters.upcoming}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                     filters.upcoming
                       ? 'border-primary bg-primary/10 text-primary'

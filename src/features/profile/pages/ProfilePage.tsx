@@ -1,20 +1,21 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Separator } from '@/components/ui/separator';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { useProfile } from '../hooks/useProfile';
 import { AvatarUploader } from '../components/AvatarUploader';
 import { ProfileForm } from '../components/ProfileForm';
 import { ProfileStats } from '../components/ProfileStats';
 
 export default function ProfilePage() {
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile, isLoading, isError, refetch } = useProfile();
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="Profile" />
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          <Skeleton className="h-24 w-24 rounded-full shrink-0" />
+          <Skeleton className="h-24 w-24 shrink-0 rounded-full" />
           <div className="w-full space-y-3">
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
@@ -25,12 +26,13 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (isError || !profile) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Profile" />
-        <p className="text-sm text-muted-foreground">Could not load profile.</p>
-      </div>
+      <ErrorState
+        title="Couldn't load profile"
+        message="We ran into a problem loading your profile."
+        onRetry={() => void refetch()}
+      />
     );
   }
 
@@ -45,10 +47,7 @@ export default function ProfilePage() {
       <div className="rounded-xl border bg-card p-6">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           <div className="shrink-0">
-            <AvatarUploader
-              avatarUrl={profile.avatar_url}
-              fullName={profile.full_name}
-            />
+            <AvatarUploader avatarUrl={profile.avatar_url} fullName={profile.full_name} />
           </div>
           <div className="w-full min-w-0">
             <ProfileForm profile={profile} />

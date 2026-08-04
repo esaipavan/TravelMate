@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { rv, FADE_VARIANTS, LIST_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
+import { ErrorState } from '@/components/shared/ErrorState';
 import {
   useDocuments,
   useUserTrips,
@@ -50,7 +51,7 @@ export default function DocumentsPage() {
   const { id: tripId } = useParams<{ id?: string }>();
   const reduced = useReducedMotion();
 
-  const { data: documents = [], isLoading } = useDocuments(tripId);
+  const { data: documents = [], isLoading, isError, refetch } = useDocuments(tripId);
   const { data: trips = [], isLoading: tripsLoading } = useUserTrips();
 
   const currentTrip = tripId ? trips.find((t) => t.id === tripId) : undefined;
@@ -157,9 +158,18 @@ export default function DocumentsPage() {
 
   const isSaving = uploadMutation.isPending || updateMutation.isPending;
 
-  // ── Loading ───────────────────────────────────────────────────────────────────
+  // ── Loading / Error ───────────────────────────────────────────────────────────
 
   if (isLoading) return <VaultSkeleton />;
+
+  if (isError)
+    return (
+      <ErrorState
+        title="Couldn't load your documents"
+        message="We ran into a problem fetching your Travel Vault."
+        onRetry={() => void refetch()}
+      />
+    );
 
   // ── Render ────────────────────────────────────────────────────────────────────
 

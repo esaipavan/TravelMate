@@ -76,7 +76,7 @@ export default function ExpensesPage() {
 
   const expenses = useMemo(() => data?.expenses ?? [], [data]);
   const tripTitle = data?.tripTitle ?? '';
-  const tripCurrency = data?.tripCurrency ?? 'INR';
+  const tripCurrency = data?.tripCurrency ?? 'USD';
   const budgetMap = data?.budgetMap ?? {};
 
   const filtered = useMemo(() => {

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BarChart2, Plus } from 'lucide-react';
+import { BarChart2, Plus, SlidersHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useAnalyticsData } from '../hooks/useAnalytics';
 import { DEFAULT_ANALYTICS_FILTERS } from '../types';
 import type { AnalyticsFilters } from '../types';
 import { AnalyticsSkeleton } from '../components/AnalyticsSkeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { AnalyticsKPIGrid } from '../components/AnalyticsKPIGrid';
 import { AnalyticsInsightsGrid } from '../components/AnalyticsInsightsGrid';
 import { AnalyticsDateRangeSelector } from '../components/AnalyticsDateRangeSelector';
@@ -83,12 +84,43 @@ function buildCSV(
   return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
+/* ── Filter empty state ───────────────────────────────────────── */
+function FilterEmptyState({ onClear }: { onClear: () => void }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      variants={rv(FADE_VARIANTS, reduced)}
+      initial="hidden"
+      animate="show"
+      className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-border/60 bg-card/40 px-6 py-16 text-center"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+        <SlidersHorizontal className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-foreground">No trips in this date range</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Try a different date range or clear your filters to see all trips.
+        </p>
+      </div>
+      <button
+        onClick={onClear}
+        className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+      >
+        Clear filters
+      </button>
+    </motion.div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────────── */
 export default function AnalyticsPage() {
   const [filters, setFilters] = useState<AnalyticsFilters>(DEFAULT_ANALYTICS_FILTERS);
 
   const {
     isLoading,
+    isError,
+    refetch,
     trips,
     filteredTrips,
     currency,
@@ -106,9 +138,22 @@ export default function AnalyticsPage() {
     setFilters((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const handleExportPDF = useCallback(() => {
-    window.print();
+  const clearFilters = useCallback(() => {
+    setFilters(DEFAULT_ANALYTICS_FILTERS);
   }, []);
+
+  const handleExportPDF = useCallback(() => {
+    // PDF export is handled by the Export page (/trips/:id/export) for per-trip exports.
+    // For global analytics, we generate a CSV instead.
+    const csv = buildCSV(kpis, currency, monthlyExpenses);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'travel-analytics.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [kpis, currency, monthlyExpenses]);
 
   const handleExportCSV = useCallback(() => {
     const csv = buildCSV(kpis, currency, monthlyExpenses);
@@ -123,11 +168,23 @@ export default function AnalyticsPage() {
 
   if (isLoading) return <AnalyticsSkeleton />;
 
+  if (isError)
+    return (
+      <ErrorState
+        title="Couldn't load analytics"
+        message="We ran into a problem loading your travel data."
+        onRetry={() => void refetch()}
+      />
+    );
+
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader title="Analytics" description="Executive travel intelligence dashboard" />
+        <PageHeader
+          title="Analytics"
+          description="Your travel data, budgets, and spending trends"
+        />
       </div>
 
       {/* Date range + export */}
@@ -139,9 +196,12 @@ export default function AnalyticsPage() {
         tripCount={filteredTrips.length}
       />
 
-      {/* Empty state */}
+      {/* Empty state — no trips at all */}
       {trips.length === 0 ? (
         <AnalyticsEmptyState />
+      ) : filteredTrips.length === 0 ? (
+        /* Date-range filter yields no trips */
+        <FilterEmptyState onClear={clearFilters} />
       ) : (
         <>
           {/* KPI grid */}

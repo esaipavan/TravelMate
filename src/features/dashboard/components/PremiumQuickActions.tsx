@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { PlaneTakeoff, Sparkles, Receipt, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, rg, LIST_VARIANTS, LIST_ITEM_VARIANTS, HOVER, PRESS } from '@/lib/motion';
+import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import type { LucideIcon } from 'lucide-react';
 
 interface Action {
@@ -14,43 +15,55 @@ interface Action {
   bg: string;
 }
 
-const ACTIONS: Action[] = [
-  {
-    label: 'New Trip',
-    desc: 'Plan your next adventure',
-    href: '/trips/new',
-    icon: PlaneTakeoff,
-    color: '#3B82F6',
-    bg: 'bg-blue-500/10',
-  },
-  {
-    label: 'AI Planner',
-    desc: 'Get personalised advice',
-    href: '/assistant',
-    icon: Sparkles,
-    color: '#8B5CF6',
-    bg: 'bg-violet-500/10',
-  },
-  {
-    label: 'Log Expense',
-    desc: 'Track your spending',
-    href: '/trips',
-    icon: Receipt,
-    color: '#10B981',
-    bg: 'bg-emerald-500/10',
-  },
-  {
-    label: 'Analytics',
-    desc: 'Discover travel insights',
-    href: '/analytics',
-    icon: BarChart3,
-    color: '#F59E0B',
-    bg: 'bg-amber-500/10',
-  },
-];
+function useQuickActions(): Action[] {
+  const { data: currentTrip } = useCurrentTrip();
+  const { data: upcomingTrips = [] } = useUpcomingTrips();
+  const displayTrip = currentTrip ?? upcomingTrips[0] ?? null;
+
+  const expenseHref = displayTrip ? `/trips/${displayTrip.id}/expenses` : '/trips';
+  const expenseDesc = displayTrip
+    ? `Log for ${displayTrip.destination.split(',')[0]}`
+    : 'Select a trip to log spending';
+
+  return [
+    {
+      label: 'New Trip',
+      desc: 'Plan your next adventure',
+      href: '/trips/new',
+      icon: PlaneTakeoff,
+      color: '#3B82F6',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      label: 'AI Planner',
+      desc: 'Get personalised advice',
+      href: '/assistant',
+      icon: Sparkles,
+      color: '#8B5CF6',
+      bg: 'bg-violet-500/10',
+    },
+    {
+      label: 'Log Expense',
+      desc: expenseDesc,
+      href: expenseHref,
+      icon: Receipt,
+      color: '#10B981',
+      bg: 'bg-emerald-500/10',
+    },
+    {
+      label: 'Analytics',
+      desc: 'Discover travel insights',
+      href: '/analytics',
+      icon: BarChart3,
+      color: '#F59E0B',
+      bg: 'bg-amber-500/10',
+    },
+  ];
+}
 
 export function PremiumQuickActions() {
   const reduced = useReducedMotion();
+  const actions = useQuickActions();
 
   return (
     <section aria-label="Quick actions">
@@ -60,7 +73,7 @@ export function PremiumQuickActions() {
         initial="hidden"
         animate="show"
       >
-        {ACTIONS.map((a) => {
+        {actions.map((a) => {
           const Icon = a.icon;
           return (
             <motion.div key={a.label} variants={rv(LIST_ITEM_VARIANTS, reduced)}>
