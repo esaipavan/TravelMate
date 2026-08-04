@@ -489,6 +489,8 @@ export type Database = {
           message: string;
           status: string;
           admin_notes: string | null;
+          rating: number | null;
+          page_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -499,11 +501,39 @@ export type Database = {
           message: string;
           status?: string;
           admin_notes?: string | null;
+          rating?: number | null;
+          page_url?: string | null;
           created_at?: string;
         };
         Update: {
           status?: string;
           admin_notes?: string | null;
+        };
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
         };
         Relationships: [];
       };

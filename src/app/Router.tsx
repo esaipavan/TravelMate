@@ -63,6 +63,12 @@ const AdminAIPage = lazy(() => import('@/features/admin/pages/AIUsagePage'));
 // Share (public)
 const SharePage = lazy(() => import('@/features/trips/pages/SharePage'));
 
+// Trust pages (public)
+const PrivacyPage = lazy(() => import('@/features/trust/pages/PrivacyPage'));
+const TermsPage = lazy(() => import('@/features/trust/pages/TermsPage'));
+const SecurityPage = lazy(() => import('@/features/trust/pages/SecurityPage'));
+const ContactPage = lazy(() => import('@/features/trust/pages/ContactPage'));
+
 // ─── Guards ──────────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -201,6 +207,40 @@ const router = createBrowserRouter([
     element: (
       <Wrap>
         <SharePage />
+      </Wrap>
+    ),
+  },
+
+  // Trust pages (public, no layout wrapper)
+  {
+    path: '/privacy',
+    element: (
+      <Wrap>
+        <PrivacyPage />
+      </Wrap>
+    ),
+  },
+  {
+    path: '/terms',
+    element: (
+      <Wrap>
+        <TermsPage />
+      </Wrap>
+    ),
+  },
+  {
+    path: '/security',
+    element: (
+      <Wrap>
+        <SecurityPage />
+      </Wrap>
+    ),
+  },
+  {
+    path: '/contact',
+    element: (
+      <Wrap>
+        <ContactPage />
       </Wrap>
     ),
   },

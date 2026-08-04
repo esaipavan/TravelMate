@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { FeedbackWidget } from '@/features/feedback/components/FeedbackWidget';
 import { PAGE_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { useRouteFocus } from '@/hooks/useRouteFocus';
 
@@ -55,6 +56,9 @@ export function AppLayout() {
 
       {/* Mobile bottom nav */}
       <MobileNav className="lg:hidden" />
+
+      {/* Feedback widget — floating above mobile nav */}
+      <FeedbackWidget />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Moon, Sun, LogOut, User, Settings } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import { SyncIndicator } from '@/components/pwa/SyncIndicator';
 import { InstallButton } from '@/components/pwa/InstallButton';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -49,16 +50,21 @@ export function Header() {
       <div className="flex items-center gap-2">
         <SyncIndicator />
         <InstallButton />
+        <NotificationBell />
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="User menu">
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full"
+              aria-label="User menu"
+            >
               <Avatar className="h-9 w-9">
                 <AvatarImage src={avatarUrl} alt={displayName ?? 'User avatar'} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                <AvatarFallback className="bg-primary text-xs text-primary-foreground">
                   {displayName ? initials(displayName) : 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -68,7 +74,7 @@ export function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{displayName ?? 'User'}</p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -82,7 +88,9 @@ export function Header() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => { void handleLogout(); }}
+              onClick={() => {
+                void handleLogout();
+              }}
               className="text-destructive focus:text-destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
