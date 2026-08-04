@@ -30,7 +30,7 @@ A production-grade, full-stack travel management platform — fast, secure, and 
 
 ## 🌐 Live Demo
 
-**[👉 Open the live app]([(https://travel-planner-eight-sandy.vercel.app](https://travel-planner-eight-sandy.vercel.app/))**
+**[👉 Open the live app](https://travel-planner-eight-sandy.vercel.app/)**
 
 Sign in with Google or an email/password account. All data is fully isolated per user via Supabase Row Level Security.
 
@@ -89,8 +89,8 @@ Sign in with Google or an email/password account. All data is fully isolated per
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/esaipavan/travel-planner.git
-cd travel-planner
+git clone https://github.com/esaipavan/TravelMate.git
+cd TravelMate
 npm install
 
 # 2. Apply database migrations
