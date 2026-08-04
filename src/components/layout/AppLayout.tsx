@@ -6,6 +6,7 @@ import { Header } from './Header';
 import { MobileNav } from './MobileNav';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { FeedbackWidget } from '@/features/feedback/components/FeedbackWidget';
+import { FloatingAI } from '@/features/ai/components/FloatingAI';
 import { PAGE_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { useRouteFocus } from '@/hooks/useRouteFocus';
 import { track } from '@/lib/analytics';
@@ -65,6 +66,9 @@ export function AppLayout() {
 
       {/* Feedback widget — floating above mobile nav */}
       <FeedbackWidget />
+
+      {/* Floating AI assistant — available on every authenticated page */}
+      <FloatingAI />
     </div>
   );
 }

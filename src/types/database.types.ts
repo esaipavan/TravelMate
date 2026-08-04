@@ -565,6 +565,52 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      ai_conversations: {
+        Row: {
+          id: string;
+          user_id: string;
+          trip_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          trip_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          trip_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ai_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          role?: string;
+          content?: string;
+        };
+        Relationships: [];
+      };
       bug_reports: {
         Row: {
           id: string;

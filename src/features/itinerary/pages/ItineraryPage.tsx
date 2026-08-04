@@ -5,6 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useItineraryData } from '../hooks/useItinerary';
 import { DaySection } from '../components/DaySection';
+import { AIItineraryOptimize } from '../components/AIItineraryOptimize';
+import { useTrip } from '@/features/trips/hooks/useTrips';
 
 function ItinerarySkeleton() {
   return (
@@ -19,11 +21,13 @@ function ItinerarySkeleton() {
 export default function ItineraryPage() {
   const { id: tripId } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useItineraryData(tripId!);
+  const { data: trip } = useTrip(tripId!);
 
   if (isLoading) return <ItinerarySkeleton />;
   if (isError || !data) return <Navigate to="/trips" replace />;
 
   const { tripTitle, tripCurrency, days } = data;
+  const destination = trip?.destination ?? tripTitle;
 
   return (
     <div className="space-y-6">
@@ -33,7 +37,23 @@ export default function ItineraryPage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title="Itinerary" description={tripTitle} />
+        <PageHeader title="Itinerary" description={tripTitle}>
+          {days.length > 0 && (
+            <AIItineraryOptimize
+              tripId={tripId!}
+              destination={destination}
+              days={days.map((d) => ({
+                id: d.id,
+                date: d.date,
+                label: d.title ?? null,
+                activities: d.items.map((i) => ({
+                  title: i.title,
+                  start_time: i.start_time ?? null,
+                })),
+              }))}
+            />
+          )}
+        </PageHeader>
       </div>
 
       {days.length === 0 ? (
@@ -52,12 +72,7 @@ export default function ItineraryPage() {
       ) : (
         <div className="space-y-4">
           {days.map((day) => (
-            <DaySection
-              key={day.id}
-              day={day}
-              tripId={tripId!}
-              currency={tripCurrency}
-            />
+            <DaySection key={day.id} day={day} tripId={tripId!} currency={tripCurrency} />
           ))}
         </div>
       )}

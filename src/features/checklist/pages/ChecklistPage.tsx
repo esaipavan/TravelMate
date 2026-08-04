@@ -18,6 +18,8 @@ import { ProgressCard } from '../components/ProgressCard';
 import { PackingItemCard } from '../components/PackingItemCard';
 import { ItemDialog } from '../components/ItemDialog';
 import { DeleteItemDialog } from '../components/DeleteItemDialog';
+import { AIPackingSuggest } from '../components/AIPackingSuggest';
+import { useTrip } from '@/features/trips/hooks/useTrips';
 import { PACKING_CATEGORIES } from '../types';
 import type { PackingItemRow, FilterStatus } from '../types';
 
@@ -37,6 +39,7 @@ function ChecklistSkeleton() {
 export default function ChecklistPage() {
   const { id: tripId } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useChecklistData(tripId!);
+  const { data: trip } = useTrip(tripId!);
   const { mutate: togglePacked } = useTogglePacked(tripId!);
 
   const [search, setSearch] = useState('');
@@ -111,6 +114,13 @@ export default function ChecklistPage() {
           </Link>
         </Button>
         <PageHeader title="Packing Checklist" description={tripTitle}>
+          <AIPackingSuggest
+            tripId={tripId!}
+            destination={trip?.destination ?? tripTitle}
+            startDate={trip?.start_date}
+            endDate={trip?.end_date}
+            existingItems={items.map((i) => i.name)}
+          />
           <Button size="sm" onClick={() => setAddOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add item

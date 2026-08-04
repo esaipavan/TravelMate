@@ -39,6 +39,7 @@ import { JournalStats } from '../components/JournalStats';
 import { JournalEntryCard } from '../components/JournalEntryCard';
 import { JournalEntryDialog } from '../components/JournalEntryDialog';
 import { JournalDetailDialog } from '../components/JournalDetailDialog';
+import { AIJournalWriter } from '../components/AIJournalWriter';
 import type { JournalEntryRow, JournalFilters, JournalFormValues } from '../types';
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -179,6 +180,13 @@ export default function JournalPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  function handleAIText(text: string) {
+    setEditEntry(null);
+    setDialogOpen(true);
+    // Store AI text so JournalEntryDialog can pre-fill content
+    sessionStorage.setItem('tm_ai_journal_prefill', text);
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────────
   if (isError)
     return (
@@ -209,6 +217,7 @@ export default function JournalPage() {
           </Link>
         </Button>
         <PageHeader title="Travel Journal" description={trip?.title ?? ''}>
+          <AIJournalWriter tripDestination={trip?.destination ?? ''} onUse={handleAIText} />
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
             New Entry
