@@ -14,8 +14,6 @@ import type { BudgetAnalysis } from '../types';
 import { buildMorningBriefPrompt } from '../services/concierge.prompts';
 import { computeTripInsight, computeBudgetAnalysis } from '../services/recommendation.engine';
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -38,6 +36,7 @@ export interface MorningBriefData {
 }
 
 export function useMorningBrief(trip: TripRow | null): MorningBriefData {
+  const TODAY = new Date().toISOString().split('T')[0];
   const destination = trip?.destination ?? '';
   const tripId = trip?.id ?? '';
 
@@ -46,7 +45,7 @@ export function useMorningBrief(trip: TripRow | null): MorningBriefData {
   const { data: expenseData, isLoading: expenseLoading } = useExpenseData(tripId);
   const { data: allReminders = [], isLoading: remindersLoading } = useReminders();
 
-  const insight = useMemo(() => (trip ? computeTripInsight(trip, TODAY) : null), [trip]);
+  const insight = useMemo(() => (trip ? computeTripInsight(trip, TODAY) : null), [trip, TODAY]);
 
   const budgetAnalysis = useMemo(
     () => (trip && insight ? computeBudgetAnalysis(trip, expenseData ?? null, insight) : null),
@@ -57,7 +56,7 @@ export function useMorningBrief(trip: TripRow | null): MorningBriefData {
     if (!itineraryData) return [];
     const todayDay = itineraryData.days.find((d) => d.date === TODAY);
     return todayDay?.items ?? [];
-  }, [itineraryData]);
+  }, [itineraryData, TODAY]);
 
   const todayReminders = useMemo((): ReminderRow[] => {
     if (!trip) return [];
@@ -67,7 +66,7 @@ export function useMorningBrief(trip: TripRow | null): MorningBriefData {
         (r.trip_id === trip.id || r.trip_id === null) &&
         r.reminder_date <= TODAY,
     );
-  }, [allReminders, trip]);
+  }, [allReminders, trip, TODAY]);
 
   const aiEnabled = !!trip && !!weather && !weatherLoading && !itinLoading;
 

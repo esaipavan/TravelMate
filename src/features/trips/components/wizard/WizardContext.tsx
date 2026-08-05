@@ -208,7 +208,7 @@ export function canProceed(step: number, state: WizardState): boolean {
     case 2:
       return state.startDate !== '' && state.endDate !== '' && state.endDate >= state.startDate;
     case 3:
-      return totalBudget(state.budget) > 0;
+      return true;
     case 4:
       return true;
     case 5:

@@ -5,8 +5,6 @@ import { useDestinationData } from '@/features/destination-intel/hooks/useDestin
 import { buildCompanionData } from '../services/companion.service';
 import type { CompanionData } from '../services/companion.service';
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 export function useTripList() {
   return useTrips();
 }
@@ -22,7 +20,13 @@ export function useCompanion(tripId: string | null) {
 
   return useQuery<CompanionData, Error>({
     queryKey: ['companion', tripId, !!intel, expenseCount],
-    queryFn: () => buildCompanionData(trip!, expenseData ?? null, intel ?? null, TODAY),
+    queryFn: () =>
+      buildCompanionData(
+        trip!,
+        expenseData ?? null,
+        intel ?? null,
+        new Date().toISOString().split('T')[0],
+      ),
     enabled: allReady,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

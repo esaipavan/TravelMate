@@ -13,8 +13,6 @@ import { AIJournal } from './AIJournal';
 import { CompanionChat } from './CompanionChat';
 import type { TripRow } from '@/features/trips/types';
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 const TABS: { value: string; label: string; emoji: string }[] = [
   { value: 'brief', label: 'Brief', emoji: '🌅' },
   { value: 'budget', label: 'Budget', emoji: '💰' },
@@ -31,7 +29,8 @@ interface Props {
 }
 
 export function ConciergeDashboard({ trip }: Props) {
-  const insight = useMemo(() => computeTripInsight(trip, TODAY), [trip]);
+  const today = new Date().toISOString().split('T')[0];
+  const insight = useMemo(() => computeTripInsight(trip, today), [trip, today]);
 
   return (
     <div className="space-y-5">
