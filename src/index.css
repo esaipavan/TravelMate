@@ -328,7 +328,9 @@
   }
 
   /* ── Animation Helpers ── */
-  .animate-in {
+  /* NOTE: .animate-in is owned by tailwindcss-animate; custom entrance
+     animations use the tm-* prefix to avoid collisions with Radix UI. */
+  .tm-animate-in {
     animation: tm-fade-in 0.25s ease-out both;
   }
   .animate-slide-up {
@@ -342,7 +344,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-in,
+    .tm-animate-in,
     .animate-slide-up,
     .animate-scale-in,
     .animate-float {
