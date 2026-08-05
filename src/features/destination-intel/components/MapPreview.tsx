@@ -1,84 +1,115 @@
-import { MapPin, Navigation, Layers } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Navigation, Loader2 } from 'lucide-react';
 import type { DestinationOverview } from '../types';
 
 interface Props {
   overview: DestinationOverview;
 }
 
+interface Coords {
+  lat: number;
+  lon: number;
+}
+
+async function geocodeDestination(query: string, signal: AbortSignal): Promise<Coords | null> {
+  try {
+    const params = new URLSearchParams({ q: query, format: 'json', limit: '1' });
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
+      signal,
+    });
+    if (!res.ok) return null;
+    const raw: unknown = await res.json();
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const first = raw[0] as Record<string, unknown>;
+    const lat = parseFloat(String(first['lat'] ?? ''));
+    const lon = parseFloat(String(first['lon'] ?? ''));
+    if (isNaN(lat) || isNaN(lon)) return null;
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+}
+
 export function MapPreview({ overview }: Props) {
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setCoords(null);
+    const query =
+      overview.country && overview.country !== overview.destination
+        ? `${overview.destination}, ${overview.country}`
+        : overview.destination;
+    void geocodeDestination(query, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setCoords(result);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [overview.destination, overview.country]);
+
+  const delta = 0.15;
+  const mapSrc = coords
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lon - delta},${coords.lat - delta},${coords.lon + delta},${coords.lat + delta}&layer=mapnik&marker=${coords.lat},${coords.lon}`
+    : null;
+
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-border/50 bg-card"
+      className="overflow-hidden rounded-2xl border border-border/50 bg-card"
       role="region"
-      aria-label="Map preview"
+      aria-label={`Map of ${overview.destination}`}
     >
-      {/* Topographic grid pattern */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage: [
-            'linear-gradient(to right, currentColor 1px, transparent 1px)',
-            'linear-gradient(to bottom, currentColor 1px, transparent 1px)',
-          ].join(', '),
-          backgroundSize: '36px 36px',
-        }}
-        aria-hidden
-      />
-
-      {/* Decorative concentric rings */}
-      <div
-        className="pointer-events-none absolute inset-0 flex items-center justify-end opacity-[0.04]"
-        aria-hidden
-      >
-        <div className="mr-12 flex items-center justify-center">
-          <div className="absolute h-32 w-32 rounded-full border-2 border-foreground" />
-          <div className="absolute h-56 w-56 rounded-full border border-foreground" />
-          <div className="absolute h-80 w-80 rounded-full border border-foreground" />
-          <div className="absolute h-[420px] w-[420px] rounded-full border border-foreground" />
+      {/* Header strip */}
+      <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
+        <span className="text-lg leading-none" role="img" aria-label={overview.country}>
+          {overview.flagEmoji}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+            <span className="text-sm font-semibold text-foreground">{overview.destination}</span>
+            <span className="text-sm text-muted-foreground">· {overview.country}</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <Navigation className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>{overview.timezoneOffset}</span>
+          </div>
         </div>
+        <span className="text-[10px] text-muted-foreground/50">© OpenStreetMap</span>
       </div>
 
-      <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
-        {/* Icon */}
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-          <MapPin className="h-7 w-7 text-primary" aria-hidden />
-        </div>
-
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl leading-none" role="img" aria-label={overview.country}>
-              {overview.flagEmoji}
-            </span>
-            <h2 className="text-base font-bold">
-              {overview.destination}
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                {overview.country}
-              </span>
-            </h2>
+      {/* Map area */}
+      <div className="relative h-64 bg-muted/30">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2
+              className="h-6 w-6 animate-spin text-muted-foreground"
+              aria-label="Loading map…"
+            />
           </div>
-
-          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Navigation className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="font-mono">Coordinates · {overview.timezoneOffset}</span>
+        )}
+        {!loading && mapSrc && (
+          <iframe
+            src={mapSrc}
+            className="h-full w-full border-0"
+            title={`Map of ${overview.destination}`}
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        )}
+        {!loading && !mapSrc && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+            <MapPin className="h-8 w-8 text-muted-foreground/30" aria-hidden="true" />
+            <p className="text-xs">Map unavailable for this destination</p>
           </div>
-
-          <p className="mt-2 text-xs text-muted-foreground">
-            Interactive map with points of interest, transit overlays, and offline navigation coming
-            in a future update.
-          </p>
-        </div>
-
-        {/* Right side */}
-        <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-          <div className="bg-primary/8 flex items-center gap-1.5 rounded-full border border-primary/25 px-3 py-1">
-            <Layers className="h-3.5 w-3.5 text-primary" aria-hidden />
-            <span className="text-xs font-medium text-primary">Maps coming soon</span>
-          </div>
-          <p className="text-[11px] text-muted-foreground/60">
-            Google Maps · Mapbox · OpenStreetMap
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );

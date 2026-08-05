@@ -143,17 +143,8 @@ export default function AnalyticsPage() {
   }, []);
 
   const handleExportPDF = useCallback(() => {
-    // PDF export is handled by the Export page (/trips/:id/export) for per-trip exports.
-    // For global analytics, we generate a CSV instead.
-    const csv = buildCSV(kpis, currency, monthlyExpenses);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'travel-analytics.csv';
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }, [kpis, currency, monthlyExpenses]);
+    window.print();
+  }, []);
 
   const handleExportCSV = useCallback(() => {
     const csv = buildCSV(kpis, currency, monthlyExpenses);

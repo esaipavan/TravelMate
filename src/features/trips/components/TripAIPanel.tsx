@@ -69,8 +69,10 @@ export function TripAIPanel({ trip }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const fetchedRef = useRef(false);
+  const cancelRef = useRef(false);
 
   function fetchRecs() {
+    cancelRef.current = false;
     setLoading(true);
     setError(false);
     setRecs(null);
@@ -91,7 +93,7 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
       },
     })
       .then((res) => {
-        /* Try to extract JSON array from the response */
+        if (cancelRef.current) return;
         const raw = res.content.trim();
         const match = raw.match(/\[[\s\S]*\]/);
         if (!match) throw new Error('No JSON array in response');
@@ -99,15 +101,21 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
         if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
         setRecs(parsed.slice(0, 3));
       })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelRef.current) setError(true);
+      })
+      .finally(() => {
+        if (!cancelRef.current) setLoading(false);
+      });
   }
 
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
     fetchRecs();
-    // fetchRecs is stable — defined outside useEffect to allow retry button
+    return () => {
+      cancelRef.current = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip.id]);
 

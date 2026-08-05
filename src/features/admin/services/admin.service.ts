@@ -175,6 +175,64 @@ export async function updateUserRole(userId: string, role: 'user' | 'admin'): Pr
   if (error) throw error;
 }
 
+// ── Feature flags ────────────────────────────────────────────────
+
+export interface FeatureFlag {
+  id: string;
+  name: string;
+  description: string | null;
+  is_enabled: boolean;
+  rollout_percentage: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getFeatureFlags(): Promise<FeatureFlag[]> {
+  const { data, error } = await supabase
+    .from('feature_flags')
+    .select('*')
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as FeatureFlag[];
+}
+
+export async function updateFeatureFlag(
+  id: string,
+  patch: { is_enabled?: boolean; rollout_percentage?: number },
+): Promise<void> {
+  const { error } = await supabase
+    .from('feature_flags')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ── AI usage logs ─────────────────────────────────────────────────
+
+export interface AIUsageLog {
+  id: string;
+  user_id: string | null;
+  provider: string;
+  model: string;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  latency_ms: number | null;
+  success: boolean;
+  error_message: string | null;
+  created_at: string;
+}
+
+export async function getAIUsageLogs(limit = 200): Promise<AIUsageLog[]> {
+  const { data, error } = await supabase
+    .from('ai_usage_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as AIUsageLog[];
+}
+
 // ── Feature adoption ─────────────────────────────────────────────────────────
 
 export interface FeatureAdoption {

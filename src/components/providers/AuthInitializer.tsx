@@ -4,19 +4,11 @@ import { useAuthStore } from '@/store/auth.store';
 import { UserRole } from '@/types';
 
 async function fetchUserRole(userId: string): Promise<UserRole> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('user_role')
-    .eq('id', userId)
-    .single();
+  const { data } = await supabase.from('profiles').select('user_role').eq('id', userId).single();
 
   const raw = (data as { user_role: string } | null)?.user_role;
 
-  if (
-    raw === UserRole.ADMIN ||
-    raw === UserRole.SUPER_ADMIN ||
-    raw === UserRole.USER
-  ) {
+  if (raw === UserRole.ADMIN || raw === UserRole.SUPER_ADMIN || raw === UserRole.USER) {
     return raw;
   }
 
@@ -64,7 +56,9 @@ export function AuthInitializer() {
       .catch((err) => {
         // Log but do NOT call reset() — a transient network error during token
         // refresh must not clear a valid session that onAuthStateChange already set.
-        console.warn('[AuthInitializer] getSession error:', err);
+        if (import.meta.env.DEV) {
+          console.warn('[AuthInitializer] getSession error:', err);
+        }
       })
       .finally(() => {
         setLoading(false);
@@ -73,7 +67,7 @@ export function AuthInitializer() {
     return () => {
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;

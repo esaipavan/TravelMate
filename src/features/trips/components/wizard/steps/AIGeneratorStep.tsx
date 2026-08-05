@@ -23,7 +23,7 @@ function buildFallback(
     language: `Learn a few basic phrases: Hello, Thank you, Please, Excuse me, How much?, and Do you speak English? Locals always appreciate the effort.`,
     emergency: `Save the local emergency number (police, ambulance, fire) and the nearest embassy or consulate contact in your phone before you fly. Get travel insurance that covers medical evacuation.`,
     attractions: `${destination} is home to world-class attractions. Research the top-rated sites, book timed entry tickets for popular venues in advance, and leave room for spontaneous discoveries.`,
-    food: `Sample local street food safely at busy stalls. Ask your accommodation for neighbourhood restaurant recommendations to avoid tourist traps. Try at least one regional specialty per day.`,
+    food: `Explore local street food at busy stalls where high turnover signals freshness. Ask your accommodation for neighbourhood restaurant recommendations to avoid tourist traps. Try at least one regional specialty per day.`,
     transport: `Use official taxis, ride-hailing apps, or public transit. Pre-book airport transfers to avoid overcharging on arrival. Download an offline map before you land.`,
     tips: `Travel light. Respect local customs and dress codes. Keep digital and physical copies of key documents. Stay flexible — the best experiences are often unplanned.`,
     dailyBudget: `Budget for accommodation, meals, local transport, and one activity per day. Set aside 10–15% as a contingency fund for unexpected expenses or spontaneous opportunities.`,

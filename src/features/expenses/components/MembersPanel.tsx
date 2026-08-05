@@ -54,8 +54,16 @@ export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) 
   }
 
   function handleCopyLink() {
-    void navigator.clipboard.writeText(window.location.href);
-    toast.info('Link copied — invite links available in Phase 18');
+    void navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        toast.success('Link copied!', { description: 'Share it so others can view this trip.' });
+      })
+      .catch(() => {
+        toast.error('Could not copy link', {
+          description: 'Try copying the URL from the address bar.',
+        });
+      });
   }
 
   return (
@@ -212,8 +220,7 @@ export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) 
         <div>
           <h3 className="text-sm font-semibold text-foreground">Invite options</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Real-time collaboration arrives in Phase 18 — members will be able to view and add
-            expenses together.
+            Share a link to this trip or send an email invite so travel companions can join.
           </p>
         </div>
         <div className="flex gap-2">
@@ -225,7 +232,13 @@ export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) 
             variant="outline"
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => toast.info('Email invites available in Phase 18')}
+            onClick={() => {
+              const subject = encodeURIComponent('Join my trip!');
+              const body = encodeURIComponent(
+                `Hi!\n\nI'd like to share this trip with you.\n\nView it here: ${window.location.href}`,
+              );
+              window.location.href = `mailto:?subject=${subject}&body=${body}`;
+            }}
           >
             <Mail className="h-4 w-4" aria-hidden="true" />
             Email invite

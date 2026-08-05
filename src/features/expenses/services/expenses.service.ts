@@ -68,12 +68,28 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+const RECEIPT_ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+];
+const RECEIPT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
 export async function uploadReceipt(userId: string, tripId: string, file: File): Promise<string> {
+  if (!RECEIPT_ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('Unsupported file type. Please upload an image (JPEG, PNG, WebP) or PDF.');
+  }
+  if (file.size > RECEIPT_MAX_BYTES) {
+    throw new Error('File is too large. Maximum size is 10 MB.');
+  }
   const ext = file.name.split('.').pop() ?? 'jpg';
   const path = `${userId}/${tripId}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('receipts').upload(path, file, {
     cacheControl: '3600',
     upsert: false,
+    contentType: file.type,
   });
   if (error) throw new Error(error.message);
   return path;

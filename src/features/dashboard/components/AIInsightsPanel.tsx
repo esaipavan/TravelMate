@@ -11,12 +11,14 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
 import { useCurrentTrip, useDashboardStats, useUpcomingTrips } from '../hooks/useDashboard';
 import { useWeather } from '@/features/weather/hooks/useWeather';
+import { chatWithAI } from '@/services/ai/ai.service';
 import type { LucideIcon } from 'lucide-react';
 
 interface Insight {
@@ -40,7 +42,7 @@ const ICON_BG: Record<Insight['type'], string> = {
   tip: 'bg-violet-500/10',
 };
 
-const TIPS = [
+const FALLBACK_TIPS = [
   'Carry a reusable water bottle to stay hydrated on the go.',
   'Use offline maps in case of poor connectivity in remote areas.',
   'Keep digital copies of your passport and important documents.',
@@ -50,6 +52,23 @@ const TIPS = [
   'Use public transport for a more immersive local experience.',
 ];
 
+function useTravelTip(destination: string | null) {
+  const today = new Date().toDateString();
+  return useQuery({
+    queryKey: ['travel-tip', destination ?? 'general', today],
+    queryFn: async () => {
+      const prompt = destination
+        ? `Give a single practical travel tip for someone visiting ${destination}. One sentence only, no preamble.`
+        : `Give a single practical travel tip for international travellers. One sentence only, no preamble.`;
+      const res = await chatWithAI([{ role: 'user', content: prompt }]);
+      const text = res.content.trim().replace(/^["']|["']$/g, '');
+      return text.length > 10 ? text : null;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: 1,
+  });
+}
+
 export function AIInsightsPanel() {
   const reduced = useReducedMotion();
   const { data: currentTrip } = useCurrentTrip();
@@ -58,6 +77,7 @@ export function AIInsightsPanel() {
 
   const displayTrip = currentTrip ?? upcomingTrips[0] ?? null;
   const { data: weather } = useWeather(displayTrip?.destination ?? '');
+  const { data: aiTip } = useTravelTip(displayTrip?.destination ?? null);
 
   const insights: Insight[] = [];
 
@@ -123,12 +143,13 @@ export function AIInsightsPanel() {
     }
   }
 
-  // 4. Rotating tip
+  // 4. AI-generated travel tip (falls back to rotating static tip)
+  const tipBody = aiTip ?? FALLBACK_TIPS[new Date().getDay() % FALLBACK_TIPS.length];
   insights.push({
     type: 'tip',
     icon: Lightbulb,
     title: 'Travel Tip',
-    body: TIPS[new Date().getDay() % TIPS.length],
+    body: tipBody,
   });
 
   const visible = insights.slice(0, 4);

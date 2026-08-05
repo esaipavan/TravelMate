@@ -25,8 +25,9 @@ export async function signUp(email: string, password: string, fullName: string):
 }
 
 export async function signInWithGoogle(returnTo = '/dashboard'): Promise<void> {
-  if (returnTo !== '/dashboard') {
-    sessionStorage.setItem(RETURN_TO_KEY, returnTo);
+  const safePath = returnTo.startsWith('/') ? returnTo : '/dashboard';
+  if (safePath !== '/dashboard') {
+    sessionStorage.setItem(RETURN_TO_KEY, safePath);
   }
 
   const { error } = await supabase.auth.signInWithOAuth({
@@ -43,9 +44,9 @@ export async function signInWithGoogle(returnTo = '/dashboard'): Promise<void> {
 }
 
 export function getOAuthReturnTo(): string {
-  const path = sessionStorage.getItem(RETURN_TO_KEY) ?? '/dashboard';
+  const stored = sessionStorage.getItem(RETURN_TO_KEY) ?? '/dashboard';
   sessionStorage.removeItem(RETURN_TO_KEY);
-  return path;
+  return stored.startsWith('/') ? stored : '/dashboard';
 }
 
 export async function signOut(): Promise<void> {

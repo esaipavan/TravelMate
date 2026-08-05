@@ -67,7 +67,7 @@ export default function UserManagementPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>

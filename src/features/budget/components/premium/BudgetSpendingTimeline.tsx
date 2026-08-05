@@ -96,8 +96,7 @@ export function BudgetSpendingTimeline({
         currency,
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenses, tripStartDate, tripEndDate, dailyBudget]);
+  }, [expenses, tripStartDate, tripEndDate, dailyBudget, currency]);
 
   const isEmpty = data.length === 0 || data.every((d) => d.amount === 0);
   const displayData = data.length > 20 ? data.slice(-20) : data;

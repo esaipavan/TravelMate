@@ -103,9 +103,11 @@ export function suggestBudget(
   avgDailyUSD: number,
   duration: number,
   currencyCode: string,
+  liveRate?: number,
 ): Record<string, number> {
   const meta = getCurrencyMeta(currencyCode);
-  const total = avgDailyUSD * duration * meta.usdRate;
+  const rate = liveRate ?? meta.usdRate;
+  const total = avgDailyUSD * duration * rate;
   return Object.fromEntries(
     Object.entries(ALLOC).map(([k, pct]) => [
       k,

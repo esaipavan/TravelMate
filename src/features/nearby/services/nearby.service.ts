@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
@@ -143,7 +142,7 @@ async function fetchGeoapifyPlaces(
   });
 
   if (import.meta.env.DEV) {
-    console.debug(
+    console.warn(
       `[nearby] Geoapify request (radius ${radiusM / 1000} km):`,
       `${GEOAPIFY}?${params.toString()}`,
     );
@@ -157,7 +156,7 @@ async function fetchGeoapifyPlaces(
   const data = (await res.json()) as GeoapifyResponse;
 
   if (import.meta.env.DEV) {
-    console.debug(
+    console.warn(
       `[nearby] API response (radius ${radiusM / 1000} km): ${data.features.length} features`,
       data,
     );
@@ -194,11 +193,11 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
     if (import.meta.env.DEV) {
       const nextRadius = RETRY_RADII[RETRY_RADII.indexOf(radiusM) + 1];
       if (nextRadius) {
-        console.debug(
+        console.warn(
           `[nearby] No results at ${radiusM / 1000} km — retrying with ${nextRadius / 1000} km…`,
         );
       } else {
-        console.debug(`[nearby] No results at ${radiusM / 1000} km — all radii exhausted.`);
+        console.warn(`[nearby] No results at ${radiusM / 1000} km — all radii exhausted.`);
       }
     }
   }
@@ -214,7 +213,7 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
     const category = resolveCategory(p.categories ?? []);
 
     if (import.meta.env.DEV) {
-      console.debug(
+      console.warn(
         `[nearby] feature "${name}" | categories:`,
         p.categories,
         '→ resolved:',

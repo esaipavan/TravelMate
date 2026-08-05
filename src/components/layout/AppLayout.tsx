@@ -11,11 +11,67 @@ import { PAGE_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { useRouteFocus } from '@/hooks/useRouteFocus';
 import { track } from '@/lib/analytics';
 
+const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/trips': 'My Trips',
+  '/trips/new': 'New Trip',
+  '/budget': 'Budget',
+  '/expenses': 'Expenses',
+  '/itinerary': 'Itinerary',
+  '/checklist': 'Packing Checklist',
+  '/journal': 'Travel Journal',
+  '/weather': 'Weather',
+  '/currency': 'Currency',
+  '/nearby': 'Nearby Places',
+  '/destinations': 'Destinations',
+  '/documents': 'Documents',
+  '/reminders': 'Reminders',
+  '/assistant': 'AI Assistant',
+  '/analytics': 'Analytics',
+  '/export': 'Export',
+  '/memories': 'Memories',
+  '/profile': 'Profile',
+  '/settings': 'Settings',
+  '/admin': 'Admin',
+  '/admin/users': 'User Management',
+  '/admin/analytics': 'Analytics',
+  '/admin/feedback': 'Feedback',
+  '/admin/bugs': 'Bug Reports',
+  '/admin/flags': 'Feature Flags',
+  '/admin/founder': 'Founder Dashboard',
+  '/admin/health': 'API Health',
+  '/admin/ai': 'AI Usage',
+};
+
+function getRouteTitle(pathname: string): string {
+  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
+  // /trips/:id/budget → Budget (Trip)
+  if (/^\/trips\/[^/]+\/budget/.test(pathname)) return 'Budget';
+  if (/^\/trips\/[^/]+\/expenses/.test(pathname)) return 'Expenses';
+  if (/^\/trips\/[^/]+\/itinerary/.test(pathname)) return 'Itinerary';
+  if (/^\/trips\/[^/]+\/checklist/.test(pathname)) return 'Packing Checklist';
+  if (/^\/trips\/[^/]+\/weather/.test(pathname)) return 'Weather';
+  if (/^\/trips\/[^/]+\/currency/.test(pathname)) return 'Currency';
+  if (/^\/trips\/[^/]+\/nearby/.test(pathname)) return 'Nearby Places';
+  if (/^\/trips\/[^/]+\/destination-intel/.test(pathname)) return 'Destination Intel';
+  if (/^\/trips\/[^/]+\/documents/.test(pathname)) return 'Documents';
+  if (/^\/trips\/[^/]+\/reminders/.test(pathname)) return 'Reminders';
+  if (/^\/trips\/[^/]+\/journal/.test(pathname)) return 'Travel Journal';
+  if (/^\/trips\/[^/]+\/assistant/.test(pathname)) return 'AI Assistant';
+  if (/^\/trips\/[^/]+\/analytics/.test(pathname)) return 'Analytics';
+  if (/^\/trips\/[^/]+\/export/.test(pathname)) return 'Export';
+  if (/^\/trips\/[^/]+\/memories/.test(pathname)) return 'Memories';
+  if (/^\/trips\/[^/]+/.test(pathname)) return 'Trip Details';
+  return 'TravelMate';
+}
+
 export function AppLayout() {
   const location = useLocation();
   const reduced = useReducedMotion();
 
   useEffect(() => {
+    const title = getRouteTitle(location.pathname);
+    document.title = `${title} | TravelMate`;
     track('page_viewed', { page: location.pathname });
   }, [location.pathname]);
 

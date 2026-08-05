@@ -30,6 +30,9 @@ import {
   Shield,
   Zap,
   Globe2,
+  Lock,
+  Eye,
+  Server,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { PageLoader } from '@/components/shared/LoadingSpinner';
@@ -196,6 +199,8 @@ const FAQ_ITEMS = [
     a: 'Open TravelMate in Chrome or Safari on your phone, then tap the browser menu and select "Add to Home Screen". The app installs instantly with a native-app experience and offline support.',
   },
 ] as const;
+
+// Testimonials removed — will be replaced with real user quotes after launch
 
 // Globe city coords [lat, lon]
 const CITIES: [number, number][] = [
@@ -529,7 +534,13 @@ function MagneticButton({
 
 // ─── LandingNav ───────────────────────────────────────────────────────────────
 
-function LandingNav() {
+function LandingNav({
+  showBanner: _showBanner,
+  onDismissBanner: _onDismissBanner,
+}: {
+  showBanner: boolean;
+  onDismissBanner: () => void;
+}) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -543,7 +554,7 @@ function LandingNav() {
       className={[
         'fixed inset-x-0 top-0 z-50 transition-all duration-500',
         scrolled
-          ? 'border-b border-white/[0.07] bg-[#06060F]/75 backdrop-blur-2xl'
+          ? 'border-b border-white/[0.07] bg-[#06060F]/80 backdrop-blur-2xl'
           : 'bg-transparent',
       ].join(' ')}
     >
@@ -1242,6 +1253,369 @@ function ProductShowcase({ reduced }: { reduced: boolean }) {
   );
 }
 
+// ─── ComparisonSection ────────────────────────────────────────────────────────
+// Honest side-by-side showing what TravelMate does that competitors don't.
+
+const COMPARISON_ROWS = [
+  {
+    feature: 'AI that knows your trip context',
+    tm: true,
+    tripit: false,
+    wanderlog: false,
+    google: false,
+  },
+  {
+    feature: 'Live weather in destination intel',
+    tm: true,
+    tripit: false,
+    wanderlog: true,
+    google: true,
+  },
+  {
+    feature: 'Real-time expense tracking + splits',
+    tm: true,
+    tripit: true,
+    wanderlog: true,
+    google: false,
+  },
+  {
+    feature: 'Offline PWA — works without signal',
+    tm: true,
+    tripit: false,
+    wanderlog: false,
+    google: false,
+  },
+  {
+    feature: 'Visa & safety intel per destination',
+    tm: true,
+    tripit: false,
+    wanderlog: false,
+    google: false,
+  },
+  {
+    feature: 'Itinerary builder with day planning',
+    tm: true,
+    tripit: true,
+    wanderlog: true,
+    google: false,
+  },
+  {
+    feature: 'Free with no feature limits',
+    tm: true,
+    tripit: false,
+    wanderlog: false,
+    google: true,
+  },
+  {
+    feature: 'Budget suggestions with live rates',
+    tm: true,
+    tripit: false,
+    wanderlog: false,
+    google: false,
+  },
+] as const;
+
+function ComparisonSection({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  const cols = [
+    { label: 'TravelMate', highlight: true },
+    { label: 'TripIt', highlight: false },
+    { label: 'Wanderlog', highlight: false },
+    { label: 'Google', highlight: false },
+  ] as const;
+
+  return (
+    <section className="px-5 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="mx-auto max-w-5xl">
+        <div ref={ref} className="mb-14 text-center">
+          <motion.div
+            initial={reduced ? {} : { opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#818cf8' }}
+            >
+              How we compare
+            </span>
+            <h2
+              className="text-[38px] font-black tracking-[-0.03em] text-white"
+              style={{ textWrap: 'balance' } as CSSProperties}
+            >
+              Built for how people actually travel
+            </h2>
+            <p
+              className="mx-auto mt-4 max-w-xl text-base leading-relaxed"
+              style={{ color: 'rgba(255,255,255,0.5)' }}
+            >
+              Other apps were built for a pre-AI world. TravelMate is built around what matters now:
+              context-aware AI, live data, and offline access.
+            </p>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={reduced ? {} : { opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="overflow-x-auto rounded-2xl"
+          style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <table className="w-full min-w-[560px] border-collapse">
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <th
+                  className="py-4 pl-6 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider"
+                  style={{ color: 'rgba(255,255,255,0.3)', width: '42%' }}
+                >
+                  Feature
+                </th>
+                {cols.map((c) => (
+                  <th
+                    key={c.label}
+                    className="py-4 text-center text-[12px] font-bold"
+                    style={{
+                      color: c.highlight ? '#818cf8' : 'rgba(255,255,255,0.35)',
+                      background: c.highlight ? 'rgba(99,102,241,0.07)' : 'transparent',
+                      width: '14.5%',
+                    }}
+                  >
+                    {c.highlight && (
+                      <span
+                        className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400 align-middle"
+                        aria-hidden
+                      />
+                    )}
+                    {c.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARISON_ROWS.map((row, i) => (
+                <tr
+                  key={row.feature}
+                  style={{
+                    borderBottom:
+                      i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  }}
+                >
+                  <td
+                    className="py-3.5 pl-6 pr-4 text-[13px]"
+                    style={{ color: 'rgba(255,255,255,0.6)' }}
+                  >
+                    {row.feature}
+                  </td>
+                  {([row.tm, row.tripit, row.wanderlog, row.google] as const).map((val, ci) => (
+                    <td
+                      key={ci}
+                      className="py-3.5 text-center text-[16px]"
+                      style={{ background: ci === 0 ? 'rgba(99,102,241,0.05)' : 'transparent' }}
+                    >
+                      {val ? (
+                        <span style={{ color: '#34d399' }} aria-label="Yes">
+                          ✓
+                        </span>
+                      ) : (
+                        <span style={{ color: 'rgba(255,255,255,0.15)' }} aria-label="No">
+                          –
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </motion.div>
+
+        <p className="mt-5 text-center text-[11px]" style={{ color: 'rgba(255,255,255,0.22)' }}>
+          Comparison based on publicly available feature documentation as of 2026. Subject to
+          change.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ─── AISpotlightSection ───────────────────────────────────────────────────────
+
+const AI_MODULES = [
+  {
+    icon: '🌅',
+    label: 'Morning Brief',
+    desc: 'Flight time, weather, and top priority for the day.',
+  },
+  { icon: '💰', label: 'Budget Advisor', desc: 'Spend pacing alerts before you go over.' },
+  { icon: '🗺️', label: 'Itinerary Optimizer', desc: 'AI reorders days for minimum travel time.' },
+  {
+    icon: '🎒',
+    label: 'Packing Assistant',
+    desc: 'Climate-aware list built around your destination.',
+  },
+  { icon: '🍜', label: 'Food Guide', desc: 'Neighbourhood-specific restaurant recommendations.' },
+  { icon: '🛡️', label: 'Safety Advisor', desc: 'Local alerts and real-time safety briefings.' },
+  { icon: '✍️', label: 'AI Journal', desc: 'One prompt generates a vivid travel narrative.' },
+  { icon: '💬', label: 'Live Chat', desc: 'Ask anything. Zero API keys exposed in the browser.' },
+] as const;
+
+function AISpotlightSection({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <section className="px-5 py-24">
+      <div className="mx-auto max-w-6xl">
+        <div ref={ref} className="mb-14 text-center">
+          <motion.div
+            initial={reduced ? {} : { opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#818cf8' }}
+            >
+              AI Concierge
+            </span>
+            <h2 className="text-[38px] font-black tracking-[-0.03em] text-white">
+              8 AI modules. One app.
+            </h2>
+            <p
+              className="mx-auto mt-3 max-w-lg text-[15px]"
+              style={{ color: 'rgba(248,250,252,0.4)' }}
+            >
+              Every module runs through a secure Edge Function. Zero API keys in the browser, ever.
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {AI_MODULES.map((m, i) => (
+            <motion.div
+              key={m.label}
+              initial={reduced ? {} : { opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: i * 0.055, type: 'spring', damping: 22 }}
+              className="rounded-2xl p-4"
+              style={{
+                background: 'rgba(99,102,241,0.04)',
+                border: '1px solid rgba(99,102,241,0.12)',
+              }}
+            >
+              <div className="mb-2 text-[22px]" aria-hidden="true">
+                {m.icon}
+              </div>
+              <div className="mb-1 text-[13px] font-semibold text-white">{m.label}</div>
+              <div className="text-[12px] leading-relaxed text-white/40">{m.desc}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div
+          initial={reduced ? {} : { opacity: 0, y: 12 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.5, type: 'spring', damping: 22 }}
+          className="mt-10 flex justify-center"
+        >
+          <div
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[12px] font-medium"
+            style={{
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+              color: 'rgba(110,231,183,0.8)',
+            }}
+          >
+            <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+            API keys live exclusively in Supabase Edge Function secrets — never in the browser
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FreeForeverSection ───────────────────────────────────────────────────────
+
+function FreeForeverSection({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <section className="px-5 py-20">
+      <div className="mx-auto max-w-4xl">
+        <motion.div
+          ref={ref}
+          initial={reduced ? {} : { opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ type: 'spring', damping: 20 }}
+          className="relative overflow-hidden rounded-3xl px-10 py-16 text-center"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(99,102,241,0.06) 100%)',
+            border: '1px solid rgba(255,255,255,0.07)',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 50% at 50% 110%, rgba(16,185,129,0.07), transparent)',
+            }}
+          />
+          <div className="relative">
+            <div className="mb-4 text-[36px]" aria-hidden="true">
+              💚
+            </div>
+            <span
+              className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: '#6ee7b7' }}
+            >
+              Why free?
+            </span>
+            <h2 className="mb-4 text-[36px] font-black tracking-[-0.03em] text-white">
+              Free forever. No hidden tiers.
+            </h2>
+            <p
+              className="mx-auto mb-8 max-w-lg text-[16px] leading-relaxed"
+              style={{ color: 'rgba(248,250,252,0.5)' }}
+            >
+              TravelMate is open source and built without a commercial model. Every feature — AI
+              Concierge, real-time collaboration, expense tracking — is free to every user, always.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {[
+                'All 13+ modules included',
+                'AI Concierge unlimited',
+                'Real-time collaboration',
+                'No ads, no upsells',
+                'Self-hostable',
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium"
+                  style={{
+                    background: 'rgba(16,185,129,0.08)',
+                    border: '1px solid rgba(16,185,129,0.18)',
+                    color: 'rgba(110,231,183,0.7)',
+                  }}
+                >
+                  <Check className="h-3 w-3" aria-hidden="true" />
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 
 function FAQSection({ reduced }: { reduced: boolean }) {
@@ -1507,6 +1881,239 @@ function SiteFooter() {
   );
 }
 
+// ─── SecuritySection ──────────────────────────────────────────────────────────
+
+function SecuritySection({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+
+  const pillars = [
+    {
+      icon: Lock,
+      title: 'End-to-end encryption',
+      body: 'All data in transit is encrypted with TLS 1.3. Sensitive fields are encrypted at rest in our Supabase database.',
+    },
+    {
+      icon: Eye,
+      title: 'Zero third-party AI access',
+      body: 'Your trip data never trains AI models. Our AI inference runs through isolated Edge Functions — providers see only your question, never your profile.',
+    },
+    {
+      icon: Server,
+      title: 'Row-level security',
+      body: 'Every database query is user-scoped by Postgres RLS. We cannot query your data even if we wanted to.',
+    },
+    {
+      icon: Shield,
+      title: 'SOC 2 infrastructure',
+      body: 'Hosted on Supabase (SOC 2 Type II) and Vercel (SOC 2 Type II). Your data never leaves enterprise-grade infrastructure.',
+    },
+    {
+      icon: Globe2,
+      title: 'GDPR & privacy by default',
+      body: 'Export or delete your account and all data at any time. No dark patterns. No selling your data. Ever.',
+    },
+    {
+      icon: Zap,
+      title: 'Open security posture',
+      body: 'Content Security Policy headers, HSTS preloading, and no API keys in the browser. Responsible disclosure welcome.',
+    },
+  ];
+
+  return (
+    <section
+      ref={ref}
+      className="px-5 py-24"
+      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          className="mb-14 text-center"
+          initial={reduced ? {} : { opacity: 0, y: 24 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+        >
+          <div
+            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
+            style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399' }}
+          >
+            <Lock className="h-3 w-3" />
+            Security
+          </div>
+          <h2
+            className="mb-4 text-4xl font-extrabold tracking-tight text-white"
+            style={{ textWrap: 'balance' } as CSSProperties}
+          >
+            Your data. Your rules.
+          </h2>
+          <p
+            className="mx-auto max-w-2xl text-lg leading-relaxed"
+            style={{ color: 'rgba(255,255,255,0.55)' }}
+          >
+            TravelMate is built from the ground up with privacy as a feature, not an afterthought.
+          </p>
+        </motion.div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {pillars.map((p, i) => (
+            <motion.div
+              key={p.title}
+              initial={reduced ? {} : { opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.4, delay: i * 0.07 }}
+              className="group rounded-2xl p-6"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+              }}
+            >
+              <div
+                className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ background: 'rgba(16,185,129,0.12)' }}
+              >
+                <p.icon className="h-5 w-5" style={{ color: '#34d399' }} />
+              </div>
+              <h3 className="mb-2 font-semibold text-white">{p.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {p.body}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FeatureDeepDive ──────────────────────────────────────────────────────────
+// Shows three core capabilities with enough detail to prove they're real.
+
+const DEEP_FEATURES = [
+  {
+    tag: 'AI Assistant',
+    tagColor: '#818cf8',
+    tagBg: 'rgba(99,102,241,0.12)',
+    headline: 'Your AI knows your entire trip',
+    body: "Ask anything and TravelMate's AI already has context: your destination, dates, budget, live weather, expense history, and itinerary. No copy-pasting. No re-explaining.",
+    items: [
+      'Budget pacing alerts before you overspend',
+      "Packing lists tuned to your destination's weather",
+      'Nearest hospital, embassy, or pharmacy — instantly',
+      'Suggests itinerary changes when weather shifts',
+    ],
+    accent: '#6366f1',
+  },
+  {
+    tag: 'Destination Intel',
+    tagColor: '#34d399',
+    tagBg: 'rgba(16,185,129,0.12)',
+    headline: 'Every destination, at depth',
+    body: 'Real-time weather from Open-Meteo. Safety ratings. Visa requirements. Daily cost breakdowns. Must-try food. All in one page — not scattered across 5 apps.',
+    items: [
+      'Live 7-day forecast for any city on Earth',
+      'Verified embassy & hospital contacts',
+      'Street-level cost guide (budget to luxury)',
+      'AI-generated local tips for any destination',
+    ],
+    accent: '#10b981',
+  },
+  {
+    tag: 'Expense Tracking',
+    tagColor: '#fbbf24',
+    tagBg: 'rgba(245,158,11,0.12)',
+    headline: 'Group splits that actually work',
+    body: 'Log expenses in any currency. TravelMate converts at live rates, tracks who paid what, and shows the single transfer that settles the group. No spreadsheet needed.',
+    items: [
+      'Multi-currency with live Frankfurter rates',
+      'Optimal settlement algorithm (minimum transfers)',
+      'Per-category analytics with trend charts',
+      'Offline-first — works without internet',
+    ],
+    accent: '#f59e0b',
+  },
+] as const;
+
+function FeatureDeepDive({ reduced }: { reduced: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+
+  return (
+    <section
+      ref={ref}
+      className="px-5 py-24"
+      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <motion.div
+          className="mb-16 text-center"
+          initial={reduced ? {} : { opacity: 0, y: 24 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+        >
+          <span
+            className="mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em]"
+            style={{ color: '#818cf8' }}
+          >
+            What sets us apart
+          </span>
+          <h2
+            className="text-[38px] font-black tracking-[-0.03em] text-white"
+            style={{ textWrap: 'balance' } as CSSProperties}
+          >
+            Three things we do better
+          </h2>
+        </motion.div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {DEEP_FEATURES.map((f, i) => (
+            <motion.div
+              key={f.tag}
+              initial={reduced ? {} : { opacity: 0, y: 24 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.45, delay: i * 0.1 }}
+              className="flex flex-col rounded-2xl p-7"
+              style={{
+                background: 'rgba(255,255,255,0.025)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+                style={{ background: f.tagBg, color: f.tagColor }}
+              >
+                {f.tag}
+              </div>
+              <h3 className="mb-3 text-[19px] font-bold leading-snug text-white">{f.headline}</h3>
+              <p
+                className="mb-6 text-[13px] leading-relaxed"
+                style={{ color: 'rgba(255,255,255,0.5)' }}
+              >
+                {f.body}
+              </p>
+              <ul className="mt-auto space-y-2.5">
+                {f.items.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2.5 text-[13px]"
+                    style={{ color: 'rgba(255,255,255,0.65)' }}
+                  >
+                    <Check
+                      className="mt-0.5 h-4 w-4 shrink-0"
+                      style={{ color: f.accent }}
+                      aria-hidden
+                    />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── LandingPage ──────────────────────────────────────────────────────────────
 
 function LandingPage({ reduced }: { reduced: boolean }) {
@@ -1523,13 +2130,14 @@ function LandingPage({ reduced }: { reduced: boolean }) {
       </a>
 
       <CursorGlow />
-      <LandingNav />
+      <LandingNav showBanner={false} onDismissBanner={() => undefined} />
 
       {/* ════════════════════════════════ HERO ════════════════════════════════ */}
       <section
         id="main-content"
         aria-label="Hero"
-        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pb-8 pt-20"
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pb-8"
+        style={{ paddingTop: '5rem' }}
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div
@@ -1580,28 +2188,13 @@ function LandingPage({ reduced }: { reduced: boolean }) {
             </motion.div>
 
             <h1 className="mb-6 text-5xl font-black leading-[1.06] tracking-[-0.04em] lg:text-[68px]">
-              {['Travel', 'smarter'].map((w, i) => (
-                <motion.span
-                  key={w}
-                  custom={i + 1}
-                  variants={reduced ? {} : blurUp}
-                  className="mr-4 inline-block"
-                >
-                  {w}
-                </motion.span>
-              ))}
-              <br />
-              <motion.span
-                custom={3}
-                variants={reduced ? {} : blurUp}
-                className="mr-3 inline-block text-white/40"
-              >
-                with
+              <motion.span custom={1} variants={reduced ? {} : blurUp} className="block text-white">
+                Your whole trip.
               </motion.span>
               <motion.span
-                custom={4}
+                custom={2}
                 variants={reduced ? {} : blurUp}
-                className="inline-block"
+                className="block"
                 style={{
                   background: 'linear-gradient(135deg,#818cf8,#c084fc,#f472b6)',
                   WebkitBackgroundClip: 'text',
@@ -1609,22 +2202,22 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                   backgroundClip: 'text',
                 }}
               >
-                AI at your side
+                One intelligent app.
               </motion.span>
             </h1>
 
             <motion.p
-              custom={5}
+              custom={3}
               variants={reduced ? {} : blurUp}
               className="mb-9 max-w-[480px] text-[17px] leading-relaxed"
               style={{ color: 'rgba(248,250,252,0.48)' }}
             >
-              Plan trips, track expenses, manage documents, and get AI-powered insights — all in one
-              beautifully crafted app. Free forever.
+              Plan every day, track every dollar, and get AI guidance at every step — from departure
+              to return. Free forever.
             </motion.p>
 
             <motion.div
-              custom={6}
+              custom={4}
               variants={reduced ? {} : blurUp}
               className="mb-9 flex flex-wrap gap-3"
             >
@@ -1641,50 +2234,50 @@ function LandingPage({ reduced }: { reduced: boolean }) {
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MagneticButton>
               <a
-                href="https://github.com/esaipavan/TravelMate"
-                target="_blank"
-                rel="noreferrer"
+                href="#features"
                 className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-[15px] font-medium transition-all hover:-translate-y-0.5"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   color: 'rgba(248,250,252,0.7)',
                 }}
               >
-                <Star className="h-4 w-4" aria-hidden="true" />
-                Star on GitHub
+                See it in action
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </a>
             </motion.div>
 
             <motion.div
-              custom={7}
+              custom={5}
               variants={reduced ? {} : blurUp}
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap items-center gap-5"
             >
               {[
-                { label: 'React 18', c: '#61DAFB' },
-                { label: 'TypeScript 5', c: '#3178C6' },
-                { label: 'Supabase', c: '#3ECF8E' },
-                { label: 'Tailwind CSS', c: '#06B6D4' },
-                { label: 'Framer Motion', c: '#FF4D4D' },
-                { label: 'PWA', c: '#8B5CF6' },
-              ].map(({ label, c }) => (
-                <span
+                {
+                  icon: <Shield className="h-3.5 w-3.5" aria-hidden="true" />,
+                  label: 'Supabase RLS secured',
+                },
+                {
+                  icon: <Zap className="h-3.5 w-3.5" aria-hidden="true" />,
+                  label: 'PWA — works offline',
+                },
+                {
+                  icon: <Check className="h-3.5 w-3.5" aria-hidden="true" />,
+                  label: 'No credit card ever',
+                },
+                {
+                  icon: <Github className="h-3.5 w-3.5" aria-hidden="true" />,
+                  label: 'Open source',
+                },
+              ].map(({ icon, label }) => (
+                <div
                   key={label}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'rgba(248,250,252,0.55)',
-                  }}
+                  className="flex items-center gap-1.5 text-[12px] font-medium"
+                  style={{ color: 'rgba(248,250,252,0.32)' }}
                 >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: c }}
-                    aria-hidden="true"
-                  />
+                  <span style={{ color: '#818cf8' }}>{icon}</span>
                   {label}
-                </span>
+                </div>
               ))}
             </motion.div>
           </motion.div>
@@ -1705,6 +2298,59 @@ function LandingPage({ reduced }: { reduced: boolean }) {
             />
             <div className="relative h-[480px] w-[480px]">
               <Globe reduced={reduced} />
+              {/* Floating AI insight card */}
+              <motion.div
+                initial={reduced ? {} : { opacity: 0, y: 16, x: 16 }}
+                animate={{ opacity: 1, y: 0, x: 0 }}
+                transition={{ delay: 1.6, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute -bottom-2 -left-6 max-w-[192px] rounded-2xl p-3.5 backdrop-blur-md"
+                style={{
+                  background: 'rgba(10,10,22,0.88)',
+                  border: '1px solid rgba(99,102,241,0.28)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                }}
+                aria-hidden="true"
+              >
+                <div className="mb-2 flex items-center gap-1.5">
+                  <div
+                    className="flex h-4 w-4 items-center justify-center rounded-full"
+                    style={{ background: 'rgba(99,102,241,0.3)' }}
+                  >
+                    <Sparkles className="h-2.5 w-2.5 text-indigo-300" aria-hidden="true" />
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400">
+                    AI insight
+                  </span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-white/65">
+                  Tokyo budget is 12% under target — consider a day trip to Nikko.
+                </p>
+              </motion.div>
+
+              {/* Floating trip card */}
+              <motion.div
+                initial={reduced ? {} : { opacity: 0, y: -16, x: -16 }}
+                animate={{ opacity: 1, y: 0, x: 0 }}
+                transition={{ delay: 1.9, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute -right-4 top-8 rounded-2xl p-3 backdrop-blur-md"
+                style={{
+                  background: 'rgba(10,10,22,0.88)',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                }}
+                aria-hidden="true"
+              >
+                <div
+                  className="mb-1 text-[9px] font-bold uppercase tracking-widest"
+                  style={{ color: '#6ee7b7' }}
+                >
+                  Active trip
+                </div>
+                <div className="text-[12px] font-semibold text-white">🗼 Tokyo, Japan</div>
+                <div className="mt-0.5 text-[10px] text-white/45">
+                  Day 4 of 10 · Budget on track
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>
@@ -1732,8 +2378,8 @@ function LandingPage({ reduced }: { reduced: boolean }) {
       {/* ═══════════════════════════════ MARQUEE ══════════════════════════════ */}
       <Marquee reduced={reduced} />
 
-      {/* ══════════════════════════════ HOW IT WORKS ══════════════════════════ */}
-      <HowItWorks reduced={reduced} />
+      {/* ═══════════════════════════ COMPARISON ═══════════════════════════════ */}
+      <ComparisonSection reduced={reduced} />
 
       {/* ══════════════════════════════ FEATURES ══════════════════════════════ */}
       <section id="features" className="px-5 py-24">
@@ -1774,8 +2420,23 @@ function LandingPage({ reduced }: { reduced: boolean }) {
         </div>
       </section>
 
+      {/* ══════════════════════════ AI SPOTLIGHT ══════════════════════════════ */}
+      <AISpotlightSection reduced={reduced} />
+
+      {/* ══════════════════════════════ SECURITY ══════════════════════════════ */}
+      <SecuritySection reduced={reduced} />
+
       {/* ═══════════════════════════ PRODUCT SHOWCASE ═════════════════════════ */}
       <ProductShowcase reduced={reduced} />
+
+      {/* ══════════════════════════ FEATURE DEEP DIVE ═════════════════════════ */}
+      <FeatureDeepDive reduced={reduced} />
+
+      {/* ══════════════════════════════ HOW IT WORKS ══════════════════════════ */}
+      <HowItWorks reduced={reduced} />
+
+      {/* ══════════════════════════ FREE FOREVER ══════════════════════════════ */}
+      <FreeForeverSection reduced={reduced} />
 
       {/* ════════════════════════════════ STATS ═══════════════════════════════ */}
       <section id="stats" className="px-5 py-20">

@@ -5,13 +5,38 @@ import { CalendarDays, Clock, CreditCard, Globe, Thermometer } from 'lucide-reac
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import { rv, HERO_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import type { ReactNode } from 'react';
-import type { DestinationOverview, WeatherData } from '../types';
+import type { WeatherResult } from '@/features/weather/types';
+import type { DestinationOverview } from '../types';
 
 interface Props {
   overview: DestinationOverview;
-  weather: WeatherData;
+  weather: WeatherResult | null | undefined;
   startDate: string;
   endDate: string;
+}
+
+function wmoEmoji(code: number, isDay: boolean): string {
+  if (code === 0) return isDay ? '☀️' : '🌙';
+  if (code <= 3) return isDay ? '⛅' : '🌙';
+  if (code <= 48) return '🌫️';
+  if (code <= 57) return '🌦️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌦️';
+  if (code <= 86) return '🌨️';
+  return '⛈️';
+}
+
+function wmoLabel(code: number): string {
+  if (code === 0) return 'Clear sky';
+  if (code <= 3) return 'Partly cloudy';
+  if (code <= 48) return 'Foggy';
+  if (code <= 57) return 'Drizzle';
+  if (code <= 67) return 'Rain';
+  if (code <= 77) return 'Snow';
+  if (code <= 82) return 'Rain showers';
+  if (code <= 86) return 'Snow showers';
+  return 'Thunderstorm';
 }
 
 function Chip({ icon, label }: { icon: ReactNode; label: string }) {
@@ -79,15 +104,19 @@ export function DestinationHero({ overview, weather, startDate, endDate }: Props
         </div>
 
         {/* Live weather teaser */}
-        <div className="flex items-center gap-2 rounded-full bg-black/30 px-3.5 py-1.5 backdrop-blur-sm">
-          <span className="text-base leading-none" aria-hidden>
-            {weather.current.icon}
-          </span>
-          <span className="text-sm font-bold text-white">{weather.current.temp}°C</span>
-          <span className="hidden text-xs text-white/70 sm:inline">
-            {weather.current.condition}
-          </span>
-        </div>
+        {weather?.current && (
+          <div className="flex items-center gap-2 rounded-full bg-black/30 px-3.5 py-1.5 backdrop-blur-sm">
+            <span className="text-base leading-none" aria-hidden>
+              {wmoEmoji(weather.current.weathercode, weather.current.isDay ?? true)}
+            </span>
+            <span className="text-sm font-bold text-white">
+              {Math.round(weather.current.temperature)}°C
+            </span>
+            <span className="hidden text-xs text-white/70 sm:inline">
+              {wmoLabel(weather.current.weathercode)}
+            </span>
+          </div>
+        )}
       </motion.div>
 
       {/* ── Bottom content ───────────────────────────────────────── */}

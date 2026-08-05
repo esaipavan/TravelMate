@@ -11,30 +11,30 @@ export default defineConfig({
       registerType: 'autoUpdate',
 
       manifest: {
-        name:             'TravelMate',
-        short_name:       'TravelMate',
-        description:      'Plan trips, track expenses, and explore the world — all in one place.',
-        theme_color:      '#2563eb',
+        name: 'TravelMate',
+        short_name: 'TravelMate',
+        description: 'Plan trips, track expenses, and explore the world — all in one place.',
+        theme_color: '#6366f1',
         background_color: '#ffffff',
-        display:          'standalone',
-        orientation:      'portrait',
-        scope:            '/',
-        start_url:        '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
-            src:   '/icon-192.png',
+            src: '/icon-192.png',
             sizes: '192x192',
-            type:  'image/png',
+            type: 'image/png',
           },
           {
-            src:   '/icon-512.png',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type:  'image/png',
+            type: 'image/png',
           },
           {
-            src:     '/icon-512.png',
-            sizes:   '512x512',
-            type:    'image/png',
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],
@@ -58,11 +58,11 @@ export default defineConfig({
             urlPattern: /^https:\/\/[^/]+\.supabase\.co\/rest\//,
             handler: 'NetworkFirst',
             options: {
-              cacheName:            'supabase-rest',
+              cacheName: 'supabase-rest',
               networkTimeoutSeconds: 5,
               expiration: {
-                maxEntries:     200,
-                maxAgeSeconds:  24 * 60 * 60,
+                maxEntries: 200,
+                maxAgeSeconds: 24 * 60 * 60,
               },
               cacheableResponse: { statuses: [0, 200] },
             },
@@ -72,9 +72,9 @@ export default defineConfig({
             urlPattern: /^https:\/\/[^/]+\.supabase\.co\/storage\//,
             handler: 'CacheFirst',
             options: {
-              cacheName:   'supabase-storage',
+              cacheName: 'supabase-storage',
               expiration: {
-                maxEntries:    100,
+                maxEntries: 100,
                 maxAgeSeconds: 7 * 24 * 60 * 60,
               },
               cacheableResponse: { statuses: [0, 200] },
@@ -125,12 +125,14 @@ export default defineConfig({
             id.includes('/react/') ||
             id.includes('/react-router') ||
             id.includes('/scheduler/')
-          ) return 'vendor';
+          )
+            return 'vendor';
           // Data layer
-          if (id.includes('/@tanstack/'))  return 'query';
-          if (id.includes('/@supabase/'))  return 'supabase';
+          if (id.includes('/@tanstack/')) return 'query';
+          if (id.includes('/@supabase/')) return 'supabase';
           // Charts — recharts bundles its own d3 tree, keep together
-          if (id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-vendor')) return 'charts';
+          if (id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-vendor'))
+            return 'charts';
           // Icons — lucide-react is used by every page; named chunk stabilises its hash
           if (id.includes('/lucide-react/')) return 'icons';
           // Headless UI — Radix primitives + shadcn wrappers

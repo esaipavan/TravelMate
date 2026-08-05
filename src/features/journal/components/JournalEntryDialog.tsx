@@ -320,7 +320,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
                         key={i}
                         className="relative h-20 w-20 overflow-hidden rounded-lg border border-dashed"
                       >
-                        <img src={src} alt="" className="h-full w-full object-cover" />
+                        <img src={src} alt="Journal photo" className="h-full w-full object-cover" />
                         <button
                           type="button"
                           onClick={() => removeNew(i)}

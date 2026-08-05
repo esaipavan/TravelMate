@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pencil, Trash2, Paperclip, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/utils/formatters';
@@ -25,7 +26,12 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   misc: 'bg-muted text-muted-foreground',
 };
 
-export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Props) {
+export const ExpenseCard = memo(function ExpenseCard({
+  expense,
+  budgetAllocated,
+  onEdit,
+  onDelete,
+}: Props) {
   const catMeta = EXPENSE_CATEGORIES.find((c) => c.value === expense.category);
   const pmLabel = PAYMENT_METHODS.find((p) => p.value === expense.payment_method)?.label;
   const displayNotes = getDisplayNotes(expense.notes);
@@ -127,4 +133,4 @@ export function ExpenseCard({ expense, budgetAllocated, onEdit, onDelete }: Prop
       </div>
     </div>
   );
-}
+});

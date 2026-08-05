@@ -75,6 +75,36 @@ export function SafetySection({ safety, destination }: Props) {
   const rating = RATING_META[safety.overallRating];
   const RatingIcon = rating.icon;
 
+  const hasContent =
+    safety.ratingNote ||
+    safety.emergency.touristHelpline ||
+    safety.emergency.police ||
+    safety.tips.length > 0 ||
+    safety.scams.length > 0 ||
+    safety.avoidAreas.length > 0 ||
+    safety.etiquette.length > 0;
+
+  if (!hasContent) {
+    return (
+      <section
+        id="safety"
+        aria-label={`Safety information for ${destination}`}
+        className="space-y-5"
+      >
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Safety</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Emergency contacts, local tips, and cultural etiquette
+          </p>
+        </div>
+        <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+          Safety guide not available for this destination. Ask your AI assistant about local safety
+          tips and emergency contacts for {destination}.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="safety" aria-label={`Safety information for ${destination}`} className="space-y-6">
       {/* Header + overall rating */}

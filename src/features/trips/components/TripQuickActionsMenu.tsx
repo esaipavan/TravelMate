@@ -6,7 +6,6 @@ import {
   Pencil,
   Share2,
   Copy,
-  Archive,
   FileDown,
   Trash2,
   MoreHorizontal,
@@ -43,14 +42,6 @@ export function TripQuickActionsMenu({ trip, onEdit, onShare, onDelete }: Props)
           description: 'A copy has been added to your trips.',
         }),
       onError: () => toast.error('Could not duplicate trip'),
-    });
-    setOpen(false);
-  }
-
-  function handleArchive(e: React.MouseEvent) {
-    e.preventDefault();
-    toast.info('Archive coming soon', {
-      description: 'Trip archiving will be available in the next release.',
     });
     setOpen(false);
   }
@@ -128,14 +119,6 @@ export function TripQuickActionsMenu({ trip, onEdit, onShare, onDelete }: Props)
               <FileDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               Export PDF
             </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="cursor-pointer gap-2.5 rounded-xl"
-            onSelect={handleArchive as unknown as (e: Event) => void}
-          >
-            <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            Archive
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="mx-1" />

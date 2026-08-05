@@ -256,7 +256,7 @@ export function TravelersStep() {
         </div>
       </motion.div>
 
-      {/* Roles legend + Phase 18 note */}
+      {/* Collaboration roles legend */}
       <motion.div
         variants={rv(CARD_VARIANTS, reduced)}
         initial="hidden"
@@ -264,14 +264,9 @@ export function TravelersStep() {
         transition={{ delay: 0.2 }}
         className="space-y-3 rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-            <p className="text-sm font-semibold text-foreground">Collaboration Roles</p>
-          </div>
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-            Phase 18
-          </span>
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" aria-hidden="true" />
+          <p className="text-sm font-semibold text-foreground">Collaboration Roles</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           {(
@@ -289,8 +284,7 @@ export function TravelersStep() {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Full role-based collaboration and real-time co-editing is coming in a future release.
-          Invitees added here will be notified when collaboration goes live.
+          Each traveller's role determines what they can see and edit on the shared trip.
         </p>
       </motion.div>
     </div>

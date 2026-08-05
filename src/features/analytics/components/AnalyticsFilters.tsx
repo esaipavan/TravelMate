@@ -1,7 +1,7 @@
 import { X, Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input }  from '@/components/ui/input';
-import { Label }  from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -13,29 +13,27 @@ import type { AnalyticsFilters } from '../types';
 import { DEFAULT_ANALYTICS_FILTERS } from '../types';
 
 interface TripOption {
-  id:    string;
+  id: string;
   title: string;
 }
 
 interface Props {
-  filters:       AnalyticsFilters;
-  trips:         TripOption[];
-  onChange:      (f: AnalyticsFilters) => void;
-  onExportPDF:   () => void;
-  onExportCSV:   () => void;
+  filters: AnalyticsFilters;
+  trips: TripOption[];
+  onChange: (f: AnalyticsFilters) => void;
+  onExportPDF: () => void;
+  onExportCSV: () => void;
 }
 
 export function AnalyticsFilters({ filters, trips, onChange, onExportPDF, onExportCSV }: Props) {
-  const hasFilter =
-    !!filters.dateFrom || !!filters.dateTo ||
-    !!filters.tripId   || !!filters.country;
+  const hasFilter = !!filters.dateFrom || !!filters.dateTo || !!filters.tripId || !!filters.country;
 
   function set<K extends keyof AnalyticsFilters>(key: K, value: AnalyticsFilters[K]) {
     onChange({ ...filters, [key]: value });
   }
 
   return (
-    <div className="print:hidden flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4">
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4 print:hidden">
       {/* Date from */}
       <div className="flex flex-col gap-1">
         <Label className="text-xs text-muted-foreground">From</Label>
@@ -71,7 +69,9 @@ export function AnalyticsFilters({ filters, trips, onChange, onExportPDF, onExpo
           <SelectContent>
             <SelectItem value="_all">All trips</SelectItem>
             {trips.map((t) => (
-              <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+              <SelectItem key={t.id} value={t.id}>
+                {t.title}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -95,7 +95,7 @@ export function AnalyticsFilters({ filters, trips, onChange, onExportPDF, onExpo
           size="icon"
           className="h-8 w-8 self-end"
           onClick={() => onChange(DEFAULT_ANALYTICS_FILTERS)}
-          title="Clear filters"
+          aria-label="Clear filters"
         >
           <X className="h-4 w-4" />
         </Button>

@@ -73,10 +73,12 @@ export default function SharePage() {
 
   useEffect(() => {
     if (!token || isAuthLoading) return;
+    let cancelled = false;
 
     void (async () => {
       try {
         const inv = await getInvitationByToken(token);
+        if (cancelled) return;
         if (!inv) {
           setStatus('not_found');
           return;
@@ -92,9 +94,13 @@ export default function SharePage() {
           setStatus('ready');
         }
       } catch {
-        setStatus('not_found');
+        if (!cancelled) setStatus('not_found');
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token, isAuthLoading]);
 
   async function handleAccept() {

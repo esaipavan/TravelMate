@@ -179,7 +179,11 @@ export function DocumentDialog({
                   {file ? (
                     <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2">
                       {filePreview ? (
-                        <img src={filePreview} alt="" className="h-10 w-10 rounded object-cover" />
+                        <img
+                          src={filePreview}
+                          alt="Document preview"
+                          className="h-10 w-10 rounded object-cover"
+                        />
                       ) : (
                         <FileText className="h-8 w-8 shrink-0 text-red-500" />
                       )}
@@ -218,7 +222,11 @@ export function DocumentDialog({
               {isEdit && currentFileUrl && (
                 <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2">
                   {isImageUrl(currentFileUrl) ? (
-                    <img src={currentFileUrl} alt="" className="h-10 w-10 rounded object-cover" />
+                    <img
+                      src={currentFileUrl}
+                      alt="Current document"
+                      className="h-10 w-10 rounded object-cover"
+                    />
                   ) : isPdfUrl(currentFileUrl) ? (
                     <FileText className="h-8 w-8 shrink-0 text-red-500" />
                   ) : (

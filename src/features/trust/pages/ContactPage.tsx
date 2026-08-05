@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, MessageCircle, Twitter, Send } from 'lucide-react';
+import { Mail, MessageCircle, Github, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +34,7 @@ export default function ContactPage() {
       setName('');
       setMessage('');
     } catch {
-      toast.error('Could not send your message. Email us directly at hello@travelmate.app');
+      toast.error('Could not send your message. Email us directly at saipavanetikala5@gmail.com');
     } finally {
       setSending(false);
     }
@@ -52,8 +52,8 @@ export default function ContactPage() {
           {
             icon: Mail,
             label: 'Email',
-            value: 'hello@travelmate.app',
-            href: 'mailto:hello@travelmate.app',
+            value: 'saipavanetikala5@gmail.com',
+            href: 'mailto:saipavanetikala5@gmail.com',
           },
           {
             icon: MessageCircle,
@@ -62,10 +62,10 @@ export default function ContactPage() {
             href: null,
           },
           {
-            icon: Twitter,
-            label: 'Twitter / X',
-            value: '@travelmateapp',
-            href: 'https://x.com/travelmateapp',
+            icon: Github,
+            label: 'GitHub',
+            value: 'esaipavan/TravelMate',
+            href: 'https://github.com/esaipavan/TravelMate',
           },
         ].map(({ icon: Icon, label, value, href }) => (
           <div key={label} className="rounded-xl border bg-card p-4">

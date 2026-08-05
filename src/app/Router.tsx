@@ -93,6 +93,15 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireSuperAdmin({ children }: { children: React.ReactNode }) {
+  const { user, isSuperAdmin, isLoading } = useAuthStore();
+  const location = useLocation();
+  if (isLoading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  return <>{children}</>;
+}
+
 function RequireGuest({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return <PageLoader />;
@@ -493,9 +502,11 @@ const router = createBrowserRouter([
       {
         path: 'founder',
         element: (
-          <Wrap>
-            <AdminFounderPage />
-          </Wrap>
+          <RequireSuperAdmin>
+            <Wrap>
+              <AdminFounderPage />
+            </Wrap>
+          </RequireSuperAdmin>
         ),
       },
       {

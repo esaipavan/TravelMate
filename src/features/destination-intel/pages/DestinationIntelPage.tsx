@@ -104,7 +104,7 @@ export default function DestinationIntelPage() {
       {/* Hero */}
       <DestinationHero
         overview={intel.overview}
-        weather={intel.weather}
+        weather={weatherData}
         startDate={trip.start_date}
         endDate={trip.end_date}
       />

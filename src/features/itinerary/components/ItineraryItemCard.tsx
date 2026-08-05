@@ -101,24 +101,24 @@ export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-1 lg:opacity-0 lg:transition-opacity lg:focus-within:opacity-100 lg:group-hover:opacity-100">
         <Button
           size="icon"
           variant="ghost"
           className="h-7 w-7"
           onClick={() => onEdit(item)}
-          title="Edit item"
+          aria-label="Edit item"
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
         <Button
           size="icon"
           variant="ghost"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"
           onClick={() => onDelete(item)}
-          title="Delete item"
+          aria-label="Delete item"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       </div>
     </div>

@@ -52,6 +52,28 @@ export async function loadHistory(
   }
 }
 
+export async function createNewConversation(
+  userId: string,
+  tripId: string | null,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('ai_conversations')
+    .insert({ user_id: userId, trip_id: tripId })
+    .select('id')
+    .single();
+  if (error ?? !data) throw new Error('Failed to create conversation');
+  return data.id;
+}
+
+export async function clearConversation(userId: string, tripId: string | null): Promise<void> {
+  try {
+    const convId = await getOrCreateConversation(userId, tripId);
+    await supabase.from('ai_messages').delete().eq('conversation_id', convId);
+  } catch {
+    // non-critical — UI already cleared local state
+  }
+}
+
 export function saveMessages(
   userId: string,
   tripId: string | null,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Heart, MapPin, Calendar, ArrowRight, Wallet } from 'lucide-react';
@@ -140,7 +140,7 @@ interface Props {
   index: number;
 }
 
-export function TripGalleryCard({ trip, index: _index }: Props) {
+export const TripGalleryCard = memo(function TripGalleryCard({ trip, index: _index }: Props) {
   const reduced = useReducedMotion();
   const user = useAuthStore((s) => s.user);
 
@@ -442,4 +442,4 @@ export function TripGalleryCard({ trip, index: _index }: Props) {
       />
     </>
   );
-}
+});

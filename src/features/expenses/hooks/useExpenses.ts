@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { track } from '@/lib/analytics';
 import {
   getExpenseData,
   createExpense,
@@ -26,7 +27,10 @@ export function useCreateExpense(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: ExpenseInsert) => createExpense(data),
-    onSuccess: () => invalidate(qc, tripId),
+    onSuccess: (result) => {
+      track('expense_added', { trip_id: tripId, category: result.category, amount: result.amount });
+      invalidate(qc, tripId);
+    },
   });
 }
 

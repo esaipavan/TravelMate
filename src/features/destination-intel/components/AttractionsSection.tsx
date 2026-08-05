@@ -62,8 +62,8 @@ function AttractionCard({ attraction, isFavourite, onToggleFav }: CardProps) {
   const cat = CATEGORY_META[attraction.category];
 
   const handleSave = () => {
-    toast.info('Itinerary integration coming in a future sprint', {
-      description: `"${attraction.name}" noted — you can plan it manually in the Itinerary tab.`,
+    toast.info(`Open Itinerary to plan your visit`, {
+      description: `Head to the Itinerary tab to add "${attraction.name}" to a specific day.`,
       duration: 3500,
     });
   };

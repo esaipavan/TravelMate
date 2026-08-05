@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { SidebarContent } from './Sidebar';
 
 /**
@@ -25,12 +25,8 @@ export function MobileDrawer() {
         <Menu className="h-5 w-5" aria-hidden="true" />
       </Button>
 
-      <SheetContent
-        id="mobile-nav-drawer"
-        side="left"
-        className="w-60 p-0"
-        aria-label="Navigation"
-      >
+      <SheetContent id="mobile-nav-drawer" side="left" className="w-60 p-0">
+        <SheetTitle className="sr-only">Navigation</SheetTitle>
         <SidebarContent onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>

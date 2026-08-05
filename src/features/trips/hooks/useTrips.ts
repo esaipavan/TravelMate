@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
+import { track } from '@/lib/analytics';
 import {
   getTrips,
   getTripById,
@@ -37,7 +38,8 @@ export function useCreateTrip() {
   const userId = useAuthStore((s) => s.user?.id);
   return useMutation({
     mutationFn: (data: TripInsert) => createTrip(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      track('trip_created', { destination: result.destination, trip_id: result.id });
       void qc.invalidateQueries({ queryKey: ['trips', userId] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },

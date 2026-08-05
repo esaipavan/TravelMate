@@ -288,6 +288,23 @@ export function FoodSection({ food, destination }: Props) {
 
   const mustTryCount = food.dishes.filter((d) => d.mustTry).length;
 
+  if (food.dishes.length === 0 && food.restaurants.length === 0) {
+    return (
+      <section id="food" aria-label={`Food and drink in ${destination}`} className="space-y-5">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Food &amp; Drink</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Curated food guide not available for this destination.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+          Ask your AI assistant about local cuisine, must-try dishes, and restaurant recommendations
+          for {destination}.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="food" aria-label={`Food and drink in ${destination}`} className="space-y-5">
       {/* Header */}

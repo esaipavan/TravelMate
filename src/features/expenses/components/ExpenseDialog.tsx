@@ -52,7 +52,7 @@ const schema = z.object({
   category: z.enum(CATEGORY_VALUES),
   date: z.string().min(1, 'Date is required'),
   payment_method: z.string(),
-  notes: z.string(),
+  notes: z.string().max(2000),
 });
 
 interface Props {

@@ -5,6 +5,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { rv, FADE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
 import { getCurrencyMeta, suggestBudget, CURRENCIES } from '../destinationData';
+import { useExchangeRate } from '@/features/currency/hooks/useCurrency';
 import { useWizard, BUDGET_CATEGORIES, totalBudget } from '../WizardContext';
 import type { BudgetAllocation } from '../WizardContext';
 
@@ -87,16 +88,19 @@ function BudgetSummary({
   currency,
   totalUSD,
   duration,
+  liveRate,
 }: {
   budget: BudgetAllocation;
   currency: string;
   totalUSD: number;
   duration: number;
+  liveRate?: number;
 }) {
   const total = totalBudget(budget);
   const meta = getCurrencyMeta(currency);
+  const rate = liveRate ?? meta.usdRate;
   const perDay = duration > 0 ? Math.round(total / duration) : 0;
-  const suggested = totalUSD > 0 ? Math.round(totalUSD * meta.usdRate) : 0;
+  const suggested = totalUSD > 0 ? Math.round(totalUSD * rate) : 0;
   const diff = suggested > 0 ? total - suggested : 0;
 
   return (
@@ -149,6 +153,9 @@ export function BudgetStep() {
   const { state, dispatch } = useWizard();
 
   const meta = getCurrencyMeta(state.currency);
+  const { data: rateData } = useExchangeRate('USD', state.currency);
+  const liveRate = state.currency === 'USD' ? 1 : (rateData?.rate ?? undefined);
+
   const duration = useMemo(() => {
     if (!state.startDate || !state.endDate) return 0;
     return (
@@ -165,7 +172,7 @@ export function BudgetStep() {
   /* Auto-fill suggestions on mount if budget is all-zero */
   useEffect(() => {
     if (totalBudget(state.budget) === 0 && duration > 0) {
-      const suggested = suggestBudget(avgDailyUSD, duration, state.currency);
+      const suggested = suggestBudget(avgDailyUSD, duration, state.currency, liveRate);
       const newBudget: BudgetAllocation = {
         accommodation: suggested['accommodation'] ?? 0,
         food: suggested['food'] ?? 0,
@@ -186,7 +193,7 @@ export function BudgetStep() {
   }
 
   function handleFillSuggestion() {
-    const suggested = suggestBudget(avgDailyUSD, duration, state.currency);
+    const suggested = suggestBudget(avgDailyUSD, duration, state.currency, liveRate);
     const newBudget: BudgetAllocation = {
       accommodation: suggested['accommodation'] ?? 0,
       food: suggested['food'] ?? 0,
@@ -277,6 +284,7 @@ export function BudgetStep() {
         currency={state.currency}
         totalUSD={totalUSD}
         duration={duration}
+        liveRate={liveRate}
       />
 
       {/* Sliders */}

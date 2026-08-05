@@ -1,11 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { Bell, Calendar, RefreshCw, Pencil, Trash2, Check, AlarmClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,19 +18,19 @@ import {
 } from '../types';
 
 interface Props {
-  reminder:  ReminderRow;
+  reminder: ReminderRow;
   tripTitle?: string;
-  onEdit:    (r: ReminderRow) => void;
-  onDelete:  (r: ReminderRow) => void;
-  onToggle:  (id: string, complete: boolean) => void;
-  onSnooze:  (id: string, minutes: number) => void;
+  onEdit: (r: ReminderRow) => void;
+  onDelete: (r: ReminderRow) => void;
+  onToggle: (id: string, complete: boolean) => void;
+  onSnooze: (id: string, minutes: number) => void;
 }
 
 export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, onSnooze }: Props) {
-  const meta     = REMINDER_TYPE_MAP[reminder.type] ?? REMINDER_TYPE_MAP['custom'];
-  const status   = getEffectiveStatus(reminder);
-  const priCfg   = PRIORITY_CONFIG[reminder.priority];
-  const statCfg  = STATUS_CONFIG[status];
+  const meta = REMINDER_TYPE_MAP[reminder.type] ?? REMINDER_TYPE_MAP['custom'];
+  const status = getEffectiveStatus(reminder);
+  const priCfg = PRIORITY_CONFIG[reminder.priority];
+  const statCfg = STATUS_CONFIG[status];
   const complete = status === 'completed';
   const repeatLabel = REPEAT_OPTIONS.find((o) => o.value === reminder.repeat)?.label ?? '';
 
@@ -53,17 +49,19 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg shrink-0">{meta.emoji}</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-lg">{meta.emoji}</span>
           <p
-            className={`font-semibold leading-snug truncate ${complete ? 'line-through text-muted-foreground' : ''}`}
+            className={`truncate font-semibold leading-snug ${complete ? 'text-muted-foreground line-through' : ''}`}
             title={reminder.title}
           >
             {reminder.title}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${priCfg.badgeClass}`}>
+          <span
+            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${priCfg.badgeClass}`}
+          >
             {priCfg.label}
           </span>
         </div>
@@ -71,7 +69,7 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
 
       {/* Description */}
       {reminder.description && (
-        <p className="text-xs text-muted-foreground line-clamp-2">{reminder.description}</p>
+        <p className="line-clamp-2 text-xs text-muted-foreground">{reminder.description}</p>
       )}
 
       {/* Meta */}
@@ -87,15 +85,13 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
             {repeatLabel}
           </span>
         )}
-        {tripTitle && (
-          <span className="flex items-center gap-1.5">
-            ✈️ {tripTitle}
-          </span>
-        )}
+        {tripTitle && <span className="flex items-center gap-1.5">✈️ {tripTitle}</span>}
       </div>
 
       {/* Status badge */}
-      <span className={`self-start inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${statCfg.badgeClass}`}>
+      <span
+        className={`inline-flex self-start rounded-full border px-2 py-0.5 text-xs font-medium ${statCfg.badgeClass}`}
+      >
         {statCfg.label}
       </span>
 
@@ -107,9 +103,13 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label={complete ? 'Mark pending' : 'Mark complete'}
               onClick={() => onToggle(reminder.id, !complete)}
             >
-              <Check className={`h-3.5 w-3.5 ${complete ? 'text-emerald-500' : ''}`} />
+              <Check
+                className={`h-3.5 w-3.5 ${complete ? 'text-emerald-500' : ''}`}
+                aria-hidden="true"
+              />
             </Button>
           </TooltipTrigger>
           <TooltipContent>{complete ? 'Mark pending' : 'Mark complete'}</TooltipContent>
@@ -120,8 +120,13 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <AlarmClock className="h-3.5 w-3.5" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Snooze reminder"
+                  >
+                    <AlarmClock className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -140,8 +145,14 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
         <div className="ml-auto flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(reminder)}>
-                <Pencil className="h-3.5 w-3.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Edit reminder"
+                onClick={() => onEdit(reminder)}
+              >
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit</TooltipContent>
@@ -153,9 +164,10 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-destructive hover:text-destructive"
+                aria-label="Delete reminder"
                 onClick={() => onDelete(reminder)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete</TooltipContent>
@@ -168,11 +180,18 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
 
 // ── Compact list item ─────────────────────────────────────────────────────────
 
-export function ReminderListItem({ reminder, tripTitle, onEdit, onDelete, onToggle, onSnooze }: Props) {
-  const meta     = REMINDER_TYPE_MAP[reminder.type] ?? REMINDER_TYPE_MAP['custom'];
-  const status   = getEffectiveStatus(reminder);
-  const priCfg   = PRIORITY_CONFIG[reminder.priority];
-  const statCfg  = STATUS_CONFIG[status];
+export function ReminderListItem({
+  reminder,
+  tripTitle,
+  onEdit,
+  onDelete,
+  onToggle,
+  onSnooze,
+}: Props) {
+  const meta = REMINDER_TYPE_MAP[reminder.type] ?? REMINDER_TYPE_MAP['custom'];
+  const status = getEffectiveStatus(reminder);
+  const priCfg = PRIORITY_CONFIG[reminder.priority];
+  const statCfg = STATUS_CONFIG[status];
   const complete = status === 'completed';
 
   let formattedDate = '';
@@ -192,16 +211,20 @@ export function ReminderListItem({ reminder, tripTitle, onEdit, onDelete, onTogg
         variant="ghost"
         size="icon"
         className="h-7 w-7 shrink-0"
+        aria-label={complete ? 'Mark pending' : 'Mark complete'}
         onClick={() => onToggle(reminder.id, !complete)}
       >
-        <Check className={`h-3.5 w-3.5 ${complete ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+        <Check
+          className={`h-3.5 w-3.5 ${complete ? 'text-emerald-500' : 'text-muted-foreground'}`}
+          aria-hidden="true"
+        />
       </Button>
 
       <span className="shrink-0">{meta.emoji}</span>
 
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <p
-          className={`truncate text-sm font-medium ${complete ? 'line-through text-muted-foreground' : ''}`}
+          className={`truncate text-sm font-medium ${complete ? 'text-muted-foreground line-through' : ''}`}
           title={reminder.title}
         >
           {reminder.title}
@@ -215,18 +238,22 @@ export function ReminderListItem({ reminder, tripTitle, onEdit, onDelete, onTogg
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <span className={`hidden rounded-full border px-2 py-0.5 text-xs font-medium sm:inline-flex ${priCfg.badgeClass}`}>
+        <span
+          className={`hidden rounded-full border px-2 py-0.5 text-xs font-medium sm:inline-flex ${priCfg.badgeClass}`}
+        >
           {priCfg.label}
         </span>
-        <span className={`hidden rounded-full border px-2 py-0.5 text-xs font-medium sm:inline-flex ${statCfg.badgeClass}`}>
+        <span
+          className={`hidden rounded-full border px-2 py-0.5 text-xs font-medium sm:inline-flex ${statCfg.badgeClass}`}
+        >
           {statCfg.label}
         </span>
 
         {!complete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <AlarmClock className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Snooze reminder">
+                <AlarmClock className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -239,16 +266,23 @@ export function ReminderListItem({ reminder, tripTitle, onEdit, onDelete, onTogg
           </DropdownMenu>
         )}
 
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(reminder)}>
-          <Pencil className="h-3.5 w-3.5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          aria-label="Edit reminder"
+          onClick={() => onEdit(reminder)}
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-destructive hover:text-destructive"
+          aria-label="Delete reminder"
           onClick={() => onDelete(reminder)}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       </div>
     </div>

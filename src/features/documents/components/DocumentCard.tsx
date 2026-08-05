@@ -1,11 +1,16 @@
 import { format } from 'date-fns';
-import { FileText, File, Download, ExternalLink, Pencil, Trash2, MapPin, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  FileText,
+  File,
+  Download,
+  ExternalLink,
+  Pencil,
+  Trash2,
+  MapPin,
+  Calendar,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   type TravelDocumentRow,
   type ExpiryStatus,
@@ -18,14 +23,20 @@ import {
 
 // ── Expiry badge ──────────────────────────────────────────────────────────────
 
-const EXPIRY_CONFIG: Record<
-  ExpiryStatus,
-  { label: string; className: string } | null
-> = {
-  expired:       { label: 'Expired',       className: 'bg-destructive/15 text-destructive border-destructive/30' },
-  expiring_soon: { label: 'Expiring Soon', className: 'bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400' },
-  valid:         { label: 'Valid',         className: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400' },
-  no_expiry:     null,
+const EXPIRY_CONFIG: Record<ExpiryStatus, { label: string; className: string } | null> = {
+  expired: {
+    label: 'Expired',
+    className: 'bg-destructive/15 text-destructive border-destructive/30',
+  },
+  expiring_soon: {
+    label: 'Expiring Soon',
+    className: 'bg-amber-500/15 text-amber-600 border-amber-500/30 dark:text-amber-400',
+  },
+  valid: {
+    label: 'Valid',
+    className: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400',
+  },
+  no_expiry: null,
 };
 
 function ExpiryBadge({ status }: { status: ExpiryStatus }) {
@@ -44,14 +55,7 @@ function ExpiryBadge({ status }: { status: ExpiryStatus }) {
 
 function FilePreview({ url }: { url: string }) {
   if (isImageUrl(url)) {
-    return (
-      <img
-        src={url}
-        alt=""
-        className="h-full w-full object-cover"
-        loading="lazy"
-      />
-    );
+    return <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />;
   }
   if (isPdfUrl(url)) {
     return <FileText className="h-8 w-8 text-red-500" />;
@@ -63,11 +67,11 @@ function FilePreview({ url }: { url: string }) {
 
 async function triggerDownload(url: string, filename: string) {
   try {
-    const res  = await fetch(url);
+    const res = await fetch(url);
     const blob = await res.blob();
     const href = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = href;
+    const a = document.createElement('a');
+    a.href = href;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -81,15 +85,15 @@ async function triggerDownload(url: string, filename: string) {
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 interface Props {
-  document:  TravelDocumentRow;
+  document: TravelDocumentRow;
   tripTitle?: string;
-  onEdit:    (doc: TravelDocumentRow) => void;
-  onDelete:  (doc: TravelDocumentRow) => void;
+  onEdit: (doc: TravelDocumentRow) => void;
+  onDelete: (doc: TravelDocumentRow) => void;
 }
 
 export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Props) {
-  const meta            = DOC_TYPE_MAP[doc.type] ?? DOC_TYPE_MAP['other'];
-  const expiryStatus    = getExpiryStatus(doc.expiry_date);
+  const meta = DOC_TYPE_MAP[doc.type] ?? DOC_TYPE_MAP['other'];
+  const expiryStatus = getExpiryStatus(doc.expiry_date);
   const isExpiredOrSoon = expiryStatus === 'expired' || expiryStatus === 'expiring_soon';
 
   return (
@@ -133,19 +137,15 @@ export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Pro
                 expiryStatus === 'expired'
                   ? 'text-destructive'
                   : expiryStatus === 'expiring_soon'
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : ''
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : ''
               }`}
             >
               <Calendar className="h-3 w-3 shrink-0" />
               Expires {format(new Date(doc.expiry_date), 'dd MMM yyyy')}
             </span>
           )}
-          {tripTitle && (
-            <span className="flex items-center gap-1">
-              ✈️ {tripTitle}
-            </span>
-          )}
+          {tripTitle && <span className="flex items-center gap-1">✈️ {tripTitle}</span>}
           <span className="flex items-center gap-1.5">
             {formatFileSize(doc.file_size)}
             {doc.file_size && doc.created_at ? '·' : ''}
@@ -161,9 +161,10 @@ export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Pro
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Open document"
                 onClick={() => window.open(doc.file_url, '_blank')}
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Open</TooltipContent>
@@ -175,9 +176,10 @@ export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Pro
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Download document"
                 onClick={() => void triggerDownload(doc.file_url, doc.name)}
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Download</TooltipContent>
@@ -190,9 +192,10 @@ export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Pro
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
+                  aria-label="Edit document"
                   onClick={() => onEdit(doc)}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Edit</TooltipContent>
@@ -204,9 +207,10 @@ export function DocumentCard({ document: doc, tripTitle, onEdit, onDelete }: Pro
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive"
+                  aria-label="Delete document"
                   onClick={() => onDelete(doc)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Delete</TooltipContent>

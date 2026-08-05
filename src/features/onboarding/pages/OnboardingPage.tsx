@@ -479,6 +479,7 @@ function StepWelcome({ userName, selected, onNext, reduced }: StepWelcomeProps) 
         className="mt-auto pt-8"
       >
         <button
+          type="button"
           onClick={() => choice && onNext(choice)}
           disabled={!choice}
           className={[
@@ -744,7 +745,7 @@ function StepItinerary({ destination, dates, onNext, reduced }: StepItineraryPro
             className="text-[11px] font-bold uppercase tracking-widest"
             style={{ color: dest.accent }}
           >
-            AI Draft · {dest.name}
+            Starter Plan · {dest.name}
           </span>
         </div>
         <h2 className="text-[24px] font-black tracking-tight text-white">
@@ -810,6 +811,7 @@ function StepItinerary({ destination, dates, onNext, reduced }: StepItineraryPro
         className="pt-5"
       >
         <button
+          type="button"
           onClick={onNext}
           className={[
             'flex h-14 w-full items-center justify-center gap-2 rounded-2xl',
@@ -1064,7 +1066,7 @@ function StepCreateTrip({
         <button
           type="button"
           onClick={onSkipTrip}
-          className="py-2 text-[13px] text-white/35 transition-colors hover:text-white/60"
+          className="py-2 text-[13px] text-white/35 transition-colors hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
           I&apos;ll set up my trip later
         </button>
@@ -1204,6 +1206,7 @@ function StepTour({ tripId, onFinish, reduced }: StepTourProps) {
         className="mt-auto pt-6"
       >
         <button
+          type="button"
           onClick={onFinish}
           className={[
             'flex h-14 w-full items-center justify-center gap-2 rounded-2xl',
@@ -1311,7 +1314,11 @@ export default function OnboardingPage() {
     const code = params.get('code');
     if (code) {
       void import('@/lib/supabase').then(({ supabase }) => {
-        void supabase.auth.exchangeCodeForSession(code).catch(() => {});
+        void supabase.auth.exchangeCodeForSession(code).catch((err: unknown) => {
+          if (import.meta.env.DEV) {
+            console.warn('[Onboarding] PKCE code exchange failed:', err);
+          }
+        });
       });
     }
   }, []);

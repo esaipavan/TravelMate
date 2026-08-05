@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Link2,
   Globe,
   Lock,
-  UserCheck,
   Users,
   Copy,
   Check,
@@ -13,11 +13,12 @@ import {
   Mail,
   QrCode,
   X,
+  Download,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUpdateTrip } from '../hooks/useTrips';
+import { InviteDialog } from '@/features/collaboration/components/InviteDialog';
 import type { TripRow } from '../types';
 
 interface Props {
@@ -26,47 +27,46 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-type Visibility = 'private' | 'public' | 'invite' | 'friends';
+type Visibility = 'private' | 'public';
 
 const VISIBILITY_OPTIONS: Array<{
   value: Visibility;
   label: string;
   desc: string;
   icon: typeof Lock;
-  soon?: boolean;
 }> = [
   { value: 'private', label: 'Private', desc: 'Only you can see this trip', icon: Lock },
   { value: 'public', label: 'Public', desc: 'Anyone with the link can view', icon: Globe },
-  {
-    value: 'invite',
-    label: 'Invite Only',
-    desc: 'Only people you invite can view',
-    icon: UserCheck,
-    soon: true,
-  },
-  {
-    value: 'friends',
-    label: 'Friends',
-    desc: 'Shared with your connections',
-    icon: Users,
-    soon: true,
-  },
 ];
 
 export function TripShareSheet({ trip, open, onOpenChange }: Props) {
+  const shareUrl = `${window.location.origin}/share/${trip.id}`;
+
   const { mutate: updateTrip, isPending } = useUpdateTrip();
   const [visibility, setVisibility] = useState<Visibility>(trip.is_public ? 'public' : 'private');
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const shareUrl = `${window.location.origin}/share/${trip.id}`;
+  const renderQr = useCallback(() => {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) return;
+    void QRCode.toCanvas(canvas, shareUrl, {
+      width: 256,
+      margin: 2,
+      color: { dark: '#0f172a', light: '#f8fafc' },
+    });
+  }, [shareUrl]);
+
+  useEffect(() => {
+    if (showQr) {
+      const id = requestAnimationFrame(renderQr);
+      return () => cancelAnimationFrame(id);
+    }
+  }, [showQr, renderQr]);
 
   function handleVisibility(v: Visibility) {
-    if (v === 'invite' || v === 'friends') {
-      toast.info('Coming in a future release', {
-        description: 'Invite-only & friends sharing is on the roadmap.',
-      });
-      return;
-    }
     setVisibility(v);
     updateTrip({ id: trip.id, data: { is_public: v === 'public' } });
   }
@@ -97,9 +97,14 @@ export function TripShareSheet({ trip, open, onOpenChange }: Props) {
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
-  function openQrHelp() {
-    void copyLink();
-    toast.info('Link copied — paste it into any QR generator app.');
+  function downloadQr() {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `${trip.title.replace(/\s+/g, '-')}-qr.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast.success('QR code downloaded!');
   }
 
   return (
@@ -139,21 +144,15 @@ export function TripShareSheet({ trip, open, onOpenChange }: Props) {
                     onClick={() => handleVisibility(opt.value)}
                     disabled={isPending}
                     className={cn(
-                      'relative flex flex-col items-start gap-1 rounded-2xl border p-3.5 text-left outline-none transition-all duration-150',
+                      'flex flex-col items-start gap-1 rounded-2xl border p-3.5 text-left outline-none transition-all duration-150',
                       'focus-visible:ring-2 focus-visible:ring-primary',
                       active
                         ? 'border-primary bg-primary/5'
                         : 'border-border/50 bg-muted/30 hover:bg-muted/60',
-                      opt.soon && 'cursor-not-allowed opacity-60',
                     )}
                     aria-pressed={active}
                     aria-label={opt.label}
                   >
-                    {opt.soon && (
-                      <span className="absolute right-2 top-2 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Soon
-                      </span>
-                    )}
                     <Icon
                       className={cn('h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')}
                       aria-hidden="true"
@@ -226,36 +225,54 @@ export function TripShareSheet({ trip, open, onOpenChange }: Props) {
               <ShareButton
                 icon={QrCode}
                 label="QR Code"
-                onClick={openQrHelp}
+                onClick={() => setShowQr((v) => !v)}
                 color="text-violet-500"
                 bg="bg-violet-500/10"
               />
             </div>
           </div>
 
-          {/* Invite members (coming soon) */}
-          <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4">
+          {/* QR code panel */}
+          {showQr && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col items-center gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/5 p-5"
+            >
+              <p className="text-xs font-semibold text-muted-foreground">Scan to open this trip</p>
+              <canvas ref={qrCanvasRef} className="rounded-xl" />
+              <button
+                type="button"
+                onClick={downloadQr}
+                className="flex items-center gap-1.5 rounded-lg bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-600 transition-colors hover:bg-violet-500/20 dark:text-violet-400"
+              >
+                <Download className="h-3 w-3" aria-hidden="true" />
+                Download QR
+              </button>
+            </motion.div>
+          )}
+
+          {/* Invite members */}
+          <button
+            type="button"
+            onClick={() => setShowInvite(true)}
+            className="w-full rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <div className="mb-1 flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm font-medium text-foreground">Invite Members</span>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                Phase 18
-              </span>
+              <span className="ml-auto text-xs font-medium text-primary">Invite →</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
               Invite collaborators to co-plan, share expenses, and edit the itinerary together.
             </p>
-            <div className="mt-3 flex gap-2">
-              <div className="flex-1 rounded-lg border border-border/40 bg-background px-3 py-1.5 text-xs text-muted-foreground">
-                Enter email address…
-              </div>
-              <Button size="sm" disabled className="h-7 px-3 text-xs opacity-50">
-                Invite
-              </Button>
-            </div>
-          </div>
+          </button>
         </div>
       </DialogContent>
+
+      <InviteDialog tripId={trip.id} open={showInvite} onOpenChange={setShowInvite} />
     </Dialog>
   );
 }
@@ -269,11 +286,12 @@ interface ShareButtonProps {
 }
 
 function ShareButton({ icon: Icon, label, onClick, color, bg }: ShareButtonProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      whileTap={{ scale: 0.94 }}
+      whileTap={prefersReducedMotion ? {} : { scale: 0.94 }}
       transition={{ type: 'spring', damping: 20, stiffness: 300 }}
       className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-muted/30 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary"
       aria-label={label}

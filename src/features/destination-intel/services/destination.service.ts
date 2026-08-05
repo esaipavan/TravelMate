@@ -1,29 +1,15 @@
-import { getDestinationData } from '../data/mockData';
+import { AIDestinationProvider } from './ai-destination.provider';
 import type { DestinationData } from '../types';
 
-// ─── Provider interface ────────────────────────────────────────────
-// Swap the implementation when live APIs become available.
-// Candidates: OpenWeatherMap (weather), Google Places (attractions),
-//             Amadeus (transport/cost), TripAdvisor (reviews).
-
-export interface DestinationProvider {
-  getDestinationData(destination: string): Promise<DestinationData>;
-}
-
-// ─── Mock provider (Sprint 5.1) ────────────────────────────────────
-
-class MockDestinationProvider implements DestinationProvider {
-  async getDestinationData(destination: string): Promise<DestinationData> {
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
-    return getDestinationData(destination);
-  }
-}
+export type { DestinationProvider } from './ai-destination.provider';
 
 // ─── Active provider ───────────────────────────────────────────────
-// Future: replace with LiveDestinationProvider once API keys are in
-// Supabase Edge Function secrets.
+// AIDestinationProvider:
+//  - Known cities (Goa, Bali, Bangkok, Tokyo, Paris, Dubai, London) → curated static data
+//  - All other destinations → AI-generated via chatWithAI (ai-chat Edge Function)
+//  - Falls back to generic template if AI call fails
 
-const provider: DestinationProvider = new MockDestinationProvider();
+const provider = new AIDestinationProvider();
 
 export async function fetchDestinationIntel(destination: string): Promise<DestinationData> {
   return provider.getDestinationData(destination);

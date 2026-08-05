@@ -159,9 +159,10 @@ export function DocumentVaultCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white/90 hover:bg-white/20 hover:text-white"
+                aria-label="Open document"
                 onClick={() => window.open(doc.file_url, '_blank')}
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Open</TooltipContent>
@@ -173,9 +174,10 @@ export function DocumentVaultCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white/90 hover:bg-white/20 hover:text-white"
+                aria-label="Download document"
                 onClick={() => void triggerDownload(doc.file_url, doc.name)}
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Download</TooltipContent>
@@ -189,9 +191,10 @@ export function DocumentVaultCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white/90 hover:bg-white/20 hover:text-white"
+                aria-label="Edit document"
                 onClick={() => onEdit(doc)}
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit</TooltipContent>
@@ -203,9 +206,10 @@ export function DocumentVaultCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-rose-400 hover:bg-white/20 hover:text-rose-300"
+                aria-label="Delete document"
                 onClick={() => onDelete(doc)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete</TooltipContent>

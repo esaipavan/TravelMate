@@ -15,15 +15,35 @@ import { COST_DB } from './costData';
 
 /* ── helpers ───────────────────────────────────────────────────── */
 
-const FD: { dayLabel: string; dateStr: string }[] = [
-  { dayLabel: 'Mon', dateStr: 'Jul 28' },
-  { dayLabel: 'Tue', dateStr: 'Jul 29' },
-  { dayLabel: 'Wed', dateStr: 'Jul 30' },
-  { dayLabel: 'Thu', dateStr: 'Jul 31' },
-  { dayLabel: 'Fri', dateStr: 'Aug 1' },
-  { dayLabel: 'Sat', dateStr: 'Aug 2' },
-  { dayLabel: 'Sun', dateStr: 'Aug 3' },
-];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+function buildForecastDates(): { dayLabel: string; dateStr: string }[] {
+  const today = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return {
+      dayLabel: DAY_LABELS[d.getDay()],
+      dateStr: `${MONTH_LABELS[d.getMonth()]} ${d.getDate()}`,
+    };
+  });
+}
+
+const FD = buildForecastDates();
 
 function day(
   i: number,
@@ -37,7 +57,7 @@ function day(
   return { ...FD[i], icon, condition, high, low, precipPct, humidity };
 }
 
-/* ── shared placeholders (sections added in future sprints) ─────── */
+/* ── shared placeholders ─────────────────────────────────────────── */
 
 const FOOD: FoodGuide = {
   dishes: [],
@@ -73,7 +93,7 @@ const SAFETY: SafetyInfo = {
   etiquette: [],
 };
 
-const BASE_CHECKLIST: ChecklistItem[] = [
+export const BASE_CHECKLIST: ChecklistItem[] = [
   { id: 'passport', label: 'Passport (valid 6+ months)', category: 'documents', required: true },
   {
     id: 'visa',
@@ -836,19 +856,21 @@ const LONDON: DestinationData = {
 
 /* ── Generic fallback ────────────────────────────────────────────── */
 
-function buildGenericData(destination: string): DestinationData {
+export function buildGenericData(destination: string): DestinationData {
+  const parts = destination.split(',');
+  const inferredCountry = parts.length >= 2 ? parts[parts.length - 1].trim() : destination;
   return {
     overview: {
       destination,
-      country: 'International',
-      countryCode: 'XX',
+      country: inferredCountry,
+      countryCode: '',
       flagEmoji: '🌍',
       timezone: 'UTC',
       timezoneOffset: 'UTC+0',
-      currency: 'Local Currency',
+      currency: 'Local currency',
       currencyCode: 'USD',
       currencySymbol: '$',
-      language: 'Local Language',
+      language: 'Local language',
       additionalLanguages: ['English'],
       bestSeason: 'Varies by season',
       avgTempLow: 18,
