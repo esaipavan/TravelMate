@@ -113,6 +113,22 @@ export async function removeMember(tripId: string, userId: string): Promise<void
 
 export async function getEffectiveRole(tripId: string): Promise<string | null> {
   const { data, error } = await supabase.rpc('get_trip_member_role', { p_trip_id: tripId });
-  if (error) throw new Error(error.message);
-  return data;
+  if (!error) return data;
+
+  // RPC not deployed yet — fall back to direct table queries (RLS-guarded).
+  // Querying trips with the user's RLS yields a row only if they own it.
+  const { data: ownedTrip } = await supabase
+    .from('trips')
+    .select('id')
+    .eq('id', tripId)
+    .maybeSingle();
+  if (ownedTrip) return 'owner';
+
+  // Check the trip_members table in case it exists and the user is a member.
+  const { data: member } = await supabase
+    .from('trip_members')
+    .select('role')
+    .eq('trip_id', tripId)
+    .maybeSingle();
+  return (member as { role: string } | null)?.role ?? null;
 }
