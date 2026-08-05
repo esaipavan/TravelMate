@@ -14,6 +14,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
+import { MarkdownMessage } from '@/features/ai/components/MarkdownMessage';
 import { formatCurrency } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
 import { useCurrentTrip, useDashboardStats, useUpcomingTrips } from '../hooks/useDashboard';
@@ -188,7 +189,13 @@ export function AIInsightsPanel() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground">{ins.title}</p>
-                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{ins.body}</p>
+                {ins.type === 'tip' ? (
+                  <div className="mt-0.5 text-xs leading-snug text-muted-foreground [&_em]:italic [&_p]:mb-0 [&_strong]:font-semibold">
+                    <MarkdownMessage content={ins.body} />
+                  </div>
+                ) : (
+                  <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{ins.body}</p>
+                )}
               </div>
             </motion.div>
           );

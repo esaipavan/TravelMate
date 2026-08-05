@@ -15,7 +15,7 @@ export async function getExpenseData(tripId: string): Promise<ExpenseData> {
   ] = await Promise.all([
     supabase
       .from('trips')
-      .select('title, currency, start_date, end_date')
+      .select('title, currency, start_date, end_date, total_budget')
       .eq('id', tripId)
       .single(),
     supabase
@@ -42,6 +42,7 @@ export async function getExpenseData(tripId: string): Promise<ExpenseData> {
     tripCurrency: tripData?.currency ?? 'INR',
     tripStartDate: tripData?.start_date ?? '',
     tripEndDate: tripData?.end_date ?? '',
+    totalBudget: tripData?.total_budget ?? 0,
     budgetMap,
   };
 }

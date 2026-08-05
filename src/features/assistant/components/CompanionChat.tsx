@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { rv, FADE_VARIANTS } from '@/lib/motion';
 import { chatWithAI } from '@/services/ai/ai.service';
 import { getTripStatus } from '@/utils/tripStatus';
+import { MarkdownMessage } from '@/features/ai/components/MarkdownMessage';
 import type { TripRow } from '@/features/trips/types';
 import type { AIMessage } from '@/services/ai/ai.types';
 
@@ -122,16 +123,15 @@ export function CompanionChat({ trip }: Props) {
                     <Bot className="h-3 w-3 text-primary" aria-hidden />
                   </div>
                 )}
-                <p
-                  className={cn(
-                    'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground',
-                  )}
-                >
-                  {msg.content}
-                </p>
+                {msg.role === 'user' ? (
+                  <p className="max-w-[80%] rounded-2xl bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground">
+                    {msg.content}
+                  </p>
+                ) : (
+                  <div className="max-w-[80%] rounded-2xl bg-muted px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
+                    <MarkdownMessage content={msg.content} />
+                  </div>
+                )}
               </motion.div>
             ))}
 

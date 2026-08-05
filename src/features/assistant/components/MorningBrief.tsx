@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { rv, FADE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { weatherCodeToEmoji, weatherCodeToLabel } from '@/features/weather/utils';
 import { formatCurrency } from '@/utils/formatters';
+import { MarkdownMessage } from '@/features/ai/components/MarkdownMessage';
 import { useMorningBrief } from '../hooks/useMorningBrief';
 import { useSmartAlerts } from '../hooks/useSmartAlerts';
 import type { TripRow } from '@/features/trips/types';
@@ -171,7 +172,9 @@ export function MorningBrief({ trip }: Props) {
               <span>Personalising your morning brief…</span>
             </div>
           ) : (
-            <p className="text-sm leading-relaxed text-foreground/90">{brief.aiSummary}</p>
+            <div className="text-sm leading-relaxed text-foreground/90 [&_em]:italic [&_p]:mb-1 [&_strong]:font-semibold">
+              <MarkdownMessage content={brief.aiSummary ?? ''} />
+            </div>
           )}
         </motion.div>
       )}

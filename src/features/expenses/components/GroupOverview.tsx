@@ -18,9 +18,7 @@ interface Props {
 
 export function GroupOverview({ data, members, ownerMemberId, onAddMembers }: Props) {
   const reduced = useReducedMotion();
-  const { expenses, tripCurrency, budgetMap, tripStartDate, tripEndDate } = data;
-
-  const totalBudget = Object.values(budgetMap).reduce((s, v) => s + v, 0);
+  const { expenses, tripCurrency, totalBudget, tripStartDate, tripEndDate } = data;
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const remaining = totalBudget - totalSpent;
   const perPerson = members.length > 0 ? totalSpent / members.length : totalSpent;

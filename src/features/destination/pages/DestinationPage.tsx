@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Globe, RefreshCw, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,13 @@ function DestinationSkeleton() {
 }
 
 export default function DestinationPage() {
+  useEffect(() => {
+    document.title = 'Destination Guide | TravelMate';
+    return () => {
+      document.title = 'TravelMate';
+    };
+  }, []);
+
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>(getSearchHistory);

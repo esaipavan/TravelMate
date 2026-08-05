@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { GripVertical, PlusCircle } from 'lucide-react';
+import { GripVertical, PlusCircle, Clock } from 'lucide-react';
+import { parseISO, isBefore, startOfDay } from 'date-fns';
 import {
   DndContext,
   closestCenter,
@@ -73,11 +74,11 @@ interface Props {
 
 export function DaySection({ day, tripId, currency }: Props) {
   const [items, setItems] = useState<ItineraryItemRow[]>(day.items);
-  const [addOpen, setAddOpen]         = useState(false);
-  const [editItem, setEditItem]       = useState<ItineraryItemRow | undefined>(undefined);
-  const [editOpen, setEditOpen]       = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editItem, setEditItem] = useState<ItineraryItemRow | undefined>(undefined);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ItineraryItemRow | null>(null);
-  const [deleteOpen, setDeleteOpen]   = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     setItems(day.items);
@@ -112,30 +113,43 @@ export function DaySection({ day, tripId, currency }: Props) {
   }
 
   const totalCost = items.reduce((s, i) => s + (i.estimated_cost ?? 0), 0);
+  const isPast = isBefore(parseISO(day.date + 'T00:00:00'), startOfDay(new Date()));
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className={`rounded-lg border bg-card ${isPast ? 'opacity-60' : ''}`}>
       {/* Day header */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+          <div
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${isPast ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}
+          >
             {day.day_number}
           </div>
           <div>
-            <h3 className="text-sm font-semibold leading-tight">Day {day.day_number}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold leading-tight">Day {day.day_number}</h3>
+              {isPast && (
+                <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                  Past
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{formatDate(day.date)}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {totalCost > 0 && (
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <span className="text-xs tabular-nums text-muted-foreground">
               Est. {formatCurrency(totalCost, currency)}
             </span>
           )}
-          <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-            <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-            Add
-          </Button>
+          {!isPast && (
+            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+              <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+              Add
+            </Button>
+          )}
         </div>
       </div>
 
@@ -143,13 +157,19 @@ export function DaySection({ day, tripId, currency }: Props) {
       <div className="p-3">
         {items.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            No activities yet.{' '}
-            <button
-              className="underline underline-offset-2 hover:text-foreground"
-              onClick={() => setAddOpen(true)}
-            >
-              Add one
-            </button>
+            {isPast ? (
+              'Nothing was planned for this day.'
+            ) : (
+              <>
+                No activities yet.{' '}
+                <button
+                  className="underline underline-offset-2 hover:text-foreground"
+                  onClick={() => setAddOpen(true)}
+                >
+                  Add one
+                </button>
+              </>
+            )}
           </p>
         ) : (
           <DndContext
@@ -157,10 +177,7 @@ export function DaySection({ day, tripId, currency }: Props) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext
-              items={items.map((i) => i.id)}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
                 {items.map((item) => (
                   <SortableItem

@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import { formatDate } from '@/utils/formatters';
+import { MarkdownMessage } from '@/features/ai/components/MarkdownMessage';
 import { useAIJournal } from '../hooks/useAIJournal';
 import type { TripRow } from '@/features/trips/types';
 
@@ -62,7 +63,9 @@ export function AIJournal({ trip }: Props) {
             animate="show"
             className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-transparent p-5"
           >
-            <p className="text-sm italic leading-relaxed text-foreground/90">{narrative}</p>
+            <div className="text-sm italic leading-relaxed text-foreground/90 [&_p]:mb-1 [&_strong]:font-semibold">
+              <MarkdownMessage content={narrative} />
+            </div>
             <Button
               variant="ghost"
               size="sm"

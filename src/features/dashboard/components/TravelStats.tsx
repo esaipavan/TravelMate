@@ -104,7 +104,7 @@ export function TravelStats() {
     },
     {
       icon: isOver ? TrendingDown : PiggyBank,
-      label: isOver ? 'Over Budget' : 'Total Saved',
+      label: isOver ? 'Over Budget' : 'Budget Remaining',
       value: formatCurrency(isOver ? spent - budget : saved, currency),
       iconColor: isOver ? 'text-rose-500' : 'text-teal-500',
       iconBg: isOver ? 'bg-rose-500/10' : 'bg-teal-500/10',

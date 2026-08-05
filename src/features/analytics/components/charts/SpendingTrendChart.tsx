@@ -81,6 +81,9 @@ export function SpendingTrendChart({ data, currency }: SpendingTrendChartProps) 
             tickLine={false}
             tickFormatter={formatCompact}
             width={44}
+            domain={[0, 'auto']}
+            tickCount={5}
+            allowDecimals={false}
           />
 
           <Tooltip
