@@ -7,7 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -135,8 +137,8 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <SelectedIcon className="h-4 w-4 text-primary" aria-hidden="true" />
             Share Feedback
@@ -146,126 +148,129 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            void handleSubmit(e);
-          }}
-          className="space-y-4 pt-1"
-        >
-          {/* Type selector */}
-          <div className="grid grid-cols-2 gap-2">
-            {TYPES.map(({ value: v, label, icon: Icon }) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={type === v}
-                onClick={() => setType(v)}
-                className={cn(
-                  'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors',
-                  type === v
-                    ? 'border-primary/60 bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border/80 hover:bg-accent hover:text-foreground',
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Star rating (general/compliment only) */}
-          {showRating && (
-            <div className="space-y-1.5">
-              <Label>How&apos;s TravelMate treating you?</Label>
-              <StarRating value={rating} onChange={setRating} />
+        <ScrollArea className="flex-1">
+          <form
+            id="feedback-form"
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            className="space-y-4 px-6 py-4"
+          >
+            {/* Type selector */}
+            <div className="grid grid-cols-2 gap-2">
+              {TYPES.map(({ value: v, label, icon: Icon }) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={type === v}
+                  onClick={() => setType(v)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors',
+                    type === v
+                      ? 'border-primary/60 bg-primary/10 text-primary'
+                      : 'border-border text-muted-foreground hover:border-border/80 hover:bg-accent hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* Severity (bug only) */}
-          {isBug && (
+            {/* Star rating (general/compliment only) */}
+            {showRating && (
+              <div className="space-y-1.5">
+                <Label>How&apos;s TravelMate treating you?</Label>
+                <StarRating value={rating} onChange={setRating} />
+              </div>
+            )}
+
+            {/* Severity (bug only) */}
+            {isBug && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fb-severity">Severity</Label>
+                <Select value={severity} onValueChange={(v) => setSeverity(v as typeof severity)}>
+                  <SelectTrigger id="fb-severity">
+                    <SelectValue />
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low — minor inconvenience</SelectItem>
+                    <SelectItem value="medium">Medium — affects my workflow</SelectItem>
+                    <SelectItem value="high">High — blocking core feature</SelectItem>
+                    <SelectItem value="critical">Critical — data loss / crash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Subject */}
             <div className="space-y-1.5">
-              <Label htmlFor="fb-severity">Severity</Label>
-              <Select value={severity} onValueChange={(v) => setSeverity(v as typeof severity)}>
-                <SelectTrigger id="fb-severity">
-                  <SelectValue />
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low — minor inconvenience</SelectItem>
-                  <SelectItem value="medium">Medium — affects my workflow</SelectItem>
-                  <SelectItem value="high">High — blocking core feature</SelectItem>
-                  <SelectItem value="critical">Critical — data loss / crash</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Subject */}
-          <div className="space-y-1.5">
-            <Label htmlFor="fb-subject">{isBug ? 'Title' : 'Subject'}</Label>
-            <Input
-              id="fb-subject"
-              placeholder={isBug ? 'What happened?' : 'One-line summary (optional)'}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              maxLength={200}
-            />
-          </div>
-
-          {/* Message */}
-          <div className="space-y-1.5">
-            <Label htmlFor="fb-message">
-              {isBug ? 'Description' : 'Message'}
-              <span className="ml-1 text-destructive" aria-label="required">
-                *
-              </span>
-            </Label>
-            <Textarea
-              id="fb-message"
-              placeholder={
-                isBug
-                  ? 'Describe what went wrong and what you expected to happen…'
-                  : 'Tell us what you think…'
-              }
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              required
-              maxLength={2000}
-            />
-          </div>
-
-          {/* Steps to reproduce (bug only) */}
-          {isBug && (
-            <div className="space-y-1.5">
-              <Label htmlFor="fb-steps">Steps to reproduce (optional)</Label>
-              <Textarea
-                id="fb-steps"
-                placeholder="1. Go to…&#10;2. Click…&#10;3. See error"
-                rows={3}
-                value={steps}
-                onChange={(e) => setSteps(e.target.value)}
-                maxLength={1000}
+              <Label htmlFor="fb-subject">{isBug ? 'Title' : 'Subject'}</Label>
+              <Input
+                id="fb-subject"
+                placeholder={isBug ? 'What happened?' : 'One-line summary (optional)'}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                maxLength={200}
               />
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                reset();
-                onOpenChange(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending || !message.trim()}>
-              {isPending ? 'Sending…' : 'Send'}
-            </Button>
-          </div>
-        </form>
+            {/* Message */}
+            <div className="space-y-1.5">
+              <Label htmlFor="fb-message">
+                {isBug ? 'Description' : 'Message'}
+                <span className="ml-1 text-destructive" aria-label="required">
+                  *
+                </span>
+              </Label>
+              <Textarea
+                id="fb-message"
+                placeholder={
+                  isBug
+                    ? 'Describe what went wrong and what you expected to happen…'
+                    : 'Tell us what you think…'
+                }
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+                maxLength={2000}
+              />
+            </div>
+
+            {/* Steps to reproduce (bug only) */}
+            {isBug && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fb-steps">Steps to reproduce (optional)</Label>
+                <Textarea
+                  id="fb-steps"
+                  placeholder="1. Go to…&#10;2. Click…&#10;3. See error"
+                  rows={3}
+                  value={steps}
+                  onChange={(e) => setSteps(e.target.value)}
+                  maxLength={1000}
+                />
+              </div>
+            )}
+          </form>
+        </ScrollArea>
+
+        <DialogFooter className="border-t px-6 py-4">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              reset();
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" form="feedback-form" disabled={isPending || !message.trim()}>
+            {isPending ? 'Sending…' : 'Send'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

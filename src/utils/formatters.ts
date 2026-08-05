@@ -13,7 +13,7 @@ export function formatCurrency(amount: number, currency = 'INR', locale = 'en-IN
 // Date-only strings (YYYY-MM-DD) from the DB are stored in local time; appending
 // T00:00:00 forces date-fns / JS to parse them as local midnight rather than UTC
 // midnight (which would display the wrong calendar day in negative-offset timezones).
-function parseLocalDate(date: string | Date): Date {
+export function parseLocalDate(date: string | Date): Date {
   if (typeof date !== 'string') return date;
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return parseISO(`${date}T00:00:00`);
   return parseISO(date);
@@ -25,7 +25,7 @@ export function formatDate(date: string | Date, fmt = 'MMM d, yyyy'): string {
 
 export function formatDateRange(startDate: string, endDate: string): string {
   const start = parseLocalDate(startDate);
-  const end   = parseLocalDate(endDate);
+  const end = parseLocalDate(endDate);
   if (format(start, 'MMM yyyy') === format(end, 'MMM yyyy')) {
     return `${format(start, 'MMM d')} – ${format(end, 'd, yyyy')}`;
   }
@@ -38,7 +38,7 @@ export function formatTimeAgo(date: string | Date): string {
 }
 
 export function tripDuration(startDate: string, endDate: string): number {
-  return differenceInDays(parseISO(endDate), parseISO(startDate)) + 1;
+  return differenceInDays(parseLocalDate(endDate), parseLocalDate(startDate)) + 1;
 }
 
 export function formatFileSize(bytes: number): string {

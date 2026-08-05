@@ -10,7 +10,8 @@
 } from 'recharts';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useMemo } from 'react';
-import { format, eachDayOfInterval, parseISO, isAfter } from 'date-fns';
+import { format, eachDayOfInterval, isAfter } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import { CalendarDays } from 'lucide-react';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
@@ -72,8 +73,8 @@ export function BudgetSpendingTimeline({
   const data = useMemo<DayData[]>(() => {
     if (!tripStartDate || !tripEndDate) return [];
 
-    const start = parseISO(tripStartDate);
-    const end = new Date(Math.min(parseISO(tripEndDate).getTime(), new Date().getTime()));
+    const start = parseLocalDate(tripStartDate);
+    const end = new Date(Math.min(parseLocalDate(tripEndDate).getTime(), new Date().getTime()));
 
     if (isAfter(start, end)) return [];
 

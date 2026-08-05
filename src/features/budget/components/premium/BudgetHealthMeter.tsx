@@ -1,5 +1,6 @@
 ﻿import { motion, useReducedMotion } from 'framer-motion';
-import { differenceInDays, parseISO, isAfter, isBefore } from 'date-fns';
+import { differenceInDays, isAfter, isBefore } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import { Activity, TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
@@ -75,8 +76,8 @@ export function BudgetHealthMeter({ summary, tripStartDate, tripEndDate }: Props
   if (!tripStartDate || !tripEndDate || budget <= 0 || summary.totalSpent === 0) return null;
 
   const today = new Date();
-  const start = parseISO(tripStartDate);
-  const end = parseISO(tripEndDate);
+  const start = parseLocalDate(tripStartDate);
+  const end = parseLocalDate(tripEndDate);
   const totalDays = Math.max(differenceInDays(end, start) + 1, 1);
 
   if (isBefore(today, start)) return null;

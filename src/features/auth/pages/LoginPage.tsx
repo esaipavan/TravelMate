@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/form';
 import { emailSchema } from '@/utils/validators';
 import { APP_NAME } from '@/utils/constants';
-import { signIn, signInWithGoogle } from '../services/auth.service';
+import { signIn, signInWithGoogle, resendConfirmationEmail } from '../services/auth.service';
+import { EmailSentState } from '../components/EmailSentState';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ export default function LoginPage() {
 
   const [showPw, setShowPw] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
 
@@ -68,7 +70,22 @@ export default function LoginPage() {
       await signIn(values.email, values.password);
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      if (msg === 'Please verify your email address before signing in.') {
+        setUnconfirmedEmail(values.email);
+      } else {
+        toast.error(msg);
+      }
+    }
+  }
+
+  async function handleResend() {
+    if (!unconfirmedEmail) return;
+    try {
+      await resendConfirmationEmail(unconfirmedEmail);
+      toast.success('Confirmation email sent. Check your inbox.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to resend. Please try again.');
     }
   }
 
@@ -80,6 +97,38 @@ export default function LoginPage() {
       setGoogleLoading(false);
       toast.error(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
     }
+  }
+
+  if (unconfirmedEmail) {
+    return (
+      <div className="space-y-6">
+        <EmailSentState
+          email={unconfirmedEmail}
+          message="Your email isn't verified yet. Click the link we sent you, or request a new one below."
+          backTo={{ label: 'Back to sign in', to: '/login' }}
+        />
+        <div className="space-y-2 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              void handleResend();
+            }}
+            className="text-sm font-semibold hover:underline"
+            style={{ color: 'hsl(257 60% 72%)' }}
+          >
+            Resend confirmation email
+          </button>
+          <p className="block" />
+          <button
+            type="button"
+            onClick={() => setUnconfirmedEmail(null)}
+            className="text-sm text-white/60 hover:underline"
+          >
+            Try a different account
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

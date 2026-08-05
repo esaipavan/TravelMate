@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, subMonths, differenceInDays, parseISO } from 'date-fns';
+import { format, subMonths, differenceInDays } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import { useAuthStore } from '@/store/auth.store';
 import { getTrips } from '@/features/trips/services/trips.service';
 import { getDocuments } from '@/features/documents/services/documents.service';
@@ -300,7 +301,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const durations = filteredTrips
       .map((t) => {
         try {
-          return differenceInDays(parseISO(t.end_date), parseISO(t.start_date)) + 1;
+          return differenceInDays(parseLocalDate(t.end_date), parseLocalDate(t.start_date)) + 1;
         } catch {
           return 0;
         }

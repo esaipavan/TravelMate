@@ -1,12 +1,13 @@
 import { Bell, Clock, CheckCircle, AlertTriangle, Flag } from 'lucide-react';
-import { addDays, parseISO, isAfter } from 'date-fns';
+import { addDays, isAfter } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import type { ReminderRow } from '../types';
 import { getEffectiveStatus } from '../types';
 
 interface StatCardProps {
-  icon:       React.ReactNode;
-  label:      string;
-  value:      number;
+  icon: React.ReactNode;
+  label: string;
+  value: number;
   highlight?: boolean;
 }
 
@@ -37,16 +38,16 @@ interface Props {
 }
 
 export function ReminderStats({ reminders }: Props) {
-  const total     = reminders.length;
+  const total = reminders.length;
   const completed = reminders.filter((r) => r.status === 'completed').length;
-  const overdue   = reminders.filter((r) => getEffectiveStatus(r) === 'overdue').length;
-  const highPri   = reminders.filter((r) => r.priority === 'high' && r.status !== 'completed').length;
+  const overdue = reminders.filter((r) => getEffectiveStatus(r) === 'overdue').length;
+  const highPri = reminders.filter((r) => r.priority === 'high' && r.status !== 'completed').length;
 
   const now7 = addDays(new Date(), 7);
   const upcoming = reminders.filter((r) => {
     if (r.status === 'completed') return false;
     try {
-      return isAfter(now7, parseISO(r.reminder_date));
+      return isAfter(now7, parseLocalDate(r.reminder_date));
     } catch {
       return false;
     }
@@ -54,11 +55,7 @@ export function ReminderStats({ reminders }: Props) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <StatCard
-        icon={<Bell className="h-5 w-5 text-primary" />}
-        label="Total"
-        value={total}
-      />
+      <StatCard icon={<Bell className="h-5 w-5 text-primary" />} label="Total" value={total} />
       <StatCard
         icon={<Clock className="h-5 w-5 text-primary" />}
         label="Upcoming (7 days)"

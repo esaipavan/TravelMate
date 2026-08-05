@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { rv, PAGE_VARIANTS } from '@/lib/motion';
-import { parseISO, addDays, isAfter } from 'date-fns';
+import { addDays, isAfter } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import {
   Bell,
   Plus,
@@ -140,7 +141,7 @@ export default function RemindersPage() {
       result = result.filter((r) => {
         if (r.status === 'completed') return false;
         try {
-          return isAfter(now7, parseISO(r.reminder_date));
+          return isAfter(now7, parseLocalDate(r.reminder_date));
         } catch {
           return false;
         }

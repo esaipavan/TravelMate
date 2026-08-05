@@ -49,6 +49,8 @@ interface TripFormProps {
   isSubmitting: boolean;
   submitLabel: string;
   onCancel?: () => void;
+  formId?: string;
+  hideActions?: boolean;
 }
 
 export function TripForm({
@@ -57,6 +59,8 @@ export function TripForm({
   isSubmitting,
   submitLabel,
   onCancel,
+  formId,
+  hideActions,
 }: TripFormProps) {
   const form = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
@@ -77,6 +81,7 @@ export function TripForm({
   return (
     <Form {...form}>
       <form
+        id={formId}
         onSubmit={(e) => {
           void form.handleSubmit(onSubmit)(e);
         }}
@@ -262,16 +267,18 @@ export function TripForm({
         />
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-2">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-              Cancel
+        {!hideActions && (
+          <div className="flex justify-end gap-2 pt-2">
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                Cancel
+              </Button>
+            )}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : submitLabel}
             </Button>
-          )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : submitLabel}
-          </Button>
-        </div>
+          </div>
+        )}
       </form>
     </Form>
   );

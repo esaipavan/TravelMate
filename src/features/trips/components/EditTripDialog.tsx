@@ -1,5 +1,13 @@
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { TripForm } from './TripForm';
 import { useUpdateTrip } from '../hooks/useTrips';
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
@@ -45,27 +53,42 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 p-0">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>Edit trip</DialogTitle>
         </DialogHeader>
-        <TripForm
-          defaultValues={{
-            title: trip.title,
-            destination: trip.destination,
-            start_date: trip.start_date,
-            end_date: trip.end_date,
-            total_budget: trip.total_budget ?? undefined,
-            currency: trip.currency,
-            status: trip.status,
-            notes: trip.notes ?? '',
-            is_public: trip.is_public,
-          }}
-          onSubmit={handleSubmit}
-          isSubmitting={isPending}
-          submitLabel="Save changes"
-          onCancel={() => onOpenChange(false)}
-        />
+
+        <ScrollArea className="flex-1">
+          <div className="px-6 py-4">
+            <TripForm
+              formId="edit-trip-form"
+              hideActions
+              defaultValues={{
+                title: trip.title,
+                destination: trip.destination,
+                start_date: trip.start_date,
+                end_date: trip.end_date,
+                total_budget: trip.total_budget ?? undefined,
+                currency: trip.currency,
+                status: trip.status,
+                notes: trip.notes ?? '',
+                is_public: trip.is_public,
+              }}
+              onSubmit={handleSubmit}
+              isSubmitting={isPending}
+              submitLabel="Save changes"
+            />
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="border-t px-6 py-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="edit-trip-form" disabled={isPending}>
+            {isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

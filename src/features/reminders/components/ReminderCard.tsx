@@ -1,4 +1,5 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { parseLocalDate } from '@/utils/formatters';
 import { Bell, Calendar, RefreshCw, Pencil, Trash2, Check, AlarmClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -36,7 +37,7 @@ export function ReminderCard({ reminder, tripTitle, onEdit, onDelete, onToggle, 
 
   let formattedDate = '';
   try {
-    formattedDate = format(parseISO(reminder.reminder_date), 'dd MMM yyyy');
+    formattedDate = format(parseLocalDate(reminder.reminder_date), 'dd MMM yyyy');
   } catch {
     formattedDate = reminder.reminder_date;
   }
@@ -196,7 +197,7 @@ export function ReminderListItem({
 
   let formattedDate = '';
   try {
-    formattedDate = format(parseISO(reminder.reminder_date), 'dd MMM yyyy');
+    formattedDate = format(parseLocalDate(reminder.reminder_date), 'dd MMM yyyy');
   } catch {
     formattedDate = reminder.reminder_date;
   }

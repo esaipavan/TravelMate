@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -153,132 +154,135 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 p-0">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>{isEdit ? 'Edit item' : 'Add item'}</DialogTitle>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            void handleSubmit(onSubmit)(e);
-          }}
-          className="space-y-4"
-        >
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="item-title">Title</Label>
-            <Input id="item-title" placeholder="e.g. Flight to Tokyo" {...register('title')} />
-            {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
-          </div>
-
-          {/* Category + Status */}
-          <div className="grid grid-cols-2 gap-3">
+        <ScrollArea className="flex-1">
+          <form
+            id="item-form"
+            onSubmit={(e) => {
+              void handleSubmit(onSubmit)(e);
+            }}
+            className="space-y-4 px-6 py-4"
+          >
+            {/* Title */}
             <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Select
-                value={watch('category')}
-                onValueChange={(v) => setValue('category', v as ItineraryCategory)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITINERARY_CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="item-title">Title</Label>
+              <Input id="item-title" placeholder="e.g. Flight to Tokyo" {...register('title')} />
+              {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select
-                value={watch('status')}
-                onValueChange={(v) => setValue('status', v as ItemStatus)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITEM_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          {/* Start + End time */}
-          <div className="grid grid-cols-2 gap-3">
+            {/* Category + Status */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select
+                  value={watch('category')}
+                  onValueChange={(v) => setValue('category', v as ItineraryCategory)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITINERARY_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select
+                  value={watch('status')}
+                  onValueChange={(v) => setValue('status', v as ItemStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Start + End time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="start-time">
+                  Start time <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                <Input id="start-time" type="time" {...register('start_time')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="end-time">
+                  End time <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                <Input id="end-time" type="time" {...register('end_time')} />
+              </div>
+            </div>
+
+            {/* Location */}
             <div className="space-y-1.5">
-              <Label htmlFor="start-time">
-                Start time <span className="text-muted-foreground">(optional)</span>
+              <Label htmlFor="location">
+                Location <span className="text-muted-foreground">(optional)</span>
               </Label>
-              <Input id="start-time" type="time" {...register('start_time')} />
+              <Input
+                id="location"
+                placeholder="e.g. Narita International Airport"
+                {...register('location_name')}
+              />
             </div>
+
+            {/* Estimated cost */}
             <div className="space-y-1.5">
-              <Label htmlFor="end-time">
-                End time <span className="text-muted-foreground">(optional)</span>
+              <Label htmlFor="estimated-cost">
+                Estimated cost <span className="text-muted-foreground">(optional)</span>
               </Label>
-              <Input id="end-time" type="time" {...register('end_time')} />
+              <Input
+                id="estimated-cost"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                {...register('estimated_cost')}
+              />
+              {errors.estimated_cost && (
+                <p className="text-xs text-destructive">{errors.estimated_cost.message}</p>
+              )}
             </div>
-          </div>
 
-          {/* Location */}
-          <div className="space-y-1.5">
-            <Label htmlFor="location">
-              Location <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="location"
-              placeholder="e.g. Narita International Airport"
-              {...register('location_name')}
-            />
-          </div>
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="description">
+                Notes <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Any details, confirmation numbers, etc."
+                rows={2}
+                {...register('description')}
+              />
+            </div>
+          </form>
+        </ScrollArea>
 
-          {/* Estimated cost */}
-          <div className="space-y-1.5">
-            <Label htmlFor="estimated-cost">
-              Estimated cost <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="estimated-cost"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              {...register('estimated_cost')}
-            />
-            {errors.estimated_cost && (
-              <p className="text-xs text-destructive">{errors.estimated_cost.message}</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className="space-y-1.5">
-            <Label htmlFor="description">
-              Notes <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="Any details, confirmation numbers, etc."
-              rows={2}
-              {...register('description')}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add item'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="border-t px-6 py-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="item-form" disabled={isPending}>
+            {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add item'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

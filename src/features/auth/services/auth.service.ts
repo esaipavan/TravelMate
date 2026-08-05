@@ -54,6 +54,15 @@ export async function signOut(): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function resendConfirmationEmail(email: string): Promise<void> {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: `${getAppUrl()}/onboarding` },
+  });
+  if (error) throw new Error(mapAuthError(error));
+}
+
 export async function sendPasswordResetEmail(email: string): Promise<void> {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${getAppUrl()}/reset-password`,
