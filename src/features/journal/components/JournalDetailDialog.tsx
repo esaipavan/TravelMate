@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+﻿import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
@@ -9,11 +9,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { JournalEntryRow, MoodEnum } from '../types';
 
 const MOOD_EMOJI: Record<MoodEnum, string> = {
-  amazing: '🤩',
-  good: '😊',
-  okay: '😐',
-  bad: '😔',
-  terrible: '😢',
+  amazing: 'ðŸ¤©',
+  good: 'ðŸ˜Š',
+  okay: 'ðŸ˜',
+  bad: 'ðŸ˜”',
+  terrible: 'ðŸ˜¢',
 };
 
 const mdComponents: Components = {
@@ -84,7 +84,7 @@ export function JournalDetailDialog({ entry, onClose }: Props) {
         </DialogHeader>
 
         {entry && (
-          <ScrollArea className="flex-1">
+          <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-4 px-6 py-4">
               {/* Mood + rating */}
               {(entry.mood || entry.rating != null) && (

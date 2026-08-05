@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -199,7 +199,7 @@ export function ExpenseDialog({
           <DialogTitle>{isEdit ? 'Edit expense' : 'Add expense'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <form
             id="expense-form"
             onSubmit={(e) => {
@@ -287,7 +287,7 @@ export function ExpenseDialog({
                 onValueChange={(v) => setValue('payment_method', v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select method…" />
+                  <SelectValue placeholder="Select methodâ€¦" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">None</SelectItem>
@@ -300,7 +300,7 @@ export function ExpenseDialog({
               </Select>
             </div>
 
-            {/* Paid by — shown only when group has multiple members */}
+            {/* Paid by â€” shown only when group has multiple members */}
             {showPaidBy && members && (
               <div className="space-y-1.5">
                 <Label>Paid by</Label>
@@ -327,7 +327,7 @@ export function ExpenseDialog({
               </Label>
               <Textarea
                 id="notes"
-                placeholder="Any additional details…"
+                placeholder="Any additional detailsâ€¦"
                 rows={2}
                 {...register('notes')}
               />
@@ -404,9 +404,9 @@ export function ExpenseDialog({
           </Button>
           <Button type="submit" form="expense-form" disabled={isPending || uploadingReceipt}>
             {uploadingReceipt
-              ? 'Uploading…'
+              ? 'Uploadingâ€¦'
               : isPending
-                ? 'Saving…'
+                ? 'Savingâ€¦'
                 : isEdit
                   ? 'Save changes'
                   : 'Add expense'}

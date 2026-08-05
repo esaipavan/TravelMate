@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Star, Bug, Lightbulb, MessageCircle, Mail, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -148,7 +148,7 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <form
             id="feedback-form"
             onSubmit={(e) => {
@@ -195,10 +195,10 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low — minor inconvenience</SelectItem>
-                    <SelectItem value="medium">Medium — affects my workflow</SelectItem>
-                    <SelectItem value="high">High — blocking core feature</SelectItem>
-                    <SelectItem value="critical">Critical — data loss / crash</SelectItem>
+                    <SelectItem value="low">Low â€” minor inconvenience</SelectItem>
+                    <SelectItem value="medium">Medium â€” affects my workflow</SelectItem>
+                    <SelectItem value="high">High â€” blocking core feature</SelectItem>
+                    <SelectItem value="critical">Critical â€” data loss / crash</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -228,8 +228,8 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
                 id="fb-message"
                 placeholder={
                   isBug
-                    ? 'Describe what went wrong and what you expected to happen…'
-                    : 'Tell us what you think…'
+                    ? 'Describe what went wrong and what you expected to happenâ€¦'
+                    : 'Tell us what you thinkâ€¦'
                 }
                 rows={4}
                 value={message}
@@ -245,7 +245,7 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
                 <Label htmlFor="fb-steps">Steps to reproduce (optional)</Label>
                 <Textarea
                   id="fb-steps"
-                  placeholder="1. Go to…&#10;2. Click…&#10;3. See error"
+                  placeholder="1. Go toâ€¦&#10;2. Clickâ€¦&#10;3. See error"
                   rows={3}
                   value={steps}
                   onChange={(e) => setSteps(e.target.value)}
@@ -268,7 +268,7 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
             Cancel
           </Button>
           <Button type="submit" form="feedback-form" disabled={isPending || !message.trim()}>
-            {isPending ? 'Sending…' : 'Send'}
+            {isPending ? 'Sendingâ€¦' : 'Send'}
           </Button>
         </DialogFooter>
       </DialogContent>

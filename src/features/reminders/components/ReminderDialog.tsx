@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -101,7 +101,7 @@ export function ReminderDialog({ open, onOpenChange, reminder, trips, onSave, is
           <DialogTitle>{isEdit ? 'Edit Reminder' : 'New Reminder'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <Form {...form}>
             <form
               id="reminder-form"
@@ -136,7 +136,7 @@ export function ReminderDialog({ open, onOpenChange, reminder, trips, onSave, is
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Optional notes…"
+                        placeholder="Optional notesâ€¦"
                         className="resize-none"
                         rows={2}
                         {...field}
@@ -282,7 +282,7 @@ export function ReminderDialog({ open, onOpenChange, reminder, trips, onSave, is
                           <SelectItem value="_none">No trip</SelectItem>
                           {trips.map((t) => (
                             <SelectItem key={t.id} value={t.id}>
-                              {t.title} — {t.destination}
+                              {t.title} â€” {t.destination}
                             </SelectItem>
                           ))}
                         </SelectContent>

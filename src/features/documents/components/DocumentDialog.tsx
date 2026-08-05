@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, X, FileText, File as FileIcon, Loader2 } from 'lucide-react';
@@ -160,7 +160,7 @@ export function DocumentDialog({
           <DialogTitle>{isEdit ? 'Edit Document' : 'Upload Document'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <Form {...form}>
             <form
               id="doc-form"
@@ -323,7 +323,7 @@ export function DocumentDialog({
                           <SelectItem value="_none">No trip</SelectItem>
                           {trips.map((t) => (
                             <SelectItem key={t.id} value={t.id}>
-                              {t.title} — {t.destination}
+                              {t.title} â€” {t.destination}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -362,7 +362,7 @@ export function DocumentDialog({
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Any additional notes…"
+                        placeholder="Any additional notesâ€¦"
                         className="resize-none"
                         rows={3}
                         {...field}

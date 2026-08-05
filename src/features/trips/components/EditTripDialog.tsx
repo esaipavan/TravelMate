@@ -58,7 +58,7 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
           <DialogTitle>Edit trip</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <div className="px-6 py-4">
             <TripForm
               formId="edit-trip-form"

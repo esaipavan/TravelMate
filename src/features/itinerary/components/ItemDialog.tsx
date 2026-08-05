@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,11 +26,11 @@ import { useCreateItem, useUpdateItem } from '../hooks/useItinerary';
 import type { ItineraryItemRow, ItineraryCategory, ItemStatus } from '../types';
 
 const ITINERARY_CATEGORIES = [
-  { value: 'transport', label: '✈️ Transport' },
-  { value: 'accommodation', label: '🏨 Accommodation' },
-  { value: 'activity', label: '🎯 Activity' },
-  { value: 'food', label: '🍽️ Food' },
-  { value: 'other', label: '📌 Other' },
+  { value: 'transport', label: 'âœˆï¸ Transport' },
+  { value: 'accommodation', label: 'ðŸ¨ Accommodation' },
+  { value: 'activity', label: 'ðŸŽ¯ Activity' },
+  { value: 'food', label: 'ðŸ½ï¸ Food' },
+  { value: 'other', label: 'ðŸ“Œ Other' },
 ] as const;
 
 const ITEM_STATUSES = ['planned', 'confirmed', 'completed', 'cancelled'] as const;
@@ -159,7 +159,7 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
           <DialogTitle>{isEdit ? 'Edit item' : 'Add item'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <form
             id="item-form"
             onSubmit={(e) => {
@@ -280,7 +280,7 @@ export function ItemDialog({ tripId, dayId, nextOrderIndex, item, open, onOpenCh
             Cancel
           </Button>
           <Button type="submit" form="item-form" disabled={isPending}>
-            {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Add item'}
+            {isPending ? 'Savingâ€¦' : isEdit ? 'Save changes' : 'Add item'}
           </Button>
         </DialogFooter>
       </DialogContent>

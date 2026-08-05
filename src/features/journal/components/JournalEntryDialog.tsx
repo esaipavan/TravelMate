@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Upload, Star, Loader2 } from 'lucide-react';
@@ -38,11 +38,11 @@ import {
 } from '../types';
 
 const MOODS: { value: MoodEnum; label: string; emoji: string }[] = [
-  { value: 'amazing', label: 'Amazing', emoji: '🤩' },
-  { value: 'good', label: 'Good', emoji: '😊' },
-  { value: 'okay', label: 'Okay', emoji: '😐' },
-  { value: 'bad', label: 'Bad', emoji: '😔' },
-  { value: 'terrible', label: 'Terrible', emoji: '😢' },
+  { value: 'amazing', label: 'Amazing', emoji: 'ðŸ¤©' },
+  { value: 'good', label: 'Good', emoji: 'ðŸ˜Š' },
+  { value: 'okay', label: 'Okay', emoji: 'ðŸ˜' },
+  { value: 'bad', label: 'Bad', emoji: 'ðŸ˜”' },
+  { value: 'terrible', label: 'Terrible', emoji: 'ðŸ˜¢' },
 ];
 
 const TODAY = new Date().toISOString().split('T')[0];
@@ -145,7 +145,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
           <DialogTitle>{isEdit ? 'Edit Journal Entry' : 'New Journal Entry'}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <Form {...form}>
             <form
               id="journal-form"
@@ -162,7 +162,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="Give your entry a title…" {...field} />
+                      <Input placeholder="Give your entry a titleâ€¦" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -279,7 +279,7 @@ export function JournalEntryDialog({ open, onOpenChange, entry, onSave, isPendin
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Write about your experience… Markdown is supported."
+                        placeholder="Write about your experienceâ€¦ Markdown is supported."
                         className="min-h-[120px] resize-y"
                         {...field}
                       />
