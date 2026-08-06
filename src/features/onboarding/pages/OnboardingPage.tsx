@@ -9,8 +9,7 @@ import type { DestinationCategory } from '../types';
 import { WelcomeStep } from '../components/WelcomeStep';
 import { DestinationStep } from '../components/DestinationStep';
 import { TripProfileStep } from '../components/TripProfileStep';
-import { ItineraryStep } from '../components/ItineraryStep';
-import { CreateTripStep } from '../components/CreateTripStep';
+import { AIGenerationStep } from '../components/AIGenerationStep';
 import { FeatureTourStep } from '../components/FeatureTourStep';
 import { ProgressHeader } from '../components/ProgressHeader';
 import { SkipDialog } from '../components/SkipDialog';
@@ -26,8 +25,7 @@ const STEP_NAMES = [
   'welcome',
   'destination_dates',
   'trip_profile',
-  'itinerary_preview',
-  'trip_creation',
+  'ai_generation',
   'feature_tour',
 ] as const;
 const TOTAL_STEPS = STEP_NAMES.length;
@@ -145,34 +143,23 @@ export default function OnboardingPage() {
 
       case 3:
         return (
-          <ItineraryStep
-            key="itinerary"
-            destination={state.data.destination ?? 'Your destination'}
-            dates={state.data.dates}
+          <AIGenerationStep
+            key="ai-generation"
+            destination={state.data.destination ?? ''}
+            destinationCategory={state.data.destinationCategory}
+            startDate={state.data.startDate}
+            endDate={state.data.endDate}
+            groupType={state.data.groupType}
+            budgetTier={state.data.budgetTier}
+            userId={user?.id ?? ''}
             reduced={reduced}
-            onNext={() => handleAdvance(3)}
+            onMarkComplete={complete}
+            onNext={(tripId, briefId) => handleAdvance(3, { tripId, aiBriefId: briefId })}
+            onSkip={() => navigate('/dashboard', { replace: true })}
           />
         );
 
       case 4:
-        return (
-          <CreateTripStep
-            key="create"
-            destination={state.data.destination ?? ''}
-            dates={state.data.dates}
-            userId={user?.id ?? ''}
-            reduced={reduced}
-            onDone={(tripId) =>
-              handleAdvance(4, {
-                tripId,
-                checklist: { ...state.data.checklist, tripCreated: true },
-              })
-            }
-            onSkipTrip={() => handleAdvance(4)}
-          />
-        );
-
-      case 5:
         return (
           <FeatureTourStep
             key="tour"
