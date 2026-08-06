@@ -12,37 +12,38 @@ type LatLon = [number, number];
 // ─── Globe data ───────────────────────────────────────────────────────────────
 
 const CITIES: LatLon[] = [
-  [40.7, -74],
-  [51.5, -0.1],
-  [35.7, 139.7],
-  [-33.9, 18.4],
-  [48.9, 2.4],
-  [1.3, 103.8],
-  [25.2, 55.3],
-  [-23.5, -46.6],
+  [28.6, 77.2], // Delhi
+  [19.1, 72.9], // Mumbai
+  [12.97, 77.59], // Bangalore
+  [17.4, 78.5], // Hyderabad
+  [51.5, -0.1], // London
+  [1.3, 103.8], // Singapore
+  [25.2, 55.3], // Dubai
+  [48.9, 2.4], // Paris
+  [35.7, 139.7], // Tokyo
 ];
 
 const ARCS: [LatLon, LatLon][] = [
   [
-    [40.7, -74],
-    [51.5, -0.1],
-  ],
+    [28.6, 77.2],
+    [25.2, 55.3],
+  ], // Delhi → Dubai
   [
-    [51.5, -0.1],
-    [35.7, 139.7],
-  ],
-  [
-    [48.9, 2.4],
+    [19.1, 72.9],
     [1.3, 103.8],
-  ],
+  ], // Mumbai → Singapore
+  [
+    [12.97, 77.59],
+    [48.9, 2.4],
+  ], // Bangalore → Paris
 ];
 
 // ─── Left panel features ──────────────────────────────────────────────────────
 
 const FEATURES = [
-  { icon: MapPin, text: 'Day-by-day itineraries & destination guides' },
-  { icon: Wallet, text: 'Real-time budget across 30+ currencies' },
-  { icon: Sparkles, text: 'AI-powered recommendations & smart packing' },
+  { icon: MapPin, text: 'Kedarnath to Goa — day-by-day AI itineraries' },
+  { icon: Wallet, text: 'Group expenses in ₹ — split fairly, settle fast' },
+  { icon: Sparkles, text: 'AI morning briefs, packing lists & safety tips' },
 ] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -261,8 +262,14 @@ export function PublicLayout() {
           <MiniGlobe paused={reduced ?? false} />
 
           <div className="text-center">
+            <p
+              className="mb-1 text-[11px] font-semibold uppercase tracking-widest"
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            >
+              Apna trip, apni planning
+            </p>
             <p className="text-2xl font-bold leading-tight tracking-tight text-white">
-              Plan trips you'll
+              Plan your best
               <br />
               <span
                 style={{
@@ -271,11 +278,11 @@ export function PublicLayout() {
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                remember forever
+                India trips.
               </span>
             </p>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              AI-powered planning for the modern explorer.
+              Built for Indian travellers. Free, forever.
             </p>
           </div>
 

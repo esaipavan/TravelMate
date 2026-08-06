@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2, Plane } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Loader2, Lock, Plane, ShieldCheck } from 'lucide-react';
 import { GoogleIcon } from '../components/GoogleIcon';
 import { toast } from 'sonner';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -44,14 +44,22 @@ const ITEM: Variants = {
   show: { opacity: 1, y: 0, transition: { type: 'spring', damping: 24, stiffness: 90 } },
 };
 
+const TRUST_ITEMS = [
+  { Icon: Lock, text: 'Your data stays encrypted' },
+  { Icon: ShieldCheck, text: 'Secure authentication' },
+  { Icon: KeyRound, text: 'Privacy-first — we never share your data' },
+] as const;
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reduced = useReducedMotion();
+  const rememberMeId = useId();
 
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
@@ -60,6 +68,7 @@ export default function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
+    mode: 'onTouched',
   });
 
   const { isSubmitting } = form.formState;
@@ -157,7 +166,7 @@ export default function LoginPage() {
         </p>
       </motion.div>
 
-      {/* Google */}
+      {/* Google (primary) */}
       <motion.div variants={reduced ? {} : ITEM}>
         <Button
           type="button"
@@ -181,7 +190,7 @@ export default function LoginPage() {
           className="text-[10px] font-semibold uppercase tracking-widest"
           style={{ color: 'rgba(255,255,255,0.3)' }}
         >
-          or
+          or sign in with email
         </span>
         <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.1)' }} />
       </motion.div>
@@ -196,6 +205,7 @@ export default function LoginPage() {
             className="space-y-4"
             noValidate
           >
+            {/* Email */}
             <FormField
               control={form.control}
               name="email"
@@ -207,7 +217,6 @@ export default function LoginPage() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="you@example.com"
                       autoComplete="email"
                       disabled={isLoading}
                       className="h-11 rounded-xl"
@@ -219,27 +228,18 @@ export default function LoginPage() {
               )}
             />
 
+            {/* Password */}
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="text-sm font-semibold text-white/80">Password</FormLabel>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs font-medium hover:underline"
-                      style={{ color: 'hsl(257 60% 72%)' }}
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
+                  <FormLabel className="text-sm font-semibold text-white/80">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         type={showPw ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        autoComplete="current-password"
+                        autoComplete={rememberMe ? 'current-password' : 'off'}
                         disabled={isLoading}
                         className="h-11 rounded-xl pr-10"
                         {...field}
@@ -251,7 +251,11 @@ export default function LoginPage() {
                         style={{ color: 'rgba(255,255,255,0.4)' }}
                         aria-label={showPw ? 'Hide password' : 'Show password'}
                       >
-                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPw ? (
+                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        )}
                       </button>
                     </div>
                   </FormControl>
@@ -260,6 +264,32 @@ export default function LoginPage() {
               )}
             />
 
+            {/* Remember me + Forgot password */}
+            <div className="flex items-center justify-between">
+              <label htmlFor={rememberMeId} className="flex cursor-pointer items-center gap-2">
+                <input
+                  id={rememberMeId}
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
+                  className="h-4 w-4 cursor-pointer rounded accent-violet-500"
+                />
+                <span className="select-none text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  Remember me
+                </span>
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium hover:underline"
+                style={{ color: 'hsl(257 60% 72%)' }}
+                tabIndex={isLoading ? -1 : 0}
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            {/* Submit */}
             <Button
               type="submit"
               className="mt-1 h-11 w-full rounded-xl border-0 font-semibold text-white"
@@ -271,6 +301,39 @@ export default function LoginPage() {
             </Button>
           </form>
         </Form>
+      </motion.div>
+
+      {/* Trust section */}
+      <motion.div
+        variants={reduced ? {} : ITEM}
+        className="rounded-xl p-4"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
+        <p
+          className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: 'rgba(255,255,255,0.3)' }}
+        >
+          Your account is protected
+        </p>
+        <ul className="space-y-2">
+          {TRUST_ITEMS.map(({ Icon, text }) => (
+            <li
+              key={text}
+              className="flex items-center gap-2.5 text-[12px]"
+              style={{ color: 'rgba(255,255,255,0.55)' }}
+            >
+              <Icon
+                className="h-3.5 w-3.5 flex-shrink-0"
+                style={{ color: 'hsl(257 60% 72%)' }}
+                aria-hidden="true"
+              />
+              {text}
+            </li>
+          ))}
+        </ul>
       </motion.div>
 
       {/* Footer */}
