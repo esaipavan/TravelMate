@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { JournalEntryRow, JournalEntryInsert, JournalEntryUpdate } from '../types';
 
-const BUCKET = 'journal-images';
+const BUCKET = 'journal';
 
 // ── Entries ──────────────────────────────────────────────────────────────────
 
@@ -16,11 +16,7 @@ export async function getJournalEntries(tripId: string): Promise<JournalEntryRow
 }
 
 export async function createJournalEntry(entry: JournalEntryInsert): Promise<JournalEntryRow> {
-  const { data, error } = await supabase
-    .from('journal_entries')
-    .insert(entry)
-    .select()
-    .single();
+  const { data, error } = await supabase.from('journal_entries').insert(entry).select().single();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -51,21 +47,24 @@ export async function uploadJournalImage(
   entryId: string,
   file: File,
 ): Promise<string> {
-  const ext  = file.name.split('.').pop() ?? 'jpg';
+  const ext = file.name.split('.').pop() ?? 'jpg';
   const path = `${userId}/${entryId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file);
   if (error) throw new Error(error.message);
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  const { data, error: signError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, 31536000);
+  if (signError) throw new Error(signError.message);
+  return data.signedUrl;
 }
 
 export async function deleteJournalImages(urls: string[]): Promise<void> {
   if (!urls.length) return;
-  const marker = `/object/public/${BUCKET}/`;
-  const paths  = urls
+  const marker = `/object/sign/${BUCKET}/`;
+  const paths = urls
     .map((url) => {
       const idx = url.indexOf(marker);
-      return idx !== -1 ? url.slice(idx + marker.length) : '';
+      return idx !== -1 ? url.slice(idx + marker.length).split('?')[0] : '';
     })
     .filter(Boolean);
   if (paths.length) {

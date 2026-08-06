@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Moon, Sun, LogOut, User, Settings } from 'lucide-react';
 import { MobileDrawer } from './MobileDrawer';
 import { SyncIndicator } from '@/components/pwa/SyncIndicator';
@@ -22,6 +23,7 @@ import { toast } from 'sonner';
 
 export function Header() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
 
@@ -31,6 +33,9 @@ export function Header() {
       toast.error('Failed to sign out');
       return;
     }
+    queryClient.clear();
+    localStorage.removeItem('travelmate-onboarding-v3');
+    localStorage.removeItem('travelmate-dashboard-checklist');
     navigate('/login');
   };
 

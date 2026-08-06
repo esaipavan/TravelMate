@@ -14,8 +14,8 @@ export default function OAuthCallbackPage() {
 
     if (user) {
       const returnTo = getOAuthReturnTo();
-      // New users (no onboarding completed) go to the wizard regardless of returnTo
-      if (!isOnboardingComplete() && returnTo === '/dashboard') {
+      // New users always go to onboarding regardless of deep-link returnTo
+      if (!isOnboardingComplete()) {
         navigate('/onboarding', { replace: true });
       } else {
         navigate(returnTo, { replace: true });

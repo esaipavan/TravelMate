@@ -1,18 +1,14 @@
 import { supabase } from '@/lib/supabase';
 import type { ProfileRow, ProfileUpdate } from '../types';
 
-const AVATAR_BUCKET = 'profile-images';
+const AVATAR_BUCKET = 'avatars';
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 // ── Profile CRUD ──────────────────────────────────────────────────────────────
 
 export async function getProfile(userId: string): Promise<ProfileRow> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -41,7 +37,7 @@ export function validateAvatarFile(file: File): string | null {
 }
 
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const ext  = file.name.split('.').pop() ?? 'jpg';
+  const ext = file.name.split('.').pop() ?? 'jpg';
   const path = `${userId}/avatar.${ext}`;
 
   const { error } = await supabase.storage
@@ -56,7 +52,7 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
 
 export async function removeAvatar(avatarUrl: string): Promise<void> {
   const marker = `/object/public/${AVATAR_BUCKET}/`;
-  const idx    = avatarUrl.indexOf(marker);
+  const idx = avatarUrl.indexOf(marker);
   if (idx === -1) return;
   const path = avatarUrl.split('?')[0].slice(idx + marker.length);
   await supabase.storage.from(AVATAR_BUCKET).remove([path]);
@@ -90,12 +86,12 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
   ]);
 
   return {
-    exported_at:     new Date().toISOString(),
-    profile:         profileResult.data,
-    trips:           tripsResult.data         ?? [],
-    expenses:        expensesResult.data       ?? [],
-    journal_entries: journalResult.data        ?? [],
-    documents:       documentsResult.data      ?? [],
-    reminders:       remindersResult.data      ?? [],
+    exported_at: new Date().toISOString(),
+    profile: profileResult.data,
+    trips: tripsResult.data ?? [],
+    expenses: expensesResult.data ?? [],
+    journal_entries: journalResult.data ?? [],
+    documents: documentsResult.data ?? [],
+    reminders: remindersResult.data ?? [],
   };
 }

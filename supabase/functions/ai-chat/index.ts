@@ -31,15 +31,17 @@ Your expertise covers:
 - For budget questions, provide concrete numbers where possible (e.g., "street food averages $2–5 per meal")
 - Lead with the most important information first`;
 
-
 function getProvider(): IAIProvider {
   const providerName = Deno.env.get('AI_PROVIDER') ?? 'groq';
 
   switch (providerName) {
-    case 'gemini':     return new GeminiProvider();
-    case 'openrouter': return new OpenRouterProvider();
+    case 'gemini':
+      return new GeminiProvider();
+    case 'openrouter':
+      return new OpenRouterProvider();
     case 'groq':
-    default:           return new GroqProvider();
+    default:
+      return new GroqProvider();
   }
 }
 
@@ -99,11 +101,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    userId = user?.id ?? null;
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+    userId = user.id;
 
     // Parse body
-    const body = await req.json() as AIRequestBody;
+    const body = (await req.json()) as AIRequestBody;
     const { messages, options } = body;
 
     if (!messages?.length) {
