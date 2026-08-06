@@ -33,6 +33,9 @@ export type Database = {
           ai_suggestions_enabled: boolean;
           browser_notifications_enabled: boolean;
           email_notifications_enabled: boolean;
+          preferred_group_type: string | null;
+          preferred_budget_tier: string | null;
+          onboarding_version: number | null;
         };
         Insert: {
           id: string;
@@ -62,6 +65,9 @@ export type Database = {
           ai_suggestions_enabled?: boolean;
           browser_notifications_enabled?: boolean;
           email_notifications_enabled?: boolean;
+          preferred_group_type?: string | null;
+          preferred_budget_tier?: string | null;
+          onboarding_version?: number | null;
         };
         Update: {
           id?: string;
@@ -90,6 +96,9 @@ export type Database = {
           ai_suggestions_enabled?: boolean;
           browser_notifications_enabled?: boolean;
           email_notifications_enabled?: boolean;
+          preferred_group_type?: string | null;
+          preferred_budget_tier?: string | null;
+          onboarding_version?: number | null;
         };
         Relationships: [];
       };
@@ -113,6 +122,9 @@ export type Database = {
           is_favourite: boolean;
           created_at: string;
           updated_at: string;
+          destination_category: string | null;
+          group_type: string | null;
+          budget_tier: string | null;
         };
         Insert: {
           id?: string;
@@ -133,6 +145,9 @@ export type Database = {
           is_favourite?: boolean;
           created_at?: string;
           updated_at?: string;
+          destination_category?: string | null;
+          group_type?: string | null;
+          budget_tier?: string | null;
         };
         Update: {
           title?: string;
@@ -150,6 +165,9 @@ export type Database = {
           is_public?: boolean;
           is_favourite?: boolean;
           updated_at?: string;
+          destination_category?: string | null;
+          group_type?: string | null;
+          budget_tier?: string | null;
         };
         Relationships: [
           {
@@ -157,6 +175,78 @@ export type Database = {
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      trip_briefs: {
+        Row: {
+          id: string;
+          trip_id: string;
+          user_id: string;
+          generated_at: string;
+          prompt_version: number;
+          status: 'generating' | 'complete' | 'failed';
+          trip_summary: string | null;
+          day_one_itinerary: Json | null;
+          weather_summary: Json | null;
+          packing_checklist: Json | null;
+          required_documents: Json | null;
+          permits: Json | null;
+          darshan_info: Json | null;
+          emergency_contacts: Json | null;
+          budget_estimate: Json | null;
+          local_transport: Json | null;
+          hotel_suggestions: Json | null;
+          food_recommendations: Json | null;
+          safety_advice: string | null;
+          error_message: string | null;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          user_id: string;
+          generated_at?: string;
+          prompt_version?: number;
+          status?: 'generating' | 'complete' | 'failed';
+          trip_summary?: string | null;
+          day_one_itinerary?: Json | null;
+          weather_summary?: Json | null;
+          packing_checklist?: Json | null;
+          required_documents?: Json | null;
+          permits?: Json | null;
+          darshan_info?: Json | null;
+          emergency_contacts?: Json | null;
+          budget_estimate?: Json | null;
+          local_transport?: Json | null;
+          hotel_suggestions?: Json | null;
+          food_recommendations?: Json | null;
+          safety_advice?: string | null;
+          error_message?: string | null;
+        };
+        Update: {
+          status?: 'generating' | 'complete' | 'failed';
+          trip_summary?: string | null;
+          day_one_itinerary?: Json | null;
+          weather_summary?: Json | null;
+          packing_checklist?: Json | null;
+          required_documents?: Json | null;
+          permits?: Json | null;
+          darshan_info?: Json | null;
+          emergency_contacts?: Json | null;
+          budget_estimate?: Json | null;
+          local_transport?: Json | null;
+          hotel_suggestions?: Json | null;
+          food_recommendations?: Json | null;
+          safety_advice?: string | null;
+          error_message?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_briefs_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: true;
+            referencedRelation: 'trips';
             referencedColumns: ['id'];
           },
         ];
