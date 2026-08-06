@@ -1,7 +1,7 @@
-import { memo } from 'react';
+﻿import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { PlaneTakeoff, ArrowRight } from 'lucide-react';
+import { PlaneTakeoff, ArrowRight, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { getTripStatus } from '@/utils/tripStatus';
 import { useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
 import { DestinationImage } from './DestinationImage';
+import { useOnboarding } from '@/features/onboarding/hooks/useOnboarding';
 import type { UpcomingTrip } from '../types';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -18,6 +19,13 @@ const STATUS_BADGE: Record<string, string> = {
   upcoming: 'bg-blue-500/20 text-blue-200',
   completed: 'bg-white/10 text-white/60',
   cancelled: 'bg-rose-500/20 text-rose-300',
+};
+
+const BUDGET_SYMBOLS: Record<string, string> = {
+  budget: '₹',
+  comfort: '₹₹',
+  premium: '₹₹₹',
+  luxury: '₹₹₹₹',
 };
 
 interface TripImageCardProps {
@@ -28,6 +36,8 @@ interface TripImageCardProps {
 const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCardProps) {
   const theme = useDestinationTheme(trip.destination);
   const status = getTripStatus(trip);
+  const groupLabel = trip.group_type ? trip.group_type.replace('_', ' ') : null;
+  const budgetSymbol = trip.budget_tier ? (BUDGET_SYMBOLS[trip.budget_tier] ?? null) : null;
 
   return (
     <motion.div variants={rv(LIST_ITEM_VARIANTS, reduced)} className="w-64 shrink-0">
@@ -57,6 +67,20 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
               }}
             />
 
+            {/* AI badge — top right */}
+            {trip.ai_brief_status === 'complete' && (
+              <div
+                className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full px-1.5 py-0.5 backdrop-blur-sm"
+                style={{ background: 'rgba(99,102,241,0.75)' }}
+                aria-label="AI brief available"
+              >
+                <Sparkles className="h-2.5 w-2.5 text-white" aria-hidden="true" />
+                <span className="text-[9px] font-semibold uppercase tracking-wide text-white">
+                  AI
+                </span>
+              </div>
+            )}
+
             {/* Card content */}
             <div className="absolute inset-x-0 bottom-0 p-3.5">
               <span
@@ -72,6 +96,23 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
               <p className="mt-1 text-[10px] tabular-nums text-white/50">
                 {formatDateRange(trip.start_date, trip.end_date)}
               </p>
+
+              {/* Group type + budget tier */}
+              {(groupLabel || budgetSymbol) && (
+                <div className="mt-1 flex items-center gap-2">
+                  {groupLabel && (
+                    <span className="text-[10px] capitalize text-white/40">{groupLabel}</span>
+                  )}
+                  {budgetSymbol && (
+                    <span className="text-[10px] text-white/40">{budgetSymbol}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Weather brief */}
+              {trip.weather_brief && (
+                <p className="mt-0.5 truncate text-[10px] text-white/35">{trip.weather_brief}</p>
+              )}
             </div>
           </div>
         </Link>
@@ -83,6 +124,8 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
 export function UpcomingTripsSection() {
   const reduced = useReducedMotion();
   const { data: trips = [], isLoading } = useUpcomingTrips();
+  const { state: onboardingState } = useOnboarding();
+  const hasTripFromOnboarding = onboardingState.completed && !!onboardingState.data.tripId;
 
   return (
     <section aria-label="Upcoming trips">
@@ -109,7 +152,7 @@ export function UpcomingTripsSection() {
         </div>
       )}
 
-      {!isLoading && trips.length === 0 && (
+      {!isLoading && trips.length === 0 && !hasTripFromOnboarding && (
         <motion.div
           className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 bg-muted/20 py-12 text-center"
           variants={rv(CARD_VARIANTS, reduced)}

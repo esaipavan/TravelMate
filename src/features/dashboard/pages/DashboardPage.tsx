@@ -1,6 +1,7 @@
 import { WelcomeChecklist } from '../components/WelcomeChecklist';
 import { DashboardBackground } from '../components/DashboardBackground';
 import { TripCommandHero } from '../components/TripCommandHero';
+import { TripBriefCard } from '../components/TripBriefCard';
 import { PremiumQuickActions } from '../components/PremiumQuickActions';
 import { TodayTimeline } from '../components/TodayTimeline';
 import { AIInsightsPanel } from '../components/AIInsightsPanel';
@@ -15,6 +16,8 @@ export default function DashboardPage() {
       <DashboardBackground />
 
       <TripCommandHero />
+
+      <TripBriefCard />
 
       <WelcomeChecklist />
 

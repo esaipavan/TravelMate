@@ -16,6 +16,13 @@ export interface UpcomingTrip {
   cover_image_url: string | null;
   currency: string;
   total_budget: number | null;
+  // Phase 6: additional trip info from onboarding
+  destination_category?: string | null;
+  group_type?: string | null;
+  budget_tier?: string | null;
+  // Phase 6: from joined trip_briefs
+  ai_brief_status?: 'generating' | 'complete' | 'failed' | null;
+  weather_brief?: string | null;
 }
 
 export interface RecentExpense {

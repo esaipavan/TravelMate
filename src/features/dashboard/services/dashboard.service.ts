@@ -49,7 +49,7 @@ export async function getUpcomingTrips(userId: string): Promise<UpcomingTrip[]> 
   const { data } = await supabase
     .from('trips')
     .select(
-      'id, title, destination, start_date, end_date, status, cover_image_url, currency, total_budget',
+      'id, title, destination, start_date, end_date, status, cover_image_url, currency, total_budget, destination_category, group_type, budget_tier, trip_briefs(status, weather_summary)',
     )
     .eq('user_id', userId)
     .neq('status', 'cancelled')
@@ -57,7 +57,31 @@ export async function getUpcomingTrips(userId: string): Promise<UpcomingTrip[]> 
     .order('start_date')
     .limit(3);
 
-  return (data ?? []) as UpcomingTrip[];
+  return (data ?? []).map((row) => {
+    const brief = row.trip_briefs;
+    const wObj =
+      typeof brief?.weather_summary === 'object' &&
+      brief.weather_summary !== null &&
+      !Array.isArray(brief.weather_summary)
+        ? (brief.weather_summary as Record<string, unknown>)
+        : null;
+    return {
+      id: row.id,
+      title: row.title,
+      destination: row.destination,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      status: row.status,
+      cover_image_url: row.cover_image_url ?? null,
+      currency: row.currency,
+      total_budget: row.total_budget ?? null,
+      destination_category: row.destination_category ?? null,
+      group_type: row.group_type ?? null,
+      budget_tier: row.budget_tier ?? null,
+      ai_brief_status: brief?.status ?? null,
+      weather_brief: typeof wObj?.expected === 'string' ? wObj.expected : null,
+    };
+  });
 }
 
 export async function getRecentExpenses(userId: string): Promise<RecentExpense[]> {
