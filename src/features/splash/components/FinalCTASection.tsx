@@ -52,7 +52,8 @@ export function FinalCTASection() {
             Ready to plan your next trip?
           </h2>
           <p className="mb-8 text-[17px] text-gray-500 dark:text-gray-400">
-            Join travellers planning trips across India and the world. Free forever, no card needed.
+            Built for Indian travellers. Sign in with Google in 10 seconds — free forever, no credit
+            card.
           </p>
 
           {/* Primary CTA */}

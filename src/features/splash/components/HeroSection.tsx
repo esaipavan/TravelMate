@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1920&q=80';
+const HERO_IMAGE_BASE = 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23';
+const HERO_IMAGE = `${HERO_IMAGE_BASE}?auto=format&fit=crop&w=1920&q=80`;
 
 const blurUpVariants = {
   hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
@@ -35,6 +35,8 @@ export function HeroSection() {
         >
           <img
             src={HERO_IMAGE}
+            srcSet={`${HERO_IMAGE_BASE}?auto=format&fit=crop&w=480&q=75 480w, ${HERO_IMAGE_BASE}?auto=format&fit=crop&w=768&q=75 768w, ${HERO_IMAGE_BASE}?auto=format&fit=crop&w=1280&q=80 1280w, ${HERO_IMAGE_BASE}?auto=format&fit=crop&w=1920&q=80 1920w`}
+            sizes="100vw"
             alt="Travellers on a Himalayan mountain road in India at golden hour"
             className="h-full w-full object-cover"
             width={1920}
