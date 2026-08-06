@@ -22,19 +22,18 @@ export function FinalCTASection() {
 
   return (
     <section
-      className="relative overflow-hidden py-24"
-      style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' }}
+      className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 py-24 dark:from-gray-900 dark:to-gray-900"
       aria-label="Get started"
     >
       {/* Decorative destination names */}
       <div
-        className="pointer-events-none absolute inset-0 flex flex-wrap items-center justify-center gap-6 px-10 opacity-30"
+        className="pointer-events-none absolute inset-0 flex flex-wrap items-center justify-center gap-6 px-10 opacity-20 dark:opacity-10"
         aria-hidden="true"
       >
         {DESTINATIONS.map((d) => (
           <span
             key={d}
-            className="text-[28px] font-black tracking-tight text-blue-300 sm:text-[40px]"
+            className="text-[28px] font-black tracking-tight text-blue-400 sm:text-[40px]"
           >
             {d}
           </span>
@@ -49,10 +48,10 @@ export function FinalCTASection() {
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h2 className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 sm:text-[48px]">
+          <h2 className="mb-4 text-[36px] font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-[48px]">
             Ready to plan your next trip?
           </h2>
-          <p className="mb-8 text-[17px] text-gray-500">
+          <p className="mb-8 text-[17px] text-gray-500 dark:text-gray-400">
             Join travellers planning trips across India and the world. Free forever, no card needed.
           </p>
 
@@ -70,7 +69,7 @@ export function FinalCTASection() {
           </Link>
 
           {/* Google sign-in indicator */}
-          <div className="mb-4 flex items-center justify-center gap-2 text-[14px] text-gray-500">
+          <div className="mb-4 flex items-center justify-center gap-2 text-[14px] text-gray-500 dark:text-gray-400">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -99,12 +98,12 @@ export function FinalCTASection() {
 
           <Link
             to="/login"
-            className="text-[14px] font-medium text-gray-400 transition-colors hover:text-gray-700"
+            className="text-[14px] font-medium text-gray-400 transition-colors hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200"
           >
             Already have an account? Sign in →
           </Link>
 
-          <p className="mt-6 text-[12px] text-gray-400">
+          <p className="mt-6 text-[12px] text-gray-400 dark:text-gray-500">
             No credit card · Free forever · Works in India and worldwide
           </p>
         </motion.div>

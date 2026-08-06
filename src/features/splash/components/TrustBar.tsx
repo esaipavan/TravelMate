@@ -1,19 +1,25 @@
-export function TrustBar() {
-  const items = [
-    { icon: '🔒', text: 'End-to-end encrypted' },
-    { icon: '₹', text: 'Plan in rupees' },
-    { icon: '📱', text: 'Works offline' },
-    { icon: '🆓', text: 'Free forever' },
-    { icon: '🇮🇳', text: 'Built for Indian trips' },
-  ];
+import { ShieldCheck, IndianRupee, WifiOff, Sparkles, MapPin } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
+const ITEMS: { icon: LucideIcon; text: string }[] = [
+  { icon: ShieldCheck, text: 'End-to-end encrypted' },
+  { icon: IndianRupee, text: 'Plan in ₹' },
+  { icon: WifiOff, text: 'Works offline' },
+  { icon: Sparkles, text: 'Free forever' },
+  { icon: MapPin, text: 'Built for India' },
+];
+
+export function TrustBar() {
   return (
-    <div className="bg-gray-50 py-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
+    <div className="border-b border-gray-200 bg-gray-50 py-3 dark:border-gray-800 dark:bg-gray-950">
       <div className="mx-auto max-w-6xl px-5">
         <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2" role="list">
-          {items.map(({ icon, text }) => (
-            <li key={text} className="flex items-center gap-1.5 text-[13px] text-gray-500">
-              <span aria-hidden="true">{icon}</span>
+          {ITEMS.map(({ icon: Icon, text }) => (
+            <li
+              key={text}
+              className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
+            >
+              <Icon className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
               {text}
             </li>
           ))}

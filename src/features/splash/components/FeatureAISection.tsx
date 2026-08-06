@@ -39,68 +39,25 @@ export function FeatureAISection() {
 
   return (
     <section
-      id="features"
-      className="py-20"
-      style={{ background: '#FAFAF7' }}
+      id="ai"
+      className="bg-[#FAFAF7] py-20 dark:bg-gray-950"
       aria-label="AI Concierge feature"
     >
       <div className="mx-auto max-w-6xl px-5">
-        <div ref={ref} className="flex flex-col items-center gap-14 lg:flex-row lg:gap-20">
-          {/* Left: copy */}
-          <motion.div
-            className="flex-1"
-            {...anim}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="mb-4 inline-block rounded-full bg-blue-50 px-3.5 py-1 text-[12px] font-semibold uppercase tracking-wider text-blue-700">
-              AI Concierge
-            </span>
-            <h2 className="mb-4 text-[32px] font-bold leading-[1.2] tracking-tight text-gray-900 sm:text-[40px]">
-              An AI that knows your whole trip.
-            </h2>
-            <p className="mb-6 text-[17px] leading-[1.65] text-gray-500">
-              Get a morning brief, packing list, budget alerts, and safety tips — all tailored to
-              your specific itinerary. Not generic advice.
-            </p>
-
-            {/* Scenario card */}
-            <div
-              className="mb-7 rounded-2xl p-5"
-              style={{
-                background: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-              }}
-            >
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-500">
-                Example
-              </p>
-              <p className="text-[14px] leading-relaxed text-blue-900">
-                🌅 "Your Manali trip starts in 3 days. Pack thermals — forecast shows -2°C. Hotel
-                check-in is at 2pm; your bus arrives at 12:30pm. Carry lunch."
-              </p>
-            </div>
-
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 text-[14px] font-semibold text-blue-700 transition-colors hover:text-blue-900"
-            >
-              See all 8 AI modules
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </motion.div>
-
-          {/* Right: cycling insight card */}
+        <div ref={ref} className="flex flex-col-reverse items-center gap-14 lg:flex-row lg:gap-20">
+          {/* Right: cycling insight card (shown first on mobile via flex-col-reverse) */}
           <motion.div
             className="w-full max-w-sm flex-shrink-0"
             {...(reduced
               ? {}
               : { initial: { opacity: 0, x: 32 }, animate: inView ? { opacity: 1, x: 0 } : {} })}
             transition={{ duration: 0.65, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            aria-hidden="true"
           >
+            {/* Card: decorative, hidden from screen readers */}
             <div
               className="overflow-hidden rounded-2xl bg-gray-900"
               style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)', minHeight: 200 }}
+              aria-hidden="true"
             >
               <div
                 className="px-5 py-4"
@@ -134,22 +91,66 @@ export function FeatureAISection() {
                   </motion.div>
                 </AnimatePresence>
               </div>
-              {/* Dots indicator */}
-              <div className="flex justify-center gap-1.5 pb-4">
-                {AI_INSIGHTS.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveInsight(i)}
-                    className="h-1.5 rounded-full transition-all"
-                    style={{
-                      width: i === activeInsight ? 20 : 6,
-                      background: i === activeInsight ? '#F59E0B' : 'rgba(255,255,255,0.2)',
-                    }}
-                    aria-label={`Show insight ${i + 1}`}
-                  />
-                ))}
-              </div>
             </div>
+
+            {/* Dot indicators: OUTSIDE the aria-hidden card, keyboard accessible */}
+            <div
+              className="mt-3 flex justify-center gap-1.5"
+              role="group"
+              aria-label="AI insight examples"
+            >
+              {AI_INSIGHTS.map((insight, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveInsight(i)}
+                  className="rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  style={{
+                    height: 6,
+                    width: i === activeInsight ? 20 : 6,
+                    background: i === activeInsight ? '#F59E0B' : 'rgba(107,114,128,0.4)',
+                  }}
+                  aria-label={`Show ${insight.title} example`}
+                  aria-pressed={i === activeInsight}
+                />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Left: copy */}
+          <motion.div
+            className="flex-1"
+            {...anim}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="mb-4 inline-block rounded-full bg-blue-50 px-3.5 py-1 text-[12px] font-semibold uppercase tracking-wider text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              AI Concierge
+            </span>
+            <h2 className="mb-4 text-[32px] font-bold leading-[1.2] tracking-tight text-gray-900 dark:text-white sm:text-[40px]">
+              An AI that knows your whole trip.
+            </h2>
+            <p className="mb-6 text-[17px] leading-[1.65] text-gray-500 dark:text-gray-400">
+              Get a morning brief, packing list, budget alerts, and safety tips — all tailored to
+              your specific itinerary. Not generic advice.
+            </p>
+
+            {/* Scenario card */}
+            <div className="mb-7 rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-800/50 dark:bg-blue-950/30">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                Example · Manali
+              </p>
+              <p className="text-[14px] leading-relaxed text-blue-900 dark:text-blue-200">
+                🌅 "Your Manali trip starts in 3 days. Pack thermals — forecast shows -2°C. Hotel
+                check-in is at 2pm; your bus arrives at 12:30pm. Carry lunch."
+              </p>
+            </div>
+
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 text-[14px] font-semibold text-blue-700 transition-colors hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200"
+            >
+              Get started — it's free
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </motion.div>
         </div>
       </div>

@@ -12,12 +12,20 @@ const FAQ_ITEMS = [
     a: 'Never. TravelMate is free forever. We ask for nothing except your Google account to sign in. We mean it.',
   },
   {
+    q: "Why is TravelMate free? What's the business model?",
+    a: "TravelMate is free because we believe travel planning tools shouldn't cost money. We're currently building with a lean team. In the future, we plan to sustain the service through optional premium features — like team accounts, advanced analytics, and priority AI. Core planning, budgeting, and AI features will stay free forever.",
+  },
+  {
+    q: 'Is this safe for storing passport documents?',
+    a: 'Yes. Documents you upload are stored with end-to-end encryption and Row-Level Security — only you (and group members you explicitly share with) can access them. Even our team cannot read your personal documents. Read more on our Security page.',
+  },
+  {
     q: 'Will this work for trips within India — trains, domestic flights, Tier 2 cities?',
     a: 'Yes. TravelMate works for any trip, anywhere in India or the world. Users plan Manali road trips, Kerala backwaters, and IRCTC train journeys — all with the same AI companion.',
   },
   {
     q: 'Can my whole group use this together?',
-    a: 'Absolutely. Invite friends with owner, editor, or viewer roles. Changes sync in real time and an activity feed tracks who did what. The budget split handles even complex group splits automatically.',
+    a: 'Absolutely. Invite friends with owner, editor, or viewer roles. Changes sync in real time and the budget split handles even complex group expenses automatically.',
   },
   {
     q: 'Is my personal travel data safe?',
@@ -29,7 +37,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Can I export my trip data?',
-    a: 'Yes. The Export module generates a PDF of your full itinerary, budget summary, and expense log — ready to share or print before you travel.',
+    a: 'Yes. Export generates a PDF of your full itinerary, budget summary, and expense log — ready to share or print before you travel.',
   },
   {
     q: 'How do I install it on my phone?',
@@ -44,13 +52,12 @@ export function FAQSection() {
   return (
     <section
       id="faq"
-      className="py-20"
-      style={{ background: '#FAFAF7' }}
+      className="bg-[#FAFAF7] py-20 dark:bg-gray-950"
       aria-label="Frequently asked questions"
     >
       <div className="mx-auto max-w-2xl px-5">
         <div className="mb-12 text-center">
-          <h2 className="text-[32px] font-bold tracking-tight text-gray-900 sm:text-[40px]">
+          <h2 className="text-[32px] font-bold tracking-tight text-gray-900 dark:text-white sm:text-[40px]">
             Common questions
           </h2>
         </div>
@@ -61,8 +68,7 @@ export function FAQSection() {
             return (
               <div
                 key={item.q}
-                className="overflow-hidden rounded-xl bg-white transition-shadow hover:shadow-sm"
-                style={{ border: '1px solid #E5E7EB' }}
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow hover:shadow-sm dark:border-gray-700 dark:bg-gray-800"
               >
                 <dt>
                   <button
@@ -71,12 +77,14 @@ export function FAQSection() {
                     aria-controls={`faq-answer-${i}`}
                     id={`faq-question-${i}`}
                     onClick={() => setOpen(isOpen ? null : i)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600"
                     style={{ minHeight: 56 }}
                   >
-                    <span className="text-[15px] font-semibold text-gray-900">{item.q}</span>
+                    <span className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                      {item.q}
+                    </span>
                     <ChevronDown
-                      className="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200"
+                      className="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 dark:text-gray-500"
                       style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                       aria-hidden="true"
                     />
@@ -94,10 +102,7 @@ export function FAQSection() {
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                       style={{ overflow: 'hidden' }}
                     >
-                      <p
-                        className="px-5 pb-5 text-[14px] leading-relaxed text-gray-500"
-                        style={{ borderTop: '1px solid #F3F4F6' }}
-                      >
+                      <p className="border-t border-gray-100 px-5 pb-5 pt-4 text-[14px] leading-relaxed text-gray-500 dark:border-gray-700 dark:text-gray-400">
                         {item.a}
                       </p>
                     </motion.dd>

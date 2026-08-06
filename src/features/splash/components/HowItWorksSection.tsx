@@ -44,16 +44,15 @@ export function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="py-20"
-      style={{ background: '#FAFAF7' }}
+      className="bg-white py-20 dark:bg-gray-900"
       aria-label="How it works"
     >
       <div className="mx-auto max-w-6xl px-5">
         <div className="mb-14 text-center">
-          <h2 className="mb-3 text-[32px] font-bold tracking-tight text-gray-900 sm:text-[40px]">
+          <h2 className="mb-3 text-[32px] font-bold tracking-tight text-gray-900 dark:text-white sm:text-[40px]">
             Up and running in 3 steps
           </h2>
-          <p className="mx-auto max-w-lg text-[17px] text-gray-500">
+          <p className="mx-auto max-w-lg text-[17px] text-gray-500 dark:text-gray-400">
             No setup, no credit card, no learning curve.
           </p>
         </div>
@@ -74,13 +73,14 @@ export function HowItWorksSection() {
                   <div
                     className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
                     style={{ background: s.accent + '15' }}
+                    aria-hidden="true"
                   >
                     {s.isGoogle ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
                         className="h-6 w-6"
-                        aria-label="Google"
+                        aria-hidden="true"
                       >
                         <path
                           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -103,12 +103,16 @@ export function HowItWorksSection() {
                       <Icon className="h-6 w-6" style={{ color: s.accent }} aria-hidden="true" />
                     ) : null}
                   </div>
-                  <span className="text-[13px] font-bold tracking-widest text-gray-300">
+                  <span className="text-[13px] font-bold tracking-widest text-gray-300 dark:text-gray-600">
                     {s.step}
                   </span>
                 </div>
-                <h3 className="mb-2 text-[18px] font-bold text-gray-900">{s.title}</h3>
-                <p className="text-[15px] leading-relaxed text-gray-500">{s.desc}</p>
+                <h3 className="mb-2 text-[18px] font-bold text-gray-900 dark:text-white">
+                  {s.title}
+                </h3>
+                <p className="text-[15px] leading-relaxed text-gray-500 dark:text-gray-400">
+                  {s.desc}
+                </p>
               </motion.div>
             );
           })}
@@ -118,7 +122,7 @@ export function HowItWorksSection() {
           initial={reduced ? false : { opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12 text-center text-[13px] text-gray-400"
+          className="mt-12 text-center text-[13px] text-gray-400 dark:text-gray-500"
         >
           Works in Goa · Ladakh · Bali · Dubai · Manali · Paris · Tokyo and everywhere else
         </motion.p>

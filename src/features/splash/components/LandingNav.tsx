@@ -16,7 +16,9 @@ export function LandingNav() {
     <header
       className={[
         'fixed inset-x-0 top-0 z-50 transition-all duration-300',
-        scrolled ? 'border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur-xl' : 'bg-white',
+        scrolled
+          ? 'border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/95'
+          : 'bg-white dark:bg-gray-950',
       ].join(' ')}
     >
       <a
@@ -29,7 +31,7 @@ export function LandingNav() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5">
         <Link
           to="/"
-          className="flex shrink-0 items-center gap-2.5 font-bold tracking-tight text-gray-900"
+          className="flex shrink-0 items-center gap-2.5 font-bold tracking-tight text-gray-900 dark:text-white"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 shadow-sm">
             <Plane className="h-4 w-4 text-white" aria-hidden="true" />
@@ -48,7 +50,7 @@ export function LandingNav() {
             <a
               key={href}
               href={href}
-              className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              className="rounded-lg px-3.5 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
             >
               {label}
             </a>
@@ -58,7 +60,7 @@ export function LandingNav() {
         <div className="flex items-center gap-2.5">
           <Link
             to="/login"
-            className="hidden rounded-lg px-3.5 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 sm:block"
+            className="hidden rounded-lg px-3.5 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white sm:block"
           >
             Sign in
           </Link>

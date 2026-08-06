@@ -1,31 +1,6 @@
 User-agent: *
-Allow: /
-Allow: /login
-Allow: /register
-
-# Protect app routes — no value for crawlers
-Disallow: /dashboard
-Disallow: /trips
 Disallow: /admin
-Disallow: /profile
-Disallow: /settings
-Disallow: /assistant
-Disallow: /analytics
-Disallow: /budget
-Disallow: /expenses
-Disallow: /itinerary
-Disallow: /checklist
-Disallow: /journal
-Disallow: /weather
-Disallow: /currency
-Disallow: /nearby
-Disallow: /destination
-Disallow: /documents
-Disallow: /reminders
-Disallow: /export
-Disallow: /memories
-Disallow: /onboarding
-Disallow: /auth/callback
+Disallow: /api
+Allow: /
 
-# Sitemap location — update domain when deploying
-Sitemap: https://travelmate.vercel.app/sitemap.xml
+Sitemap: https://travel-planner-eight-sandy.vercel.app/sitemap.xml
