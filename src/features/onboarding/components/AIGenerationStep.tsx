@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,12 +18,8 @@ interface AIGenerationStepProps {
   budgetTier: BudgetTier | null;
   userId: string;
   reduced: boolean;
-  /** Called once on mount — marks onboarding complete before generation starts
-   *  so a page refresh during generation never restarts the flow. */
   onMarkComplete: () => void;
-  /** Called when user is ready to proceed to the next step. */
   onNext: (tripId: string | null, briefId: string | null) => void;
-  /** Called when user wants to skip to Dashboard directly (trip creation failed). */
   onSkip: () => void;
 }
 
@@ -45,8 +41,8 @@ export function AIGenerationStep({
   const markedRef = useRef(false);
   const ranRef = useRef(false);
 
-  // Mark onboarding complete immediately — before any network call.
-  // This ensures refresh during generation sends users to Dashboard, not back to step 0.
+  // Mark onboarding complete immediately before any network call so that a page
+  // refresh during generation always navigates to Dashboard, not back to step 0.
   useEffect(() => {
     if (!markedRef.current) {
       markedRef.current = true;
@@ -54,7 +50,7 @@ export function AIGenerationStep({
     }
   }, [onMarkComplete]);
 
-  // Start generation once on mount.
+  // Start generation exactly once on mount.
   useEffect(() => {
     if (ranRef.current) return;
     ranRef.current = true;
@@ -82,7 +78,7 @@ export function AIGenerationStep({
     budgetTier: budgetTier ?? null,
   };
 
-  // ── Success: AI brief ready ───────────────────────────────────────────────
+  // Success: AI brief ready
   if (phase === 'complete' && result?.status === 'complete' && result.payload) {
     return (
       <TripBriefPreview
@@ -93,11 +89,18 @@ export function AIGenerationStep({
     );
   }
 
-  // ── Partial success: trip created but AI failed ───────────────────────────
+  // Partial success: trip created but AI failed
   if (phase === 'complete' && result?.status === 'failed') {
     const isTimeout = errorCode === 'AI_TIMEOUT';
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-5 text-center">
+        {/* sr-only live region announces state; interactive controls are outside it */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {isTimeout
+            ? 'AI took too long. Your trip was created successfully.'
+            : 'AI brief could not be generated. Your trip was created successfully.'}
+        </p>
+
         <motion.div
           initial={reducedMotion ? {} : { scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -115,7 +118,7 @@ export function AIGenerationStep({
           className="mb-6"
         >
           <h2 className="mb-2 text-[20px] font-black text-white">
-            {isTimeout ? 'AI took too long' : 'AI brief couldn’t be generated'}
+            {isTimeout ? 'AI took too long' : "AI brief couldn't be generated"}
           </h2>
           <p className="text-[14px]" style={{ color: 'rgba(248,250,252,0.5)' }}>
             Your trip was created successfully. The AI brief will be ready in your dashboard.
@@ -127,8 +130,6 @@ export function AIGenerationStep({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING, delay: 0.18 }}
           className="w-full"
-          role="status"
-          aria-live="polite"
         >
           <button
             type="button"
@@ -148,10 +149,15 @@ export function AIGenerationStep({
     );
   }
 
-  // ── Trip creation failed ──────────────────────────────────────────────────
+  // Trip creation failed (DB error)
   if (phase === 'failed') {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-5 text-center">
+        {/* sr-only live region announces error; interactive controls are outside it */}
+        <p className="sr-only" role="status" aria-live="polite">
+          Trip creation failed. Please check your connection and try again.
+        </p>
+
         <motion.div
           initial={reducedMotion ? {} : { scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -168,7 +174,7 @@ export function AIGenerationStep({
           transition={{ ...SPRING, delay: 0.1 }}
           className="mb-6"
         >
-          <h2 className="mb-2 text-[20px] font-black text-white">Couldn’t create your trip</h2>
+          <h2 className="mb-2 text-[20px] font-black text-white">{"Couldn't create your trip"}</h2>
           <p className="text-[14px]" style={{ color: 'rgba(248,250,252,0.5)' }}>
             Check your connection and try again. Your onboarding data is saved.
           </p>
@@ -179,8 +185,6 @@ export function AIGenerationStep({
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPRING, delay: 0.18 }}
           className="flex w-full flex-col gap-3"
-          role="status"
-          aria-live="polite"
         >
           <button
             type="button"
@@ -199,7 +203,7 @@ export function AIGenerationStep({
           <button
             type="button"
             onClick={onSkip}
-            className="py-2.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            className="flex min-h-[44px] w-full items-center justify-center text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             style={{ color: 'rgba(248,250,252,0.35)' }}
           >
             Skip for now — go to Dashboard
@@ -209,9 +213,14 @@ export function AIGenerationStep({
     );
   }
 
-  // ── Loading / generating ──────────────────────────────────────────────────
+  // Loading / generating
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-5 text-center">
+      {/* sr-only live region announces that generation has started */}
+      <p className="sr-only" role="status" aria-live="polite">
+        Building your trip brief for {destination}. Please wait, this takes about 15 to 30 seconds.
+      </p>
+
       {/* Pulsing orb */}
       <motion.div
         className="relative mb-8 flex h-24 w-24 items-center justify-center"
@@ -242,11 +251,7 @@ export function AIGenerationStep({
         transition={{ ...SPRING, delay: 0.08 }}
         className="mb-3"
       >
-        <h2
-          className="text-[22px] font-black tracking-tight text-white"
-          role="status"
-          aria-live="polite"
-        >
+        <h2 className="text-[22px] font-black tracking-tight text-white">
           Building your trip brief
         </h2>
         <p className="mt-1 text-[14px]" style={{ color: 'rgba(248,250,252,0.4)' }}>
@@ -270,7 +275,7 @@ export function AIGenerationStep({
         className="mt-8 text-[11px]"
         style={{ color: 'rgba(248,250,252,0.2)' }}
       >
-        This takes about 15–30 seconds
+        This takes about 15-30 seconds
       </motion.p>
     </div>
   );

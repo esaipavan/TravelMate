@@ -124,7 +124,6 @@ export default function OnboardingPage() {
                 destinationCategory: cat,
                 startDate,
                 endDate,
-                // v2 compat — keeps ItineraryStep & CreateTripStep working
                 dates: { from: startDate, to: endDate },
               });
             }}

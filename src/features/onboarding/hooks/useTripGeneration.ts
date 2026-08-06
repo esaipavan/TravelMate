@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import {
   createTripWithBrief,
   type CreateTripWithBriefParams,
@@ -18,24 +18,38 @@ const INITIAL: GenerationState = { phase: 'idle', result: null, errorCode: null 
 export function useTripGeneration() {
   const [state, setState] = useState<GenerationState>(INITIAL);
   const runningRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Track mount status to guard against setState on an unmounted component.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function run(params: CreateTripWithBriefParams): Promise<void> {
     if (runningRef.current) return;
     runningRef.current = true;
-    setState({ phase: 'running', result: null, errorCode: null });
+    if (mountedRef.current) {
+      setState({ phase: 'running', result: null, errorCode: null });
+    }
     try {
       const result = await createTripWithBrief(params);
-      // createTripWithBrief never throws for AI failures — only for DB errors.
-      // AI failures are returned as result.status === 'failed'.
-      setState({
-        phase: 'complete',
-        result,
-        errorCode: result.status === 'failed' ? (result.errorMessage ?? 'AI_ERROR') : null,
-      });
+      if (mountedRef.current) {
+        setState({
+          phase: 'complete',
+          result,
+          errorCode: result.status === 'failed' ? (result.errorMessage ?? 'AI_ERROR') : null,
+        });
+      }
     } catch (err) {
       const code = err instanceof Error ? err.message : 'TRIP_CREATE_ERROR';
-      setState({ phase: 'failed', result: null, errorCode: code });
+      if (mountedRef.current) {
+        setState({ phase: 'failed', result: null, errorCode: code });
+      }
     }
+    // runningRef intentionally stays true after completion; only retry() resets it.
   }
 
   function retry(params: CreateTripWithBriefParams): void {
