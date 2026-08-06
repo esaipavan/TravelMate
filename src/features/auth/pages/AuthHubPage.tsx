@@ -93,7 +93,7 @@ export default function AuthHubPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground">{APP_NAME}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">Your AI travel companion</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">Your AI concierge for travel</p>
             </div>
           </motion.div>
 

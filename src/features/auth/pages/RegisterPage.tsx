@@ -42,8 +42,6 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GRAD = 'linear-gradient(135deg, hsl(237 72% 59%), hsl(271 77% 58%))';
-
 const STAGGER: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.12 } },
@@ -155,10 +153,7 @@ export default function RegisterPage() {
     >
       {/* Logo */}
       <motion.div variants={reduced ? {} : ITEM} className="flex items-center gap-2.5">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl"
-          style={{ background: GRAD }}
-        >
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-700 shadow-sm">
           <Plane className="h-[18px] w-[18px] text-white" aria-hidden="true" />
         </div>
         <span className="text-base font-bold tracking-tight text-white">{APP_NAME}</span>
@@ -369,8 +364,12 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              className="h-11 w-full rounded-xl border-0 font-semibold text-white"
-              style={{ background: GRAD, boxShadow: '0 0 24px rgba(124,108,221,0.35)' }}
+              className="h-11 w-full rounded-xl border-0 font-semibold"
+              style={{
+                background: '#F59E0B',
+                color: '#111827',
+                boxShadow: '0 0 20px rgba(245,158,11,0.25)',
+              }}
               disabled={isLoading}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -404,7 +403,7 @@ export default function RegisterPage() {
             >
               <Icon
                 className="h-3.5 w-3.5 flex-shrink-0"
-                style={{ color: 'hsl(257 60% 72%)' }}
+                style={{ color: '#60A5FA' }}
                 aria-hidden="true"
               />
               {text}
@@ -420,11 +419,7 @@ export default function RegisterPage() {
         style={{ color: 'rgba(255,255,255,0.45)' }}
       >
         Already have an account?{' '}
-        <Link
-          to="/login"
-          className="font-semibold hover:underline"
-          style={{ color: 'hsl(257 60% 72%)' }}
-        >
+        <Link to="/login" className="font-semibold hover:underline" style={{ color: '#60A5FA' }}>
           Sign in
         </Link>
       </motion.p>

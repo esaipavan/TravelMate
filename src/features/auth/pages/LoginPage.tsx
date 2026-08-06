@@ -33,8 +33,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GRAD = 'linear-gradient(135deg, hsl(237 72% 59%), hsl(271 77% 58%))';
-
 const STAGGER: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
@@ -123,7 +121,7 @@ export default function LoginPage() {
               void handleResend();
             }}
             className="text-sm font-semibold hover:underline"
-            style={{ color: 'hsl(257 60% 72%)' }}
+            style={{ color: '#60A5FA' }}
           >
             Resend confirmation email
           </button>
@@ -149,10 +147,7 @@ export default function LoginPage() {
     >
       {/* Logo */}
       <motion.div variants={reduced ? {} : ITEM} className="flex items-center gap-2.5">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl"
-          style={{ background: GRAD }}
-        >
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-700 shadow-sm">
           <Plane className="h-[18px] w-[18px] text-white" aria-hidden="true" />
         </div>
         <span className="text-base font-bold tracking-tight text-white">{APP_NAME}</span>
@@ -273,7 +268,7 @@ export default function LoginPage() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={isLoading}
-                  className="h-4 w-4 cursor-pointer rounded accent-violet-500"
+                  className="h-4 w-4 cursor-pointer rounded accent-blue-600"
                 />
                 <span className="select-none text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
                   Remember me
@@ -282,7 +277,7 @@ export default function LoginPage() {
               <Link
                 to="/forgot-password"
                 className="text-xs font-medium hover:underline"
-                style={{ color: 'hsl(257 60% 72%)' }}
+                style={{ color: '#60A5FA' }}
                 tabIndex={isLoading ? -1 : 0}
               >
                 Forgot password?
@@ -292,8 +287,12 @@ export default function LoginPage() {
             {/* Submit */}
             <Button
               type="submit"
-              className="mt-1 h-11 w-full rounded-xl border-0 font-semibold text-white"
-              style={{ background: GRAD, boxShadow: '0 0 24px rgba(124,108,221,0.35)' }}
+              className="mt-1 h-11 w-full rounded-xl border-0 font-semibold"
+              style={{
+                background: '#F59E0B',
+                color: '#111827',
+                boxShadow: '0 0 20px rgba(245,158,11,0.25)',
+              }}
               disabled={isLoading}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -327,7 +326,7 @@ export default function LoginPage() {
             >
               <Icon
                 className="h-3.5 w-3.5 flex-shrink-0"
-                style={{ color: 'hsl(257 60% 72%)' }}
+                style={{ color: '#60A5FA' }}
                 aria-hidden="true"
               />
               {text}
@@ -343,11 +342,7 @@ export default function LoginPage() {
         style={{ color: 'rgba(255,255,255,0.45)' }}
       >
         Don't have an account?{' '}
-        <Link
-          to="/register"
-          className="font-semibold hover:underline"
-          style={{ color: 'hsl(257 60% 72%)' }}
-        >
+        <Link to="/register" className="font-semibold hover:underline" style={{ color: '#60A5FA' }}>
           Create one free
         </Link>
       </motion.p>

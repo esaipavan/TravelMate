@@ -75,7 +75,7 @@ export function CompanionChat({ trip }: Props) {
 
   return (
     <motion.section
-      aria-label="AI travel companion chat"
+      aria-label="AI concierge chat"
       className="overflow-hidden rounded-2xl border border-border/50 bg-card"
       variants={rv(FADE_VARIANTS, reduced)}
       initial="hidden"
@@ -102,7 +102,7 @@ export function CompanionChat({ trip }: Props) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <Bot className="h-5 w-5 text-primary" aria-hidden />
             </div>
-            <p className="text-sm font-medium text-foreground">Ask your travel companion</p>
+            <p className="text-sm font-medium text-foreground">Ask your AI concierge</p>
             <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
               Local tips for {shortDestination}, packing advice, budget help, food spots, or
               must-see attractions.

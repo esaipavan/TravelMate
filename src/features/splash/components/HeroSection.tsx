@@ -56,7 +56,7 @@ export function HeroSection() {
             Apna trip, apni planning
           </p>
           <h1 className="mb-3 text-4xl font-extrabold leading-[1.1] tracking-[-0.025em] text-white">
-            Your AI travel companion for India.
+            Your AI concierge for India.
           </h1>
           <p className="mb-7 text-[15px] leading-relaxed text-white/75">
             Plan any trip from Kedarnath to Goa. AI creates your itinerary, tracks group expenses,
@@ -102,7 +102,7 @@ export function HeroSection() {
               variants={variants}
               className="mb-5 text-[56px] font-extrabold leading-[1.08] tracking-[-0.03em] text-gray-900 dark:text-white"
             >
-              Your AI travel companion for India.
+              Your AI concierge for India.
             </motion.h1>
             <motion.p
               custom={2}

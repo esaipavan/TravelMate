@@ -80,7 +80,7 @@ export default function AssistantPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
             <Sparkles className="h-4 w-4 text-primary" aria-hidden />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Travel Companion</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Concierge</h1>
         </div>
         <p className="text-sm text-muted-foreground">
           Your AI concierge — morning briefs, budget coaching, itinerary optimisation, packing, food

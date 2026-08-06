@@ -1,0 +1,118 @@
+/* Dark-theme overrides for react-day-picker inside always-dark onboarding */
+.tm-rdp {
+  --rdp-cell-size: 38px;
+  --rdp-accent-color: #6366f1;
+  --rdp-background-color: rgba(99, 102, 241, 0.15);
+  --rdp-outline: 2px solid #6366f1;
+  --rdp-outline-selected: 2px solid rgba(0, 0, 0, 0.5);
+  color: rgba(248, 250, 252, 0.8);
+  width: 100%;
+}
+
+.tm-rdp .rdp-months {
+  width: 100%;
+}
+
+.tm-rdp .rdp-month {
+  width: 100%;
+}
+
+.tm-rdp .rdp-table {
+  width: 100%;
+}
+
+.tm-rdp .rdp-caption_label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.tm-rdp .rdp-nav_button {
+  color: rgba(248, 250, 252, 0.45);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+}
+
+.tm-rdp .rdp-nav_button:hover:not([disabled]) {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.tm-rdp .rdp-head_cell {
+  color: rgba(248, 250, 252, 0.3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 4px;
+}
+
+.tm-rdp .rdp-button {
+  border-radius: 10px;
+  color: rgba(248, 250, 252, 0.75);
+  font-size: 13px;
+  font-weight: 500;
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+}
+
+.tm-rdp .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.tm-rdp .rdp-day_today:not(.rdp-day_selected):not(.rdp-day_outside) {
+  color: #818cf8;
+  font-weight: 700;
+}
+
+.tm-rdp .rdp-day_outside {
+  opacity: 0.2;
+}
+
+.tm-rdp .rdp-day_disabled {
+  opacity: 0.22;
+  cursor: not-allowed;
+}
+
+/* Selected / range styles */
+.tm-rdp .rdp-day_selected {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+.tm-rdp .rdp-day_range_start {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border-radius: 10px 0 0 10px;
+}
+
+.tm-rdp .rdp-day_range_end {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border-radius: 0 10px 10px 0;
+}
+
+/* When start equals end, restore full rounding */
+.tm-rdp .rdp-day_range_start.rdp-day_range_end {
+  border-radius: 10px;
+}
+
+.tm-rdp .rdp-day_range_middle {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  color: rgba(248, 250, 252, 0.9) !important;
+  border-radius: 0;
+}
+
+.tm-rdp .rdp-day_range_middle:hover:not([disabled]) {
+  background-color: rgba(99, 102, 241, 0.28) !important;
+}
+
+/* Focus ring */
+.tm-rdp .rdp-button:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}

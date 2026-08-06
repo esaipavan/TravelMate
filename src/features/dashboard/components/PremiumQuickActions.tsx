@@ -35,7 +35,7 @@ function useQuickActions(): Action[] {
       bg: 'bg-blue-500/10',
     },
     {
-      label: 'AI Planner',
+      label: 'AI Concierge',
       desc: 'Get personalised advice',
       href: '/assistant',
       icon: Sparkles,

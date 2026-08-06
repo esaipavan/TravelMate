@@ -11,7 +11,7 @@ const BEFORE = [
 ];
 
 const AFTER = [
-  { feature: 'AI Trip Planner', win: 'Destination-aware itinerary in minutes' },
+  { feature: 'AI Itinerary Builder', win: 'Destination-aware itinerary in minutes' },
   { feature: 'Group Budget', win: 'Everyone sees the same live numbers' },
   { feature: 'Auto Split', win: 'Instant settlement — no awkward chases' },
   { feature: 'Day-by-Day Plan', win: 'Drag-and-drop itinerary, synced live' },

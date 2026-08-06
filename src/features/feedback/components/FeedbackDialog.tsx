@@ -144,7 +144,7 @@ export function FeedbackDialog({ open, onOpenChange }: Props) {
             Share Feedback
           </DialogTitle>
           <DialogDescription>
-            Help us build the best travel companion. Every message reaches the founding team.
+            Help us improve TravelMate. Every message reaches the founding team.
           </DialogDescription>
         </DialogHeader>
 
