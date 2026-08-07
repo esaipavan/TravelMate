@@ -123,7 +123,7 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
 
 export function UpcomingTripsSection() {
   const reduced = useReducedMotion();
-  const { data: trips = [], isLoading } = useUpcomingTrips();
+  const { data: trips = [], isLoading, isError } = useUpcomingTrips();
   const { state: onboardingState } = useOnboarding();
   const hasTripFromOnboarding = onboardingState.completed && !!onboardingState.data.tripId;
 
@@ -144,7 +144,13 @@ export function UpcomingTripsSection() {
         </Button>
       </div>
 
-      {isLoading && (
+      {isError && (
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          Could not load trips. Please refresh.
+        </p>
+      )}
+
+      {!isError && isLoading && (
         <div className="flex gap-3 overflow-hidden">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-44 w-64 shrink-0 rounded-2xl" />
@@ -152,7 +158,7 @@ export function UpcomingTripsSection() {
         </div>
       )}
 
-      {!isLoading && trips.length === 0 && !hasTripFromOnboarding && (
+      {!isError && !isLoading && trips.length === 0 && !hasTripFromOnboarding && (
         <motion.div
           className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 bg-muted/20 py-12 text-center"
           variants={rv(CARD_VARIANTS, reduced)}
@@ -174,7 +180,7 @@ export function UpcomingTripsSection() {
         </motion.div>
       )}
 
-      {!isLoading && trips.length > 0 && (
+      {!isError && !isLoading && trips.length > 0 && (
         <motion.div
           className="-mx-4 px-4 lg:-mx-6 lg:px-6"
           variants={rv(LIST_VARIANTS, reduced)}

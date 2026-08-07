@@ -57,14 +57,27 @@ export default function ResetPasswordPage() {
   const { isSubmitting } = form.formState;
 
   useEffect(() => {
+    // Mark that a live PASSWORD_RECOVERY event was received in this browser session.
+    // The flag survives a page refresh (sessionStorage is tab-persistent) but is absent
+    // for ordinary signed-in users who navigate here directly — keeping the form secure.
+    const RECOVERY_FLAG = 'pw-recovery-in-progress';
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setPageState('ready');
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem(RECOVERY_FLAG, '1');
+        setPageState('ready');
+      }
     });
 
+    // Handle the page-refresh case: Supabase clears the URL hash after the first load,
+    // so PASSWORD_RECOVERY never re-fires on refresh. If the flag is present and a valid
+    // recovery session exists in localStorage, allow the user to continue.
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setPageState('ready');
+      if (session && sessionStorage.getItem(RECOVERY_FLAG) === '1') {
+        setPageState('ready');
+      }
     });
 
     const timeout = setTimeout(() => {
@@ -80,6 +93,8 @@ export default function ResetPasswordPage() {
   async function onSubmit(values: ResetFormValues) {
     try {
       await updatePassword(values.password);
+      sessionStorage.removeItem('pw-recovery-in-progress');
+      await supabase.auth.signOut();
       toast.success('Password updated. Please sign in with your new password.');
       navigate('/login', { replace: true });
     } catch (err) {

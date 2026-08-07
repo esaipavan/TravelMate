@@ -124,8 +124,8 @@ function HeroSkeleton() {
 
 export function TripCommandHero() {
   const reduced = useReducedMotion();
-  const { data: currentTrip, isLoading: loadingCurr } = useCurrentTrip();
-  const { data: upcomingTrips = [], isLoading: loadingUp } = useUpcomingTrips();
+  const { data: currentTrip, isLoading: loadingCurr, isError: errCurr } = useCurrentTrip();
+  const { data: upcomingTrips = [], isLoading: loadingUp, isError: errUp } = useUpcomingTrips();
 
   const displayTrip = currentTrip ?? upcomingTrips[0] ?? null;
   const destination = displayTrip?.destination ?? '';
@@ -133,6 +133,14 @@ export function TripCommandHero() {
   const { data: weather } = useWeather(destination);
 
   if (loadingCurr || loadingUp) return <HeroSkeleton />;
+
+  if (errCurr || errUp) {
+    return (
+      <div className="relative -mx-4 -mt-4 flex min-h-[460px] items-center justify-center bg-muted/30 lg:-mx-6 lg:-mt-6">
+        <p className="text-sm text-muted-foreground">Could not load trip data. Please refresh.</p>
+      </div>
+    );
+  }
 
   // Countdown + progress
   const today = new Date();

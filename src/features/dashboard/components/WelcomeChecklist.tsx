@@ -40,7 +40,7 @@ const GENERIC_ITEMS: GenericItem[] = [
     key: 'expenseLogged',
     label: 'Log your first expense',
     desc: 'Track spending and stay on budget.',
-    href: '/expenses',
+    href: '/trips',
     icon: Wallet,
     color: '#10b981',
   },

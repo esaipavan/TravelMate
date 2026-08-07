@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth.store';
+import { queryClient } from '@/lib/queryClient';
 import { UserRole } from '@/types';
+
+const ONBOARDING_KEY = 'travelmate-onboarding-v3';
+const CHECKLIST_KEY = 'travelmate-dashboard-checklist';
 
 async function fetchUserRole(userId: string): Promise<UserRole> {
   const { data } = await supabase.from('profiles').select('user_role').eq('id', userId).single();
@@ -24,7 +28,7 @@ export function AuthInitializer() {
     // Role fetching is fire-and-forget; errors fall back to UserRole.USER.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -34,6 +38,22 @@ export function AuthInitializer() {
           .catch(() => setRole(UserRole.USER));
       } else {
         setRole(UserRole.USER);
+        // Clear stale cache and per-user localStorage on any sign-out,
+        // including session expiry — not just explicit logout.
+        if (event === 'SIGNED_OUT') {
+          queryClient.clear();
+          localStorage.removeItem(ONBOARDING_KEY);
+          localStorage.removeItem(CHECKLIST_KEY);
+          sessionStorage.removeItem('no-persist-session');
+        }
+      }
+
+      // Supabase's autoRefreshToken writes back to localStorage after every token
+      // refresh regardless of whether the user chose "Remember Me = false". Re-remove
+      // the key on each TOKEN_REFRESHED event so non-persistent sessions stay
+      // non-persistent for the full browser-session lifetime.
+      if (event === 'TOKEN_REFRESHED' && sessionStorage.getItem('no-persist-session') === '1') {
+        localStorage.removeItem('travel-planner-auth');
       }
     });
 

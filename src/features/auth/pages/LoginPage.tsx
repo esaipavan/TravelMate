@@ -75,6 +75,14 @@ export default function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     try {
       await signIn(values.email, values.password);
+      if (!rememberMe) {
+        // Supabase JS v2 does not support per-session persistSession; the client
+        // setting is global. Remove the storage key immediately and set a flag so
+        // AuthInitializer can re-remove it after every subsequent TOKEN_REFRESHED
+        // event, preventing autoRefreshToken from re-persisting the session.
+        sessionStorage.setItem('no-persist-session', '1');
+        localStorage.removeItem('travel-planner-auth');
+      }
       navigate(from, { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
