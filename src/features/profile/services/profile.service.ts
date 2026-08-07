@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { ProfileRow, ProfileUpdate } from '../types';
 
-const AVATAR_BUCKET = 'avatars';
+const AVATAR_BUCKET = 'profile-images';
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 

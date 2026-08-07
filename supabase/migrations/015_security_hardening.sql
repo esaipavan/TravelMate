@@ -299,33 +299,67 @@ BEGIN
 END;
 $$;
 
+-- ── Grant execute on analytics RPCs to authenticated ─────────
+-- Re-applied here because migration 012's GRANT statements were
+-- never executed (the SQL-language functions failed to create).
+
+GRANT EXECUTE ON FUNCTION get_active_user_counts()             TO authenticated;
+GRANT EXECUTE ON FUNCTION get_dau_trend(int)                   TO authenticated;
+GRANT EXECUTE ON FUNCTION get_activation_rate()                TO authenticated;
+GRANT EXECUTE ON FUNCTION get_retention()                      TO authenticated;
+GRANT EXECUTE ON FUNCTION get_funnel_counts()                  TO authenticated;
+GRANT EXECUTE ON FUNCTION get_ai_summary()                     TO authenticated;
+GRANT EXECUTE ON FUNCTION get_top_destinations(int)            TO authenticated;
+GRANT EXECUTE ON FUNCTION get_device_breakdown()               TO authenticated;
+GRANT EXECUTE ON FUNCTION get_feature_adoption_v2()            TO authenticated;
+
 -- ── HIGH-10: decline_invitation — verify caller is recipient ──
+-- Only applied if trip_invitations table exists. The table is created
+-- by migration 010_group_collaboration.sql; if that migration had a
+-- partial failure on this DB the table may be absent — skip safely.
 
-CREATE OR REPLACE FUNCTION public.decline_invitation(p_token TEXT)
-RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_inv trip_invitations;
+DO $$
 BEGIN
-  SELECT * INTO v_inv
-  FROM trip_invitations
-  WHERE token = p_token AND status = 'pending'
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Invitation not found or already processed';
-  END IF;
-
-  -- Verify the caller is the intended recipient
-  IF v_inv.invited_email IS DISTINCT FROM (
-    SELECT email FROM auth.users WHERE id = auth.uid()
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'trip_invitations'
   ) THEN
-    RAISE EXCEPTION 'Unauthorized: you are not the recipient of this invitation';
-  END IF;
+    -- Can't use DECLARE with row type in dynamic SQL, so use EXECUTE
+    -- to compile the function only when the table exists.
+    EXECUTE $fn$
+      CREATE OR REPLACE FUNCTION public.decline_invitation(p_token TEXT)
+      RETURNS VOID
+      LANGUAGE plpgsql
+      SECURITY DEFINER
+      SET search_path = public
+      AS $body$
+      DECLARE
+        v_inv_id   uuid;
+        v_inv_email text;
+      BEGIN
+        SELECT id, invited_email INTO v_inv_id, v_inv_email
+        FROM trip_invitations
+        WHERE token = p_token AND status = 'pending'
+        FOR UPDATE;
 
-  UPDATE trip_invitations SET status = 'declined' WHERE id = v_inv.id;
+        IF NOT FOUND THEN
+          RAISE EXCEPTION 'Invitation not found or already processed';
+        END IF;
+
+        IF v_inv_email IS DISTINCT FROM (
+          SELECT email FROM auth.users WHERE id = auth.uid()
+        ) THEN
+          RAISE EXCEPTION 'Unauthorized: you are not the recipient of this invitation';
+        END IF;
+
+        UPDATE trip_invitations SET status = 'declined' WHERE id = v_inv_id;
+      END;
+      $body$
+    $fn$;
+
+    RAISE NOTICE 'decline_invitation function updated with recipient check.';
+  ELSE
+    RAISE NOTICE 'Skipping decline_invitation fix: trip_invitations table not found in this DB.';
+  END IF;
 END;
 $$;

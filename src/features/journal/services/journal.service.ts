@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { JournalEntryRow, JournalEntryInsert, JournalEntryUpdate } from '../types';
 
-const BUCKET = 'journal';
+const BUCKET = 'journal-images';
 
 // ── Entries ──────────────────────────────────────────────────────────────────
 
@@ -51,20 +51,17 @@ export async function uploadJournalImage(
   const path = `${userId}/${entryId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file);
   if (error) throw new Error(error.message);
-  const { data, error: signError } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, 31536000);
-  if (signError) throw new Error(signError.message);
-  return data.signedUrl;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function deleteJournalImages(urls: string[]): Promise<void> {
   if (!urls.length) return;
-  const marker = `/object/sign/${BUCKET}/`;
+  const marker = `/object/public/${BUCKET}/`;
   const paths = urls
     .map((url) => {
       const idx = url.indexOf(marker);
-      return idx !== -1 ? url.slice(idx + marker.length).split('?')[0] : '';
+      return idx !== -1 ? url.slice(idx + marker.length) : '';
     })
     .filter(Boolean);
   if (paths.length) {

@@ -4,7 +4,7 @@ import type { TravelDocumentRow, TravelDocumentInsert, TravelDocumentUpdate } fr
 
 const DOCUMENT_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
-const BUCKET = 'documents';
+const BUCKET = 'travel-documents';
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
@@ -65,17 +65,14 @@ export async function uploadDocumentFile(
     contentType: file.type,
   });
   if (error) throw new Error(error.message);
-  const { data, error: signError } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, 31536000);
-  if (signError) throw new Error(signError.message);
-  return data.signedUrl;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function deleteDocumentFile(fileUrl: string): Promise<void> {
-  const marker = `/object/sign/${BUCKET}/`;
+  const marker = `/object/public/${BUCKET}/`;
   const idx = fileUrl.indexOf(marker);
   if (idx === -1) return;
-  const path = fileUrl.slice(idx + marker.length).split('?')[0];
+  const path = fileUrl.slice(idx + marker.length);
   await supabase.storage.from(BUCKET).remove([path]);
 }
