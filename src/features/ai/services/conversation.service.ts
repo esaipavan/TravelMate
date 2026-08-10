@@ -7,29 +7,38 @@ export interface ConversationMessage {
   created_at: string;
 }
 
+// Finds the conversation id for a user+trip pair. Handles a null trip_id
+// (the global, non-trip assistant) with `is('trip_id', null)` so it dedupes
+// correctly under the UNIQUE (user_id, trip_id) NULLS NOT DISTINCT constraint.
+function findConversationId(userId: string, tripId: string | null) {
+  let q = supabase.from('ai_conversations').select('id').eq('user_id', userId);
+  q = tripId === null ? q.is('trip_id', null) : q.eq('trip_id', tripId);
+  return q.order('created_at', { ascending: false }).limit(1).maybeSingle();
+}
+
 // Returns (or creates) the single conversation for this user+trip pair.
+// Concurrency-safe: if two callers race the INSERT, the UNIQUE (user_id,
+// trip_id) constraint rejects the loser with 23505 and we re-read the winner.
 async function getOrCreateConversation(userId: string, tripId: string | null): Promise<string> {
-  if (tripId) {
-    const { data: existing } = await supabase
-      .from('ai_conversations')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('trip_id', tripId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+  const { data: existing } = await findConversationId(userId, tripId);
+  if (existing) return existing.id;
 
-    if (existing) return existing.id;
-  }
-
-  const { data, error } = await supabase
+  const { data: inserted, error: insertErr } = await supabase
     .from('ai_conversations')
     .insert({ user_id: userId, trip_id: tripId })
     .select('id')
     .single();
 
-  if (error || !data) throw new Error('Failed to create AI conversation');
-  return data.id;
+  if (inserted) return inserted.id;
+
+  // Lost a concurrent race — the unique constraint rejected this insert.
+  // Re-read the row the winning caller created.
+  if (insertErr?.code === '23505') {
+    const { data: winner } = await findConversationId(userId, tripId);
+    if (winner) return winner.id;
+  }
+
+  throw new Error('Failed to create AI conversation');
 }
 
 export async function loadHistory(
@@ -52,17 +61,16 @@ export async function loadHistory(
   }
 }
 
+// "New conversation" under the one-conversation-per-(user, trip) model:
+// reuse the existing conversation and clear its messages rather than
+// inserting a second row (which the unique constraint would reject).
 export async function createNewConversation(
   userId: string,
   tripId: string | null,
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from('ai_conversations')
-    .insert({ user_id: userId, trip_id: tripId })
-    .select('id')
-    .single();
-  if (error ?? !data) throw new Error('Failed to create conversation');
-  return data.id;
+  const convId = await getOrCreateConversation(userId, tripId);
+  await supabase.from('ai_messages').delete().eq('conversation_id', convId);
+  return convId;
 }
 
 export async function clearConversation(userId: string, tripId: string | null): Promise<void> {
