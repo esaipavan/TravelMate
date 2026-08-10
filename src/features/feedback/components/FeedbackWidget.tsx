@@ -20,8 +20,8 @@ export function FeedbackWidget() {
         aria-label="Open feedback form"
         onClick={() => setOpen(true)}
         className={cn(
-          // Position: above mobile nav (pb-20) on mobile, fixed bottom-right on desktop
-          'fixed bottom-20 right-4 z-40 lg:bottom-6 lg:right-6',
+          // Position: above mobile nav (synced with MobileNav's safe-bottom padding) on mobile, fixed bottom-right on desktop
+          'fixed bottom-[calc(5rem+max(env(safe-area-inset-bottom,0px),1rem))] right-4 z-40 lg:bottom-6 lg:right-6',
           'flex items-center gap-1.5 rounded-full border border-border/60',
           'bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-lifted',
           'transition-all duration-200 hover:border-primary/40 hover:text-primary hover:shadow-float',
