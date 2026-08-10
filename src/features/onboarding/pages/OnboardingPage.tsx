@@ -214,7 +214,7 @@ export default function OnboardingPage() {
 
       <main
         id="onboarding-main"
-        className="relative z-10 flex flex-1 flex-col overflow-hidden pb-6 pt-4"
+        className="relative z-10 flex flex-1 flex-col overflow-hidden px-4 pb-6 pt-4"
         style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}
       >
         <AnimatePresence mode="wait" custom={dir}>

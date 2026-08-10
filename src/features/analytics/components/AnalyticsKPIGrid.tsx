@@ -180,7 +180,7 @@ function KPICard({ config, rawValue, currency, isLoaded, reduced }: CardProps) {
           config.gradient,
         )}
       >
-        <config.icon className="h-4.5 h-[18px] w-4.5 w-[18px]" aria-hidden="true" />
+        <config.icon className="size-[18px]" aria-hidden="true" />
       </div>
 
       {/* Counter */}

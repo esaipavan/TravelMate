@@ -484,7 +484,7 @@ export default function ExportPage() {
                 <div
                   className={`mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl ${selected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
                 >
-                  <Icon className="h-4.5 w-4.5" />
+                  <Icon className="size-[18px]" />
                 </div>
                 <p className="text-sm font-semibold leading-tight">{label}</p>
                 <p className="mt-1 text-xs leading-snug text-muted-foreground">{description}</p>

@@ -29,11 +29,7 @@ function StatCard({ icon: Icon, label, value, iconColor, iconBg, delay, reduced 
       <div
         className={cn('mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl', iconBg)}
       >
-        <Icon
-          className={cn('h-4.5 w-4.5', iconColor)}
-          style={{ width: 18, height: 18 }}
-          aria-hidden="true"
-        />
+        <Icon className={cn('size-[18px]', iconColor)} aria-hidden="true" />
       </div>
       <motion.div
         className="text-2xl font-bold tabular-nums text-foreground"

@@ -1,12 +1,10 @@
-import {
-  Map, Globe, BookOpen, FileText, Bell, Receipt,
-} from 'lucide-react';
+import { Map, Globe, BookOpen, FileText, Bell, Receipt } from 'lucide-react';
 import { useProfileStats } from '../hooks/useProfile';
 import { useProfile } from '../hooks/useProfile';
 import { formatCurrency } from '@/utils/formatters';
 
 interface StatCardProps {
-  icon:  React.ReactNode;
+  icon: React.ReactNode;
   label: string;
   value: string | number;
 }
@@ -16,7 +14,7 @@ function StatCard({ icon, label, value }: StatCardProps) {
     <div className="flex items-center justify-between rounded-xl border bg-card p-4">
       <div className="space-y-0.5">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
+        <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
       </div>
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
         {icon}
@@ -26,7 +24,7 @@ function StatCard({ icon, label, value }: StatCardProps) {
 }
 
 export function ProfileStats() {
-  const stats    = useProfileStats();
+  const stats = useProfileStats();
   const { data: profile } = useProfile();
   const currency = profile?.home_currency ?? 'INR';
 
@@ -35,34 +33,34 @@ export function ProfileStats() {
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
         Statistics
       </p>
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard
-          icon={<Map className="h-4.5 w-4.5 text-primary" />}
+          icon={<Map className="size-[18px] text-primary" />}
           label="Total Trips"
           value={stats.totalTrips}
         />
         <StatCard
-          icon={<Globe className="h-4.5 w-4.5 text-primary" />}
+          icon={<Globe className="size-[18px] text-primary" />}
           label="Countries Visited"
           value={stats.countriesVisited}
         />
         <StatCard
-          icon={<BookOpen className="h-4.5 w-4.5 text-primary" />}
+          icon={<BookOpen className="size-[18px] text-primary" />}
           label="Journal Entries"
           value={stats.journalEntries}
         />
         <StatCard
-          icon={<FileText className="h-4.5 w-4.5 text-primary" />}
+          icon={<FileText className="size-[18px] text-primary" />}
           label="Documents"
           value={stats.documentsStored}
         />
         <StatCard
-          icon={<Bell className="h-4.5 w-4.5 text-primary" />}
+          icon={<Bell className="size-[18px] text-primary" />}
           label="Reminders"
           value={stats.reminders}
         />
         <StatCard
-          icon={<Receipt className="h-4.5 w-4.5 text-primary" />}
+          icon={<Receipt className="size-[18px] text-primary" />}
           label="Total Expenses"
           value={formatCurrency(stats.totalExpenses, currency)}
         />

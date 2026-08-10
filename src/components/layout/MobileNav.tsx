@@ -55,7 +55,7 @@ export function MobileNav({ className }: MobileNavProps) {
     <nav
       aria-label="Mobile navigation"
       className={cn(
-        'pb-safe fixed bottom-0 left-0 right-0 z-10 border-t bg-card/95 backdrop-blur-sm',
+        'safe-bottom fixed bottom-0 left-0 right-0 z-10 border-t bg-card/95 backdrop-blur-sm',
         className,
       )}
     >
@@ -69,7 +69,7 @@ export function MobileNav({ className }: MobileNavProps) {
             animate="show"
             exit="exit"
             aria-hidden="true"
-            style={{ zIndex: 9 }}
+            style={{ zIndex: 11 }}
             className="fixed inset-0 bg-black/40"
             onClick={() => setMoreOpen(false)}
           />
@@ -90,6 +90,7 @@ export function MobileNav({ className }: MobileNavProps) {
             role="dialog"
             aria-modal="true"
             aria-label="More navigation options"
+            style={{ zIndex: 12 }}
             className="absolute bottom-full left-0 right-0 rounded-t-xl border-t bg-card p-4 shadow-xl focus:outline-none"
           >
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
