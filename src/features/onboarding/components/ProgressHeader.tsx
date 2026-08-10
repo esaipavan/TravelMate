@@ -18,6 +18,8 @@ export function ProgressHeader({ step, onBack, onSkip, reduced }: ProgressHeader
       <button
         onClick={onBack}
         aria-label="Go back"
+        tabIndex={step === 0 ? -1 : 0}
+        aria-hidden={step === 0}
         className={[
           'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white/50',
           'transition-all hover:bg-white/10 hover:text-white focus-visible:outline-none',
@@ -46,7 +48,7 @@ export function ProgressHeader({ step, onBack, onSkip, reduced }: ProgressHeader
         />
       </div>
 
-      <span className="shrink-0 text-[12px] font-medium tabular-nums text-white/30">
+      <span className="shrink-0 text-[12px] font-medium tabular-nums text-white/70">
         {step + 1}/{TOTAL_STEPS}
       </span>
 

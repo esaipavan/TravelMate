@@ -250,7 +250,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded transition-colors after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         style={{ color: 'rgba(255,255,255,0.4)' }}
                         aria-label={showPw ? 'Hide password' : 'Show password'}
                       >

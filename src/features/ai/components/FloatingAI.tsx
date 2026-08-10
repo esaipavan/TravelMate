@@ -153,7 +153,10 @@ function MessageActions({
   if (isStreaming) return null;
 
   return (
-    <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+    <div
+      aria-live="off"
+      className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+    >
       <ActionBtn label={copied ? 'Copied!' : 'Copy'} onClick={handleCopy}>
         {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       </ActionBtn>
@@ -191,7 +194,7 @@ function ActionBtn({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
     >
       {children}
     </button>
@@ -1172,7 +1175,7 @@ function HeaderBtn({
       aria-label={label}
       title={label}
       className={cn(
-        'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+        'flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
         active
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',

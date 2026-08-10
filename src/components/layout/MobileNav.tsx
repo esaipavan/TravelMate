@@ -17,6 +17,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { FADE_VARIANTS, REDUCED_VARIANTS, DUR, EASE } from '@/lib/motion';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface MobileNavProps {
   className?: string;
@@ -48,6 +49,7 @@ const panelVariants = {
 export function MobileNav({ className }: MobileNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const reduced = useReducedMotion();
+  const morePanelRef = useFocusTrap<HTMLDivElement>(moreOpen, () => setMoreOpen(false));
 
   return (
     <nav
@@ -79,6 +81,8 @@ export function MobileNav({ className }: MobileNavProps) {
         {moreOpen && (
           <motion.div
             key="panel"
+            ref={morePanelRef}
+            tabIndex={-1}
             variants={reduced ? REDUCED_VARIANTS : panelVariants}
             initial="hidden"
             animate="show"
@@ -86,7 +90,7 @@ export function MobileNav({ className }: MobileNavProps) {
             role="dialog"
             aria-modal="true"
             aria-label="More navigation options"
-            className="absolute bottom-full left-0 right-0 rounded-t-xl border-t bg-card p-4 shadow-xl"
+            className="absolute bottom-full left-0 right-0 rounded-t-xl border-t bg-card p-4 shadow-xl focus:outline-none"
           >
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
               More

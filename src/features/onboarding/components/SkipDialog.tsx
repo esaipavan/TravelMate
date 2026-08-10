@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface SkipDialogProps {
   onConfirm: () => void;
@@ -8,16 +8,7 @@ interface SkipDialogProps {
 }
 
 export function SkipDialog({ onConfirm, onCancel }: SkipDialogProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    ref.current?.focus();
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onCancel();
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+  const ref = useFocusTrap<HTMLDivElement>(true, onCancel);
 
   return (
     <div
@@ -50,7 +41,7 @@ export function SkipDialog({ onConfirm, onCancel }: SkipDialogProps) {
         <h3 id="skip-title" className="mb-1.5 text-[18px] font-bold text-white">
           Skip setup?
         </h3>
-        <p className="mb-6 text-[13px]" style={{ color: 'rgba(248,250,252,0.5)' }}>
+        <p className="mb-6 text-[13px]" style={{ color: 'rgba(248,250,252,0.7)' }}>
           You can always come back and set up your first trip from the dashboard.
         </p>
         <div className="flex gap-3">

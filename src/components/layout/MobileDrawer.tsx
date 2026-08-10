@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarContent } from './Sidebar';
 
 /**
@@ -13,17 +13,17 @@ export function MobileDrawer() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden"
-        aria-label="Open navigation menu"
-        aria-expanded={open}
-        aria-controls="mobile-nav-drawer"
-        onClick={() => setOpen(true)}
-      >
-        <Menu className="h-5 w-5" aria-hidden="true" />
-      </Button>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          aria-label="Open navigation menu"
+          aria-controls="mobile-nav-drawer"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </Button>
+      </SheetTrigger>
 
       <SheetContent id="mobile-nav-drawer" side="left" className="w-60 p-0">
         <SheetTitle className="sr-only">Navigation</SheetTitle>

@@ -19,6 +19,14 @@ export function PublicLayout() {
 
   return (
     <div className="dark flex min-h-screen" style={{ background: '#06060F' }}>
+      {/* Skip link — visible only on keyboard focus (WCAG 2.4.1) */}
+      <a
+        href="#main-content"
+        className="sr-only rounded-lg focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-black focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        Skip to content
+      </a>
+
       {/* ── Left branding panel (desktop only) ─────────────────────────── */}
       <div className="relative hidden flex-col items-center justify-between overflow-hidden px-10 py-12 lg:flex lg:w-[44%] xl:w-[42%]">
         {/* Indian travel photo — same hero as landing page */}
@@ -135,7 +143,11 @@ export function PublicLayout() {
       </div>
 
       {/* ── Right form panel ────────────────────────────────────────────── */}
-      <div className="relative flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="relative flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 focus:outline-none"
+      >
         {/* Ambient orbs — blue/amber matching landing page palette */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div
@@ -186,7 +198,7 @@ export function PublicLayout() {
             <Outlet />
           </motion.div>
         </AnimatePresence>
-      </div>
+      </main>
     </div>
   );
 }

@@ -59,7 +59,7 @@ export function NotificationBell() {
                   {item.isOverdue ? (
                     <AlertCircle
                       className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive"
-                      aria-label="Overdue"
+                      aria-hidden="true"
                     />
                   ) : (
                     <Clock

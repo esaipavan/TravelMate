@@ -254,7 +254,7 @@ export function AIGenerationStep({
         <h2 className="text-[22px] font-black tracking-tight text-white">
           Building your trip brief
         </h2>
-        <p className="mt-1 text-[14px]" style={{ color: 'rgba(248,250,252,0.4)' }}>
+        <p className="mt-1 text-[14px]" style={{ color: 'rgba(248,250,252,0.65)' }}>
           AI is personalising every detail for {destination}
         </p>
       </motion.div>
@@ -273,7 +273,7 @@ export function AIGenerationStep({
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
         className="mt-8 text-[11px]"
-        style={{ color: 'rgba(248,250,252,0.2)' }}
+        style={{ color: 'rgba(248,250,252,0.65)' }}
       >
         This takes about 15-30 seconds
       </motion.p>

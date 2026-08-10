@@ -129,9 +129,13 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
           {/* Category + Quantity */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Category</Label>
+              <Label htmlFor="item-category">Category</Label>
               <Select value={watch('category')} onValueChange={(v) => setValue('category', v)}>
-                <SelectTrigger>
+                <SelectTrigger
+                  id="item-category"
+                  aria-invalid={!!errors.category}
+                  aria-describedby={errors.category ? 'item-category-error' : undefined}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,7 +147,9 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
                 </SelectContent>
               </Select>
               {errors.category && (
-                <p className="text-xs text-destructive">{errors.category.message}</p>
+                <p id="item-category-error" role="alert" className="text-xs text-destructive">
+                  {errors.category.message}
+                </p>
               )}
             </div>
             <div className="space-y-1.5">

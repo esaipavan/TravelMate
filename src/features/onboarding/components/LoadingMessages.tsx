@@ -106,7 +106,7 @@ export function LoadingMessages({ category }: LoadingMessagesProps) {
           exit={reduced ? {} : { opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
           className="text-center text-[13px]"
-          style={{ color: 'rgba(248,250,252,0.45)' }}
+          style={{ color: 'rgba(248,250,252,0.7)' }}
         >
           {current}
         </motion.p>

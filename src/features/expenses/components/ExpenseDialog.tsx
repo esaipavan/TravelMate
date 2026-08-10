@@ -202,6 +202,7 @@ export function ExpenseDialog({
         <ScrollArea className="min-h-0 flex-1">
           <form
             id="expense-form"
+            noValidate
             onSubmit={(e) => {
               void handleSubmit(onSubmit)(e);
             }}
@@ -210,8 +211,18 @@ export function ExpenseDialog({
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" placeholder="e.g. Hotel check-in" {...register('title')} />
-              {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+              <Input
+                id="title"
+                placeholder="e.g. Hotel check-in"
+                aria-invalid={!!errors.title}
+                aria-describedby={errors.title ? 'title-error' : undefined}
+                {...register('title')}
+              />
+              {errors.title && (
+                <p id="title-error" role="alert" className="text-xs text-destructive">
+                  {errors.title.message}
+                </p>
+              )}
             </div>
 
             {/* Amount + Currency */}
@@ -224,16 +235,20 @@ export function ExpenseDialog({
                   min="0"
                   step="0.01"
                   placeholder="0.00"
+                  aria-invalid={!!errors.amount}
+                  aria-describedby={errors.amount ? 'amount-error' : undefined}
                   {...register('amount')}
                 />
                 {errors.amount && (
-                  <p className="text-xs text-destructive">{errors.amount.message}</p>
+                  <p id="amount-error" role="alert" className="text-xs text-destructive">
+                    {errors.amount.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label>Currency</Label>
+                <Label htmlFor="currency-select">Currency</Label>
                 <Select value={watch('currency')} onValueChange={(v) => setValue('currency', v)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="currency-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
@@ -250,12 +265,16 @@ export function ExpenseDialog({
             {/* Category + Date */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Category</Label>
+                <Label htmlFor="category-select">Category</Label>
                 <Select
                   value={watch('category')}
                   onValueChange={(v) => setValue('category', v as ExpenseCategory)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    id="category-select"
+                    aria-invalid={!!errors.category}
+                    aria-describedby={errors.category ? 'category-error' : undefined}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,26 +286,38 @@ export function ExpenseDialog({
                   </SelectContent>
                 </Select>
                 {errors.category && (
-                  <p className="text-xs text-destructive">{errors.category.message}</p>
+                  <p id="category-error" role="alert" className="text-xs text-destructive">
+                    {errors.category.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" {...register('date')} />
-                {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
+                <Input
+                  id="date"
+                  type="date"
+                  aria-invalid={!!errors.date}
+                  aria-describedby={errors.date ? 'date-error' : undefined}
+                  {...register('date')}
+                />
+                {errors.date && (
+                  <p id="date-error" role="alert" className="text-xs text-destructive">
+                    {errors.date.message}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Payment method */}
             <div className="space-y-1.5">
-              <Label>
+              <Label htmlFor="payment-method-select">
                 Payment method <span className="text-muted-foreground">(optional)</span>
               </Label>
               <Select
                 value={watch('payment_method')}
                 onValueChange={(v) => setValue('payment_method', v)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="payment-method-select">
                   <SelectValue placeholder="Select methodâ€¦" />
                 </SelectTrigger>
                 <SelectContent>
@@ -303,9 +334,9 @@ export function ExpenseDialog({
             {/* Paid by â€” shown only when group has multiple members */}
             {showPaidBy && members && (
               <div className="space-y-1.5">
-                <Label>Paid by</Label>
+                <Label htmlFor="paidby-select">Paid by</Label>
                 <Select value={paidById} onValueChange={setPaidById}>
-                  <SelectTrigger>
+                  <SelectTrigger id="paidby-select">
                     <SelectValue placeholder="Who paid?" />
                   </SelectTrigger>
                   <SelectContent>
@@ -347,9 +378,10 @@ export function ExpenseDialog({
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
+                    aria-label="Remove receipt"
                     onClick={() => setRemoveReceipt(true)}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 </div>
               ) : (
@@ -372,12 +404,13 @@ export function ExpenseDialog({
                         size="icon"
                         variant="ghost"
                         className="h-6 w-6"
+                        aria-label="Remove selected file"
                         onClick={() => {
                           setReceiptFile(null);
                           if (fileRef.current) fileRef.current.value = '';
                         }}
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </div>
                   ) : (

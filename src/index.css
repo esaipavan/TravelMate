@@ -345,7 +345,11 @@
     .animate-in,
     .animate-slide-up,
     .animate-scale-in,
-    .animate-float {
+    .animate-float,
+    .animate-pulse,
+    .animate-spin,
+    .animate-bounce,
+    .animate-ping {
       animation: none;
     }
   }

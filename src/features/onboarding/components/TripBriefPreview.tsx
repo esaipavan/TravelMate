@@ -264,7 +264,7 @@ export function TripBriefPreview({ destination, payload, onContinue }: TripBrief
                 ))}
             </div>
             {budget.notes && (
-              <p className="mt-2 text-[11px]" style={{ color: 'rgba(248,250,252,0.3)' }}>
+              <p className="mt-2 text-[11px]" style={{ color: 'rgba(248,250,252,0.65)' }}>
                 {budget.notes}
               </p>
             )}
@@ -310,7 +310,7 @@ export function TripBriefPreview({ destination, payload, onContinue }: TripBrief
           Continue to Dashboard
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
-        <p className="mt-2 text-center text-[11px]" style={{ color: 'rgba(248,250,252,0.25)' }}>
+        <p className="mt-2 text-center text-[11px]" style={{ color: 'rgba(248,250,252,0.65)' }}>
           Full brief, itinerary builder, and budget tracker await
         </p>
       </motion.div>
