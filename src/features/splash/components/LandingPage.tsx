@@ -21,7 +21,7 @@ export function LandingPage() {
       <LandingNav />
 
       {/* Mobile sticky CTA — visible after scrolling past hero */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/95 lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/95 lg:hidden">
         <Link
           to="/register"
           className="flex items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-bold text-gray-900 transition-opacity hover:opacity-90"
