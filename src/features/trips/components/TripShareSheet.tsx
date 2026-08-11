@@ -48,6 +48,13 @@ export function TripShareSheet({ trip, open, onOpenChange }: Props) {
   const [showQr, setShowQr] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const renderQr = useCallback(() => {
     const canvas = qrCanvasRef.current;
@@ -76,7 +83,8 @@ export function TripShareSheet({ trip, open, onOpenChange }: Props) {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Link copied!');
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Could not copy — try manually selecting the URL.');
     }

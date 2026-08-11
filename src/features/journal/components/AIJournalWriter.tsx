@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +42,13 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activePrompt, setActivePrompt] = useState<number | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const dest = tripDestination || 'my destination';
 
@@ -63,7 +70,8 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
   async function copy() {
     await navigator.clipboard.writeText(generated);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   function useText() {

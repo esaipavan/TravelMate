@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin, CalendarDays, Heart, ArrowRight } from 'lucide-react';
@@ -79,7 +80,7 @@ interface Props {
   index: number;
 }
 
-export function TripTimelineRow({ trip, index }: Props) {
+export const TripTimelineRow = memo(function TripTimelineRow({ trip, index }: Props) {
   const reduced = useReducedMotion();
   const { mutate: toggle, isPending } = useToggleFavourite();
   const status = getTripStatus(trip);
@@ -198,4 +199,4 @@ export function TripTimelineRow({ trip, index }: Props) {
       </Link>
     </motion.div>
   );
-}
+});

@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { ACCEPTED_TYPES } from '../types';
 import type { TravelDocumentRow, TravelDocumentInsert, TravelDocumentUpdate } from '../types';
 
-const DOCUMENT_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — matches MAX_FILE_SIZE in ../types.ts
 
 const BUCKET = 'travel-documents';
 
@@ -56,7 +56,7 @@ export async function uploadDocumentFile(
     throw new Error('Unsupported file type. Please upload a PDF or image (JPEG, PNG).');
   }
   if (file.size > DOCUMENT_MAX_BYTES) {
-    throw new Error('File is too large. Maximum size is 20 MB.');
+    throw new Error('File is too large. Maximum size is 10 MB.');
   }
   const safeName = file.name.replace(/[^\w.-]/g, '_');
   const path = `${userId}/${docId}/${safeName}`;

@@ -214,6 +214,7 @@ export const TripGalleryCard = memo(function TripGalleryCard({ trip, index: _ind
             <motion.img
               src={imageUrl}
               alt={trip.destination}
+              loading="lazy"
               className={cn(
                 'absolute inset-0 h-full w-full object-cover transition-all duration-700',
                 imgLoaded ? 'opacity-100' : 'opacity-0',

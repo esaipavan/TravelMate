@@ -36,6 +36,7 @@ export function DestinationImage({ src, alt, className, fallbackAccent = '#6366F
       <img
         src={src}
         alt={alt}
+        loading="lazy"
         className={cn(
           'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
           loaded ? 'opacity-100' : 'opacity-0',

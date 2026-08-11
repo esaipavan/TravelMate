@@ -143,11 +143,19 @@ function MessageActions({
   onCopy,
 }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   function handleCopy() {
     onCopy();
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   if (isStreaming) return null;
@@ -269,11 +277,15 @@ export function FloatingAI() {
   }, [messages, isFetching, isAtBottom, reduced]);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 80);
+    if (!open) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 80);
+    return () => clearTimeout(t);
   }, [open]);
 
   useEffect(() => {
-    if (view === 'search') setTimeout(() => searchRef.current?.focus(), 80);
+    if (view !== 'search') return;
+    const t = setTimeout(() => searchRef.current?.focus(), 80);
+    return () => clearTimeout(t);
   }, [view]);
 
   // ── Global keyboard shortcut ──────────────────────────────────────────────

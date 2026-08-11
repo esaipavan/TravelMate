@@ -31,7 +31,7 @@ const tripSchema = z
     end_date: z.string().min(1, 'End date is required'),
     total_budget: z.preprocess(
       (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-      z.number().positive('Budget must be a positive number').optional(),
+      z.number().nonnegative('Budget cannot be negative').optional(),
     ),
     currency: z.string().min(1),
     status: z.enum(['planning', 'active', 'completed', 'cancelled']),
