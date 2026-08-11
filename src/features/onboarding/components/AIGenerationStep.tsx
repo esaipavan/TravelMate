@@ -65,6 +65,13 @@ export function AIGenerationStep({
       groupType: groupType ?? null,
       budgetTier: budgetTier ?? null,
     });
+    // Suppression is intentional and safe: the ranRef guard above makes this
+    // effect's body a true no-op on any re-invocation, regardless of which
+    // deps changed — `run()` is only ever called once per mount, using
+    // whatever prop values were current at that first commit. Adding the
+    // "missing" deps (userId, destination, run, ...) would not change this
+    // behavior; it would just make the effect re-fire and immediately
+    // early-return via the guard, so they're omitted to avoid ESLint noise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

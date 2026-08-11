@@ -6,6 +6,8 @@ import { PageLoader } from '@/components/shared/LoadingSpinner';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { useAuthStore } from '@/store/auth.store';
 
+const NotFoundPage = lazy(() => import('@/components/shared/NotFoundPage'));
+
 // ─── Lazy page imports ────────────────────────────────────────────────────────
 
 // Splash
@@ -537,8 +539,15 @@ const router = createBrowserRouter([
   },
 
   // Splash — standalone, no layout wrapper
-  // Catch-all
-  { path: '*', element: <Navigate to="/dashboard" replace /> },
+  // Catch-all — renders a dedicated 404 page for any unmatched route.
+  {
+    path: '*',
+    element: (
+      <Wrap>
+        <NotFoundPage />
+      </Wrap>
+    ),
+  },
 ]);
 
 export function AppRouter() {

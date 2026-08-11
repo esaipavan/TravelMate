@@ -87,6 +87,13 @@ export function AuthInitializer() {
     return () => {
       subscription.unsubscribe();
     };
+    // Suppression is intentional and safe: the "missing" deps are the Zustand
+    // setters (setUser/setSession/setRole/setLoading — stable references by
+    // construction, Zustand never changes action identity) and fetchUserRole
+    // (a module-level function, not a closure over component state). None of
+    // these can ever change between renders, so re-running this effect on
+    // their account would be a no-op — omitting them from the array avoids
+    // ESLint noise without any risk of a stale closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
