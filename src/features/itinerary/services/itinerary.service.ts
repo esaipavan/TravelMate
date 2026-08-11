@@ -10,7 +10,7 @@ import type {
 function getDaysBetween(startDate: string, endDate: string): string[] {
   const days: string[] = [];
   const curr = new Date(startDate + 'T00:00:00');
-  const end  = new Date(endDate  + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
   while (curr <= end) {
     // Use local date components, not toISOString() (UTC), to avoid a one-day
     // shift for timezones ahead of UTC (e.g. UTC+5:30).
@@ -23,17 +23,19 @@ function getDaysBetween(startDate: string, endDate: string): string[] {
   return days;
 }
 
-async function initializeDays(
-  tripId: string,
-  startDate: string,
-  endDate: string,
-): Promise<void> {
-  const { count } = await supabase
+async function initializeDays(tripId: string, startDate: string, endDate: string): Promise<void> {
+  // Plain GET + limit(1) instead of `{ count: 'exact', head: true }` — Supabase's
+  // PostgREST HEAD+count path intermittently 503s on this project while the
+  // equivalent GET succeeds; see dashboard 500 investigation. limit(1) also
+  // avoids counting every row just to check existence.
+  const { data: existingDays, error } = await supabase
     .from('itinerary_days')
-    .select('id', { count: 'exact', head: true })
-    .eq('trip_id', tripId);
+    .select('id')
+    .eq('trip_id', tripId)
+    .limit(1);
 
-  if ((count ?? 0) > 0) return;
+  if (error) throw new Error(error.message);
+  if ((existingDays ?? []).length > 0) return;
 
   const inserts = getDaysBetween(startDate, endDate).map((date, i) => ({
     trip_id: tripId,
@@ -53,10 +55,10 @@ export async function getItineraryData(tripId: string): Promise<ItineraryData> {
 
   if (tripError) throw new Error(tripError.message);
 
-  const tripTitle    = trip?.title      ?? '';
-  const tripCurrency = trip?.currency   ?? 'INR';
-  const startDate    = trip?.start_date ?? '';
-  const endDate      = trip?.end_date   ?? '';
+  const tripTitle = trip?.title ?? '';
+  const tripCurrency = trip?.currency ?? 'INR';
+  const startDate = trip?.start_date ?? '';
+  const endDate = trip?.end_date ?? '';
 
   if (startDate && endDate) {
     await initializeDays(tripId, startDate, endDate);
@@ -110,10 +112,7 @@ export async function createItem(data: ItineraryItemInsert): Promise<ItineraryIt
   return row;
 }
 
-export async function updateItem(
-  id: string,
-  data: ItineraryItemUpdate,
-): Promise<ItineraryItemRow> {
+export async function updateItem(id: string, data: ItineraryItemUpdate): Promise<ItineraryItemRow> {
   const { data: row, error } = await supabase
     .from('itinerary_items')
     .update(data)
@@ -129,9 +128,7 @@ export async function deleteItem(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function reorderItems(
-  updates: { id: string; order_index: number }[],
-): Promise<void> {
+export async function reorderItems(updates: { id: string; order_index: number }[]): Promise<void> {
   const results = await Promise.all(
     updates.map(({ id, order_index }) =>
       supabase.from('itinerary_items').update({ order_index }).eq('id', id),

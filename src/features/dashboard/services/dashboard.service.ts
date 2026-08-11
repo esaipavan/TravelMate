@@ -3,13 +3,16 @@ import type { DashboardStats, UpcomingTrip, RecentExpense, BudgetVsActualItem } 
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const [
-    { count: totalTrips, error: e1 },
+    { data: tripIdRows, error: e1 },
     { data: tripBudgets, error: e2 },
     { data: expenseRows, error: e3 },
     { data: profileRow, error: e4 },
     { data: tripDates, error: e5 },
   ] = await Promise.all([
-    supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    // Plain GET + array length instead of `{ count: 'exact', head: true }` —
+    // Supabase's PostgREST HEAD+count path intermittently 503s on this project
+    // while the equivalent GET succeeds; see dashboard 500 investigation.
+    supabase.from('trips').select('id').eq('user_id', userId),
     supabase
       .from('trips')
       .select('total_budget')
@@ -39,7 +42,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   }, 0);
 
   return {
-    totalTrips: totalTrips ?? 0,
+    totalTrips: (tripIdRows ?? []).length,
     totalBudget,
     totalExpenses,
     homeCurrency,
