@@ -231,12 +231,21 @@ export function AIGeneratorStep() {
     dispatch,
   ]);
 
-  /* Auto-generate on mount if idle */
+  /* Auto-generate on mount if idle. `generationStatus` is included below —
+   * `generate()` moves status away from 'idle' as its first synchronous
+   * action, so this effect only ever calls `generate()` once per mount no
+   * matter how many times it re-runs as status advances loading → done/error.
+   * `generate` itself is intentionally left out: none of its inputs
+   * (destination, tripType, dates, budget, currency) are editable from this
+   * step's UI, so its identity is stable for the lifetime of this mount —
+   * adding it would only add risk if that invariant ever changes, since a
+   * `generate` identity change would retrigger this effect. */
   useEffect(() => {
     if (generationStatus === 'idle') {
       void generate();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `generate` intentionally excluded, see comment above
+  }, [generationStatus]);
 
   function handleRegenerate() {
     void generate();
