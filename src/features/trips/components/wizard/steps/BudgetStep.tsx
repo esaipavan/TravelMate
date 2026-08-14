@@ -169,7 +169,20 @@ export function BudgetStep() {
   const avgDailyUSD = state.destinationMeta?.avgDailyBudget ?? 80;
   const totalUSD = avgDailyUSD * duration;
 
-  /* Auto-fill suggestions on mount if budget is all-zero */
+  /* Auto-fill suggestions on mount if budget is all-zero. `duration`,
+   * `avgDailyUSD`, `state.currency`, `liveRate`, and `dispatch` are included
+   * below — none of them can cause a duplicate fill: `duration`/`avgDailyUSD`
+   * come from earlier wizard steps with no editable UI here, `dispatch` is
+   * the stable useReducer dispatcher, and even though `state.currency` is
+   * editable on this step, `totalBudget(state.budget) === 0` is already
+   * false by the time the user can reach the currency select (this effect
+   * fires and fills the budget on the very first render, since `duration`
+   * is guaranteed > 0 by the Dates step's guard before this step is
+   * reachable). `state.budget` itself is intentionally excluded: adding it
+   * would re-run this effect on every slider drag (each edit changes its
+   * reference), and if a user manually drags every category down to zero,
+   * the guard would treat that as "unfilled" and silently overwrite their
+   * intentional all-zero budget with the AI suggestion again. */
   useEffect(() => {
     if (totalBudget(state.budget) === 0 && duration > 0) {
       const suggested = suggestBudget(avgDailyUSD, duration, state.currency, liveRate);
@@ -185,8 +198,8 @@ export function BudgetStep() {
       };
       dispatch({ type: 'SET_BUDGET_ALL', budget: newBudget });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `state.budget` intentionally excluded, see comment above
+  }, [duration, avgDailyUSD, state.currency, liveRate, dispatch]);
 
   function handleCategoryChange(k: keyof BudgetAllocation, v: number) {
     dispatch({ type: 'SET_BUDGET', category: k, value: v });
