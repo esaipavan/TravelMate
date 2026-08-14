@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, Sparkles, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
@@ -68,11 +68,28 @@ export function TripAIPanel({ trip }: Props) {
   const [recs, setRecs] = useState<Rec[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const fetchedRef = useRef(false);
-  const cancelRef = useRef(false);
+  // Generation counter, not a single cancelled boolean: each fetchRecs() call
+  // tags its own request with the generation it started at, and only applies
+  // its result if that generation is still current when it resolves. A plain
+  // shared "cancelled" ref would break under StrictMode's dev-only
+  // mount→cleanup→mount cycle — the first (throwaway) invocation's cleanup
+  // would permanently flip that ref, silently discarding the real request's
+  // result too and leaving the panel stuck on its loading skeleton forever.
+  // Bumping the counter in every cleanup (StrictMode's synthetic one, a real
+  // unmount, or a trip-content change) still invalidates whichever request
+  // — effect-started or button-started — was outstanding at that point.
+  const genRef = useRef(0);
 
-  function fetchRecs() {
-    cancelRef.current = false;
+  // Memoized on the specific trip fields the prompt/context actually read
+  // (not the `trip` object itself, which may be a new reference every render
+  // from the parent's query cache) — this keeps `fetchRecs`'s identity
+  // stable across incidental re-renders, so the effect below never tears
+  // down an in-flight request just because something unrelated re-rendered
+  // this component. It only changes identity when the trip content that
+  // feeds the prompt genuinely changes, which is exactly when a stale
+  // in-flight request SHOULD be cancelled.
+  const fetchRecs = useCallback(() => {
+    const myGen = ++genRef.current;
     setLoading(true);
     setError(false);
     setRecs(null);
@@ -93,7 +110,7 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
       },
     })
       .then((res) => {
-        if (cancelRef.current) return;
+        if (genRef.current !== myGen) return;
         const raw = res.content.trim();
         const match = raw.match(/\[[\s\S]*\]/);
         if (!match) throw new Error('No JSON array in response');
@@ -102,22 +119,25 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
         setRecs(parsed.slice(0, 3));
       })
       .catch(() => {
-        if (!cancelRef.current) setError(true);
+        if (genRef.current === myGen) setError(true);
       })
       .finally(() => {
-        if (!cancelRef.current) setLoading(false);
+        if (genRef.current === myGen) setLoading(false);
       });
-  }
+  }, [trip.id, trip.destination, trip.start_date, trip.end_date, trip.total_budget, trip.currency]);
 
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
     fetchRecs();
     return () => {
-      cancelRef.current = true;
+      // Intentionally reads the LIVE counter, not a value snapshotted when
+      // this effect ran — unlike a DOM-node ref (what this lint rule is
+      // designed for), genRef is a monotonic counter meant to be bumped to
+      // whatever it currently is, invalidating any request outstanding at
+      // cleanup time regardless of which invocation started it.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      genRef.current++;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trip.id]);
+  }, [fetchRecs]);
 
   return (
     <motion.section
@@ -145,10 +165,7 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                fetchedRef.current = false;
-                fetchRecs();
-              }}
+              onClick={fetchRecs}
               className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               aria-label="Refresh recommendations"
             >
@@ -177,14 +194,7 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
             <p className="text-sm font-medium text-foreground">Couldn't load recommendations</p>
             <p className="text-xs text-muted-foreground">AI service may be unavailable.</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              fetchedRef.current = false;
-              fetchRecs();
-            }}
-          >
+          <Button variant="outline" size="sm" onClick={fetchRecs}>
             Try again
           </Button>
         </div>
