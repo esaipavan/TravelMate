@@ -3,12 +3,26 @@ import { supabase } from '@/lib/supabase';
 // ── Dashboard metrics ────────────────────────────────────────────────────────
 
 export interface DashboardMetrics {
-  totalUsers: number;
-  tripsThisWeek: number;
-  openBugs: number;
-  pendingFeedback: number;
-  aiCallsToday: number;
-  activeFlags: number;
+  totalUsers: number | null;
+  tripsThisWeek: number | null;
+  openBugs: number | null;
+  pendingFeedback: number | null;
+  aiCallsToday: number | null;
+  activeFlags: number | null;
+}
+
+// null signals "this query failed" so the UI can show a visible placeholder
+// instead of a misleading 0 — the other 5 metrics still render normally,
+// since each query is independent and one failure shouldn't blank the rest.
+function countOrNull(
+  res: { data: unknown[] | null; error: unknown },
+  label: string,
+): number | null {
+  if (res.error) {
+    console.error(`getDashboardMetrics: ${label} query failed`, res.error);
+    return null;
+  }
+  return (res.data ?? []).length;
 }
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
@@ -29,12 +43,12 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   ]);
 
   return {
-    totalUsers: (usersRes.data ?? []).length,
-    tripsThisWeek: (tripsRes.data ?? []).length,
-    openBugs: (bugsRes.data ?? []).length,
-    pendingFeedback: (feedbackRes.data ?? []).length,
-    aiCallsToday: (aiRes.data ?? []).length,
-    activeFlags: (flagsRes.data ?? []).length,
+    totalUsers: countOrNull(usersRes, 'profiles'),
+    tripsThisWeek: countOrNull(tripsRes, 'trips'),
+    openBugs: countOrNull(bugsRes, 'bug_reports'),
+    pendingFeedback: countOrNull(feedbackRes, 'feedback'),
+    aiCallsToday: countOrNull(aiRes, 'ai_usage_logs'),
+    activeFlags: countOrNull(flagsRes, 'feature_flags'),
   };
 }
 
@@ -235,31 +249,18 @@ export interface FeatureAdoption {
   totalUsers: number;
 }
 
+// Direct table reads here previously undercounted adoption: the admin's own
+// RLS-scoped queries only see rows they own, not the whole user base. This
+// RPC is SECURITY DEFINER (see 012_founder_analytics.sql) and correctly
+// bypasses RLS to compute real adoption across all users.
 export async function getFeatureAdoption(): Promise<FeatureAdoption[]> {
-  const [usersRes, tripsRes, expRes, journalRes, reminderRes, docRes] = await Promise.all([
-    // Plain GET + array length instead of `{ count: 'exact', head: true }` —
-    // Supabase's PostgREST HEAD+count path intermittently 503s on this project
-    // while the equivalent GET succeeds; see dashboard 500 investigation.
-    supabase.from('profiles').select('id'),
-    supabase.from('trips').select('user_id').limit(1000),
-    supabase.from('expenses').select('user_id').limit(1000),
-    supabase.from('journal_entries').select('user_id').limit(1000),
-    supabase.from('reminders').select('user_id').limit(1000),
-    supabase.from('travel_documents').select('user_id').limit(1000),
-  ]);
-
-  // usersRes.data is null only on a query error — fall back to 1 (matching the
-  // original `count ?? 1`) to avoid a zero denominator downstream; a real,
-  // successful zero-user result (data: []) is used as-is.
-  const total = usersRes.data ? usersRes.data.length : 1;
-  const uniq = (rows: { user_id: string }[] | null) =>
-    new Set((rows ?? []).map((r) => r.user_id)).size;
-
-  return [
-    { feature: 'Trips', userCount: uniq(tripsRes.data), totalUsers: total },
-    { feature: 'Expenses', userCount: uniq(expRes.data), totalUsers: total },
-    { feature: 'Journal', userCount: uniq(journalRes.data), totalUsers: total },
-    { feature: 'Reminders', userCount: uniq(reminderRes.data), totalUsers: total },
-    { feature: 'Documents', userCount: uniq(docRes.data), totalUsers: total },
-  ];
+  const { data, error } = await supabase.rpc('get_feature_adoption_v2');
+  if (error) throw error;
+  return ((data as { feature: string; adopters: number; total_users: number }[]) ?? []).map(
+    (r) => ({
+      feature: r.feature,
+      userCount: Number(r.adopters),
+      totalUsers: Number(r.total_users),
+    }),
+  );
 }

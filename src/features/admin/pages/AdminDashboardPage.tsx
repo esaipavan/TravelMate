@@ -108,42 +108,42 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <KPICard
               label="Total Users"
-              value={metrics!.totalUsers}
+              value={metrics!.totalUsers ?? '—'}
               icon={Users}
               href="/admin/users"
               accent="bg-primary/10 text-primary"
             />
             <KPICard
               label="Trips This Week"
-              value={metrics!.tripsThisWeek}
+              value={metrics!.tripsThisWeek ?? '—'}
               icon={Map}
               href="/admin/analytics"
               accent="bg-violet-500/10 text-violet-500"
             />
             <KPICard
               label="Open Bugs"
-              value={metrics!.openBugs}
+              value={metrics!.openBugs ?? '—'}
               icon={Bug}
               href="/admin/bugs"
               accent="bg-destructive/10 text-destructive"
             />
             <KPICard
               label="Pending Feedback"
-              value={metrics!.pendingFeedback}
+              value={metrics!.pendingFeedback ?? '—'}
               icon={MessageCircle}
               href="/admin/feedback"
               accent="bg-amber-500/10 text-amber-500"
             />
             <KPICard
               label="AI Calls Today"
-              value={metrics!.aiCallsToday}
+              value={metrics!.aiCallsToday ?? '—'}
               icon={Zap}
               href="/admin/ai"
               accent="bg-emerald-500/10 text-emerald-500"
             />
             <KPICard
               label="Active Flags"
-              value={metrics!.activeFlags}
+              value={metrics!.activeFlags ?? '—'}
               icon={Flag}
               href="/admin/flags"
               accent="bg-sky-500/10 text-sky-500"
