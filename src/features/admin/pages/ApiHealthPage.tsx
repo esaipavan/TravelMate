@@ -14,7 +14,11 @@ interface HealthCheck {
 async function checkSupabaseDB(): Promise<HealthCheck> {
   const start = performance.now();
   try {
-    const { error } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
+    // Plain GET + limit(1) instead of `{ count: 'exact', head: true }` — Supabase's
+    // PostgREST HEAD+count path intermittently 503s on this project while the
+    // equivalent GET succeeds. Only reachability/error matters here, not a count,
+    // so limit(1) keeps the payload minimal like the original HEAD request.
+    const { error } = await supabase.from('profiles').select('id').limit(1);
     return {
       name: 'Supabase Database',
       description: 'Connection to the Supabase Postgres instance',

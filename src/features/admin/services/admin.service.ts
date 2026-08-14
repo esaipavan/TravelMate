@@ -17,30 +17,24 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
   const [usersRes, tripsRes, bugsRes, feedbackRes, aiRes, flagsRes] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    supabase.from('trips').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
-    supabase
-      .from('bug_reports')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['open', 'in_progress']),
-    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-    supabase
-      .from('ai_usage_logs')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', todayStart),
-    supabase
-      .from('feature_flags')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_enabled', true),
+    // Plain GET + array length instead of `{ count: 'exact', head: true }` —
+    // Supabase's PostgREST HEAD+count path intermittently 503s on this project
+    // while the equivalent GET succeeds; see dashboard 500 investigation.
+    supabase.from('profiles').select('id'),
+    supabase.from('trips').select('id').gte('created_at', weekAgo),
+    supabase.from('bug_reports').select('id').in('status', ['open', 'in_progress']),
+    supabase.from('feedback').select('id').eq('status', 'new'),
+    supabase.from('ai_usage_logs').select('id').gte('created_at', todayStart),
+    supabase.from('feature_flags').select('id').eq('is_enabled', true),
   ]);
 
   return {
-    totalUsers: usersRes.count ?? 0,
-    tripsThisWeek: tripsRes.count ?? 0,
-    openBugs: bugsRes.count ?? 0,
-    pendingFeedback: feedbackRes.count ?? 0,
-    aiCallsToday: aiRes.count ?? 0,
-    activeFlags: flagsRes.count ?? 0,
+    totalUsers: (usersRes.data ?? []).length,
+    tripsThisWeek: (tripsRes.data ?? []).length,
+    openBugs: (bugsRes.data ?? []).length,
+    pendingFeedback: (feedbackRes.data ?? []).length,
+    aiCallsToday: (aiRes.data ?? []).length,
+    activeFlags: (flagsRes.data ?? []).length,
   };
 }
 
@@ -243,7 +237,10 @@ export interface FeatureAdoption {
 
 export async function getFeatureAdoption(): Promise<FeatureAdoption[]> {
   const [usersRes, tripsRes, expRes, journalRes, reminderRes, docRes] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    // Plain GET + array length instead of `{ count: 'exact', head: true }` —
+    // Supabase's PostgREST HEAD+count path intermittently 503s on this project
+    // while the equivalent GET succeeds; see dashboard 500 investigation.
+    supabase.from('profiles').select('id'),
     supabase.from('trips').select('user_id').limit(1000),
     supabase.from('expenses').select('user_id').limit(1000),
     supabase.from('journal_entries').select('user_id').limit(1000),
@@ -251,7 +248,10 @@ export async function getFeatureAdoption(): Promise<FeatureAdoption[]> {
     supabase.from('travel_documents').select('user_id').limit(1000),
   ]);
 
-  const total = usersRes.count ?? 1;
+  // usersRes.data is null only on a query error — fall back to 1 (matching the
+  // original `count ?? 1`) to avoid a zero denominator downstream; a real,
+  // successful zero-user result (data: []) is used as-is.
+  const total = usersRes.data ? usersRes.data.length : 1;
   const uniq = (rows: { user_id: string }[] | null) =>
     new Set((rows ?? []).map((r) => r.user_id)).size;
 
