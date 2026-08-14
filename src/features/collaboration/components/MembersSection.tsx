@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { useAuthStore } from '@/store/auth.store';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useTripMembers, useUpdateMemberRole, useRemoveMember } from '../hooks/useTripMembers';
 import { useInvitations, useCancelInvitation } from '../hooks/useInvitations';
 import { InviteDialog } from './InviteDialog';
@@ -44,6 +45,8 @@ function MemberRow({
   const reduced = useReducedMotion();
   const { mutate: updateRole, isPending: updatingRole } = useUpdateMemberRole(tripId);
   const { mutate: removeM, isPending: removing } = useRemoveMember(tripId);
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   const meta = ROLE_META[member.role] ?? ROLE_META['viewer'];
   const RoleIcon = meta.icon;
@@ -51,99 +54,123 @@ function MemberRow({
   const canManage = myRole === 'owner' && !member.isOwner;
 
   return (
-    <motion.div
-      variants={rv(LIST_ITEM_VARIANTS, reduced)}
-      className="flex items-center gap-3 rounded-xl border border-border/50 bg-card p-3"
-    >
-      {/* Avatar */}
-      <div
-        className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-2 ring-background',
-          member.avatarUrl ? '' : meta.badge,
-        )}
+    <>
+      <motion.div
+        variants={rv(LIST_ITEM_VARIANTS, reduced)}
+        className="flex items-center gap-3 rounded-xl border border-border/50 bg-card p-3"
       >
-        {member.avatarUrl ? (
-          <img
-            src={member.avatarUrl}
-            alt={member.name}
-            className="h-9 w-9 rounded-full object-cover"
-          />
-        ) : (
-          member.initials
-        )}
-      </div>
-
-      {/* Name + email */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">
-          {member.name}
-          {isMe && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(you)</span>}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-      </div>
-
-      {/* Role badge */}
-      <span
-        className={cn(
-          'flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-          meta.badge,
-        )}
-      >
-        <RoleIcon className="h-3 w-3" aria-hidden />
-        {meta.label}
-      </span>
-
-      {/* Actions menu (owner only, for non-owner members) */}
-      {canManage && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
-              aria-label={`Manage ${member.name}`}
-            >
-              <MoreVertical className="h-3.5 w-3.5" aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuLabel>Change role</DropdownMenuLabel>
-            {(['editor', 'viewer'] as TripMemberRole[]).map((r) => (
-              <DropdownMenuItem
-                key={r}
-                disabled={member.role === r || updatingRole}
-                onClick={() => updateRole({ userId: member.userId, role: r })}
-              >
-                {ROLE_META[r]?.label}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              disabled={removing}
-              onClick={() => removeM(member.userId)}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />
-              Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      {/* Allow member to leave the trip */}
-      {isMe && !member.isOwner && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-          aria-label="Leave trip"
-          disabled={removing}
-          onClick={() => removeM(member.userId)}
+        {/* Avatar */}
+        <div
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-2 ring-background',
+            member.avatarUrl ? '' : meta.badge,
+          )}
         >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </Button>
-      )}
-    </motion.div>
+          {member.avatarUrl ? (
+            <img
+              src={member.avatarUrl}
+              alt={member.name}
+              className="h-9 w-9 rounded-full object-cover"
+            />
+          ) : (
+            member.initials
+          )}
+        </div>
+
+        {/* Name + email */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">
+            {member.name}
+            {isMe && (
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">(you)</span>
+            )}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+        </div>
+
+        {/* Role badge */}
+        <span
+          className={cn(
+            'flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+            meta.badge,
+          )}
+        >
+          <RoleIcon className="h-3 w-3" aria-hidden />
+          {meta.label}
+        </span>
+
+        {/* Actions menu (owner only, for non-owner members) */}
+        {canManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                aria-label={`Manage ${member.name}`}
+              >
+                <MoreVertical className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel>Change role</DropdownMenuLabel>
+              {(['editor', 'viewer'] as TripMemberRole[]).map((r) => (
+                <DropdownMenuItem
+                  key={r}
+                  disabled={member.role === r || updatingRole}
+                  onClick={() => updateRole({ userId: member.userId, role: r })}
+                >
+                  {ROLE_META[r]?.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={removing}
+                onClick={() => setRemoveConfirmOpen(true)}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Allow member to leave the trip */}
+        {isMe && !member.isOwner && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+            aria-label="Leave trip"
+            disabled={removing}
+            onClick={() => setLeaveConfirmOpen(true)}
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        )}
+      </motion.div>
+
+      <DeleteConfirmDialog
+        open={removeConfirmOpen}
+        onOpenChange={setRemoveConfirmOpen}
+        title="Remove member"
+        description={`Remove ${member.name} from this trip? They'll lose access immediately and will need a new invitation to rejoin.`}
+        confirmLabel="Remove"
+        isDeleting={removing}
+        onConfirm={() => removeM(member.userId)}
+      />
+
+      <DeleteConfirmDialog
+        open={leaveConfirmOpen}
+        onOpenChange={setLeaveConfirmOpen}
+        title="Leave trip"
+        description="You'll lose access to this trip immediately. You'll need a new invitation from the owner to rejoin."
+        confirmLabel="Leave"
+        isDeleting={removing}
+        onConfirm={() => removeM(member.userId)}
+      />
+    </>
   );
 }
 
@@ -156,6 +183,7 @@ export function MembersSection({ tripId, myRole }: Props) {
   const reduced = useReducedMotion();
   const userId = useAuthStore((s) => s.user?.id ?? '');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; email: string } | null>(null);
 
   const { data: members = [], isLoading: membersLoading } = useTripMembers(tripId);
   const { data: invitations = [], isLoading: invitationsLoading } = useInvitations(tripId);
@@ -250,7 +278,7 @@ export function MembersSection({ tripId, myRole }: Props) {
                   className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
                   aria-label={`Cancel invitation for ${inv.invited_email}`}
                   disabled={cancelling}
-                  onClick={() => cancelInvite(inv.id)}
+                  onClick={() => setCancelTarget({ id: inv.id, email: inv.invited_email })}
                 >
                   <X className="h-3.5 w-3.5" aria-hidden />
                 </Button>
@@ -272,6 +300,24 @@ export function MembersSection({ tripId, myRole }: Props) {
       )}
 
       <InviteDialog tripId={tripId} open={inviteOpen} onOpenChange={setInviteOpen} />
+
+      <DeleteConfirmDialog
+        open={cancelTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setCancelTarget(null);
+        }}
+        title="Cancel invitation"
+        description={
+          cancelTarget
+            ? `Cancel the pending invitation for ${cancelTarget.email}? They won't be able to join using this invite link anymore.`
+            : ''
+        }
+        confirmLabel="Revoke invite"
+        isDeleting={cancelling}
+        onConfirm={() => {
+          if (cancelTarget) cancelInvite(cancelTarget.id);
+        }}
+      />
     </section>
   );
 }

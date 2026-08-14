@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useAuthStore } from '@/store/auth.store';
 import { useTrip } from '@/features/trips/hooks/useTrips';
 import { useExpenseData } from '@/features/expenses/hooks/useExpenses';
@@ -235,6 +236,8 @@ export function FloatingAI() {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [showFollowUps, setShowFollowUps] = useState(false);
   const [lastUserText, setLastUserText] = useState('');
+  const [clearChatConfirmOpen, setClearChatConfirmOpen] = useState(false);
+  const [isClearingChat, setIsClearingChat] = useState(false);
 
   const fetchCancelledRef = useRef(false);
   const streamCancelRef = useRef(false);
@@ -713,7 +716,10 @@ export function FloatingAI() {
                   <MessageSquarePlus className="h-4 w-4" />
                 </HeaderBtn>
                 {messages.length > 0 && (
-                  <HeaderBtn label="Clear conversation" onClick={() => void clearChat()}>
+                  <HeaderBtn
+                    label="Clear conversation"
+                    onClick={() => setClearChatConfirmOpen(true)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </HeaderBtn>
                 )}
@@ -1195,6 +1201,19 @@ export function FloatingAI() {
           )}
         </AnimatePresence>
       </motion.button>
+
+      <DeleteConfirmDialog
+        open={clearChatConfirmOpen}
+        onOpenChange={setClearChatConfirmOpen}
+        title="Clear conversation"
+        description="This permanently deletes every message in this conversation. This can't be undone."
+        confirmLabel="Clear conversation"
+        isDeleting={isClearingChat}
+        onConfirm={() => {
+          setIsClearingChat(true);
+          void clearChat().finally(() => setIsClearingChat(false));
+        }}
+      />
     </>
   );
 }

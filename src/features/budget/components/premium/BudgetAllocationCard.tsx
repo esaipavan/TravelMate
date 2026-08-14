@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { rv, rg, HOVER, LIST_ITEM_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { useDeleteCategoryBudget } from '../../hooks/useBudget';
 import type { CategoryBudgetItem } from '../../types';
 
@@ -42,6 +44,7 @@ function barClass(percent: number, isOver: boolean): string {
 export function BudgetAllocationCard({ tripId, item, onEdit }: Props) {
   const reduced = useReducedMotion();
   const { mutate: deleteCategory, isPending } = useDeleteCategoryBudget(tripId);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fmt = (n: number) => formatCurrency(n, item.currency);
 
   const hasAllocation = item.allocated > 0;
@@ -113,7 +116,7 @@ export function BudgetAllocationCard({ tripId, item, onEdit }: Props) {
           </button>
           {hasAllocation && (
             <button
-              onClick={handleDelete}
+              onClick={() => setConfirmOpen(true)}
               disabled={isPending}
               aria-label={`Clear ${item.label} budget`}
               className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
@@ -164,6 +167,16 @@ export function BudgetAllocationCard({ tripId, item, onEdit }: Props) {
           + Set budget
         </button>
       )}
+
+      <DeleteConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Clear budget"
+        description={`Clear the ${item.label} budget? This removes the ${fmt(item.allocated)} allocation for this category. This can't be undone.`}
+        confirmLabel="Clear budget"
+        isDeleting={isPending}
+        onConfirm={handleDelete}
+      />
     </motion.div>
   );
 }
