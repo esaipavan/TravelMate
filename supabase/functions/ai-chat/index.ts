@@ -31,19 +31,27 @@ Your expertise covers:
 - For budget questions, provide concrete numbers where possible (e.g., "street food averages $2–5 per meal")
 - Lead with the most important information first`;
 
-function getProvider(): IAIProvider {
+type ProviderName = 'groq' | 'gemini' | 'openrouter';
+
+function getProviderName(): ProviderName {
   const providerName = Deno.env.get('AI_PROVIDER') ?? 'groq';
 
   switch (providerName) {
     case 'gemini':
-      return new GeminiProvider();
+      return 'gemini';
     case 'openrouter':
-      return new OpenRouterProvider();
+      return 'openrouter';
     case 'groq':
     default:
-      return new GroqProvider();
+      return 'groq';
   }
 }
+
+const PROVIDER_FACTORIES: Record<ProviderName, () => IAIProvider> = {
+  groq: () => new GroqProvider(),
+  gemini: () => new GeminiProvider(),
+  openrouter: () => new OpenRouterProvider(),
+};
 
 // Redacts URLs and key/token/auth-like substrings from a provider or network
 // error before it's logged, persisted, or (never) returned to the client —
@@ -61,12 +69,13 @@ async function tryProviders(
   messages: AIRequestBody['messages'],
   systemPrompt: string,
 ): Promise<{ result: Awaited<ReturnType<IAIProvider['chat']>>; provider: IAIProvider }> {
-  // Fallback chain: primary → gemini → openrouter
-  const chain: (() => IAIProvider)[] = [
-    getProvider,
-    () => new GeminiProvider(),
-    () => new OpenRouterProvider(),
-  ];
+  // Fallback priority: primary → gemini → openrouter, deduplicated by name so
+  // a provider configured as primary (e.g. AI_PROVIDER=gemini or
+  // AI_PROVIDER=openrouter) is never attempted a second time as one of the
+  // two hardcoded fallbacks below.
+  const order: ProviderName[] = [getProviderName(), 'gemini', 'openrouter'];
+  const uniqueNames = order.filter((name, i) => order.indexOf(name) === i);
+  const chain: (() => IAIProvider)[] = uniqueNames.map((name) => PROVIDER_FACTORIES[name]);
 
   let lastError: Error | null = null;
 
