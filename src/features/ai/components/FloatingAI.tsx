@@ -238,6 +238,13 @@ export function FloatingAI() {
 
   const fetchCancelledRef = useRef(false);
   const streamCancelRef = useRef(false);
+  // Invalidated whenever the trip changes (effect below). send() captures
+  // the current value when it starts and only applies its result if this
+  // still matches once the request resolves — FloatingAI is a single global
+  // panel that survives route navigation, so without this a slow response
+  // started on one trip could otherwise append into whichever trip's
+  // conversation happens to be on screen by the time it finishes.
+  const tripGenRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -267,6 +274,18 @@ export function FloatingAI() {
       cancelled = true;
     };
   }, [open, user?.id, tripId]);
+
+  // Deliberately separate from the load-history effect above (which has its
+  // own request-cancellation scoped to loadHistory()) — this one narrowly
+  // targets send()'s stale-response risk without touching history-loading
+  // behavior. Bumping in the cleanup invalidates whichever generation was
+  // active before the trip changed.
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      tripGenRef.current++;
+    };
+  }, [tripId]);
 
   // ── Auto-scroll & scroll detection ───────────────────────────────────────
 
@@ -383,6 +402,7 @@ export function FloatingAI() {
     setShowFollowUps(false);
     fetchCancelledRef.current = false;
     streamCancelRef.current = false;
+    const myGen = tripGenRef.current;
     setIsAtBottom(true);
 
     const userMsg: UIMessage = {
@@ -415,11 +435,23 @@ export function FloatingAI() {
       });
 
       if (fetchCancelledRef.current) {
+        // Explicit Stop — unchanged from before: bail out entirely, no save.
         setIsFetching(false);
         return;
       }
 
       setIsFetching(false);
+
+      if (tripGenRef.current !== myGen) {
+        // The trip changed while this request was in flight. The request
+        // itself completed normally and is still saved under the trip it
+        // was actually asked about — only the now-irrelevant UI update
+        // (which would otherwise land in whichever trip is on screen) is
+        // skipped.
+        saveMessages(userId, tripId, text, response.content);
+        return;
+      }
+
       setIsStreaming(true);
 
       const assistantId = crypto.randomUUID();
@@ -438,7 +470,7 @@ export function FloatingAI() {
       saveMessages(userId, tripId, text, response.content);
     } catch {
       setIsFetching(false);
-      if (!fetchCancelledRef.current) {
+      if (!fetchCancelledRef.current && tripGenRef.current === myGen) {
         setMessages((prev) => [
           ...prev,
           {
