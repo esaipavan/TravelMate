@@ -45,6 +45,18 @@ function getProvider(): IAIProvider {
   }
 }
 
+// Redacts URLs and key/token/auth-like substrings from a provider or network
+// error before it's logged, persisted, or (never) returned to the client —
+// a defense-in-depth backstop in case any provider's error text ever echoes
+// back its own request URL, headers, or credentials.
+function sanitizeProviderError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  return raw
+    .replace(/https?:\/\/\S+/gi, '[redacted-url]')
+    .replace(/\b(key|token|authorization|bearer)\b[=:]?\s*\S+/gi, '$1=[redacted]')
+    .slice(0, 300);
+}
+
 async function tryProviders(
   messages: AIRequestBody['messages'],
   systemPrompt: string,
@@ -64,7 +76,7 @@ async function tryProviders(
       const result = await provider.chat(messages, systemPrompt);
       return { result, provider };
     } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+      lastError = new Error(sanitizeProviderError(err));
       console.error(`Provider failed, trying next: ${lastError.message}`);
     }
   }
@@ -148,10 +160,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    errorMessage = err instanceof Error ? err.message : String(err);
+    errorMessage = sanitizeProviderError(err);
     console.error('AI chat error:', errorMessage);
 
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    // Never echo raw provider/network error text to the client — it can
+    // carry a request URL, header value, or other internal detail. The
+    // sanitized version above still reaches server logs and the usage-log
+    // table below for debugging.
+    return new Response(JSON.stringify({ error: 'AI request failed. Please try again shortly.' }), {
       status: 500,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });

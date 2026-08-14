@@ -26,10 +26,13 @@ export class GeminiProvider implements IAIProvider {
       body.systemInstruction = { parts: [{ text: systemPrompt }] };
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    // Key goes in a header, not the URL query string — a request URL can end
+    // up embedded in error messages (network failures, logs), which would
+    // otherwise leak the key wherever those messages surface.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
       body: JSON.stringify(body),
     });
 
@@ -38,7 +41,7 @@ export class GeminiProvider implements IAIProvider {
       throw new Error(`Gemini API error ${response.status}: ${error}`);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
       usageMetadata?: { totalTokenCount: number };
     };
