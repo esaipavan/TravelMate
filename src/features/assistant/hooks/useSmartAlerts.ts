@@ -6,9 +6,6 @@ import { weatherCodeToLabel } from '@/features/weather/utils';
 import { computeTripInsight, computeBudgetAnalysis } from '../services/recommendation.engine';
 import type { TripRow } from '@/features/trips/types';
 
-const TODAY = new Date().toISOString().split('T')[0];
-const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().split('T')[0];
-
 export interface SmartAlert {
   id: string;
   type: 'budget' | 'weather' | 'document' | 'timing' | 'health';
@@ -19,6 +16,9 @@ export interface SmartAlert {
 }
 
 export function useSmartAlerts(trip: TripRow | null): SmartAlert[] {
+  const TODAY = new Date().toISOString().split('T')[0];
+  const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().split('T')[0];
+
   const { data: weather } = useWeather(trip?.destination ?? '');
   const { data: expenseData } = useExpenseData(trip?.id ?? '');
   const { data: allReminders = [] } = useReminders();
@@ -131,5 +131,5 @@ export function useSmartAlerts(trip: TripRow | null): SmartAlert[] {
     }
 
     return alerts;
-  }, [trip, expenseData, weather, allReminders]);
+  }, [trip, expenseData, weather, allReminders, TODAY, TOMORROW]);
 }

@@ -8,8 +8,6 @@ import type { WeatherResult } from '@/features/weather/types';
 import type { SafetyInfo } from '@/features/destination-intel/types';
 import type { ReminderRow } from '@/features/reminders/types';
 
-const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().split('T')[0];
-
 export interface SafetyAlert {
   id: string;
   type: 'weather' | 'document' | 'area' | 'health' | 'scam';
@@ -28,6 +26,8 @@ export interface SafetyAdvisorData {
 }
 
 export function useSafetyAdvisor(trip: TripRow | null): SafetyAdvisorData {
+  const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().split('T')[0];
+
   const { data: weather, isLoading: weatherLoading } = useWeather(trip?.destination ?? '');
   const { data: intel, isLoading: intelLoading } = useDestinationData(trip?.destination);
   const { data: allReminders = [], isLoading: remindersLoading } = useReminders();
@@ -137,7 +137,7 @@ export function useSafetyAdvisor(trip: TripRow | null): SafetyAdvisorData {
     }
 
     return result;
-  }, [trip, weather, intel]);
+  }, [trip, weather, intel, TOMORROW]);
 
   const documentReminders = useMemo(
     () =>

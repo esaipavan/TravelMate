@@ -7,8 +7,6 @@ import { computeTripInsight, computeBudgetAnalysis } from '../services/recommend
 import type { TripRow } from '@/features/trips/types';
 import type { BudgetAnalysis } from '../types';
 
-const TODAY = new Date().toISOString().split('T')[0];
-
 export interface BudgetTip {
   title: string;
   body: string;
@@ -34,9 +32,11 @@ function isBudgetTip(x: unknown): x is BudgetTip {
 }
 
 export function useBudgetAdvisor(trip: TripRow | null): BudgetAdvisorData {
+  const TODAY = new Date().toISOString().split('T')[0];
+
   const { data: expenseData, isLoading } = useExpenseData(trip?.id ?? '');
 
-  const insight = useMemo(() => (trip ? computeTripInsight(trip, TODAY) : null), [trip]);
+  const insight = useMemo(() => (trip ? computeTripInsight(trip, TODAY) : null), [trip, TODAY]);
 
   const budgetAnalysis = useMemo(
     () => (trip && insight ? computeBudgetAnalysis(trip, expenseData ?? null, insight) : null),
