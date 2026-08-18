@@ -1,14 +1,28 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
 import { rv, FADE_VARIANTS, CARD_VARIANTS } from '@/lib/motion';
+import type { PlaceCategory } from '../../types';
 
 const EXAMPLES = ['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA'];
 
+// Friendly entry points into the existing, real Geoapify categories — no
+// new/invented category exists here. "Food" and "Cafes" intentionally both
+// map to 'restaurants' (Geoapify's `catering.*` taxonomy covers both), since
+// that's a legitimate real category, not a fabricated distinct one.
+const SHORTCUTS: { emoji: string; label: string; category: PlaceCategory }[] = [
+  { emoji: '🍴', label: 'Food', category: 'restaurants' },
+  { emoji: '🏨', label: 'Hotels', category: 'hotels' },
+  { emoji: '📍', label: 'Attractions', category: 'attractions' },
+  { emoji: '☕', label: 'Cafes', category: 'restaurants' },
+  { emoji: '🛍', label: 'Shopping', category: 'shopping' },
+];
+
 interface Props {
   onExampleClick: (destination: string) => void;
+  onCategoryShortcut: (category: PlaceCategory) => void;
 }
 
-export function ExplorerEmptyState({ onExampleClick }: Props) {
+export function ExplorerEmptyState({ onExampleClick, onCategoryShortcut }: Props) {
   const reduced = useReducedMotion();
 
   return (
@@ -44,17 +58,36 @@ export function ExplorerEmptyState({ onExampleClick }: Props) {
       </motion.div>
 
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">Discover what's nearby</h2>
+        <h2 className="text-xl font-bold text-foreground">Search any city or neighborhood</h2>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Search any destination to explore restaurants, hotels, attractions, hospitals and more —
-          all on an interactive map.
+          No predefined list — type any place, or tap Near Me to see what's around you right now.
         </p>
+      </div>
+
+      {/* Category shortcuts — tap a category to search it near you, or near
+          whatever you've already typed in the search box. */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Browse a category
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {SHORTCUTS.map(({ emoji, label, category }) => (
+            <button
+              key={label}
+              onClick={() => onCategoryShortcut(category)}
+              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-indigo-400/50 hover:bg-indigo-500/5"
+            >
+              <span aria-hidden="true">{emoji}</span>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Example destinations */}
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Try one of these
+          Or try a destination
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {EXAMPLES.map((ex) => (

@@ -1,34 +1,49 @@
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, Map,
-  Cloud, DollarSign, MapPin, Globe, FileText, Bell,
-  MessageSquare, BarChart2, User, Settings, Shield, Plane,
+  LayoutDashboard,
+  Map,
+  Compass,
+  Cloud,
+  DollarSign,
+  Globe,
+  FileText,
+  Bell,
+  MessageSquare,
+  BarChart2,
+  User,
+  Settings,
+  Shield,
+  Plane,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/store/auth.store';
 import { APP_NAME } from '@/utils/constants';
 
-interface SidebarProps { className?: string }
+interface SidebarProps {
+  className?: string;
+}
 
+// Explore (the existing Nearby Places feature) is promoted into Overview so
+// desktop and mobile share the same first-class entry point to discovery.
 const mainNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/trips',     icon: Map,             label: 'My Trips'  },
-  { to: '/analytics', icon: BarChart2,       label: 'Analytics' },
+  { to: '/nearby', icon: Compass, label: 'Explore' },
+  { to: '/trips', icon: Map, label: 'My Trips' },
+  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
 ];
 
 const toolNav = [
-  { to: '/weather',     icon: Cloud,         label: 'Weather'          },
-  { to: '/currency',    icon: DollarSign,    label: 'Currency'         },
-  { to: '/nearby',      icon: MapPin,        label: 'Nearby Places'    },
-  { to: '/destination', icon: Globe,         label: 'Destination Guide'},
-  { to: '/documents',   icon: FileText,      label: 'Documents'        },
-  { to: '/reminders',   icon: Bell,          label: 'Reminders'        },
-  { to: '/assistant',   icon: MessageSquare, label: 'AI Assistant'     },
+  { to: '/weather', icon: Cloud, label: 'Weather' },
+  { to: '/currency', icon: DollarSign, label: 'Currency' },
+  { to: '/destination', icon: Globe, label: 'Destination Guide' },
+  { to: '/documents', icon: FileText, label: 'Documents' },
+  { to: '/reminders', icon: Bell, label: 'Reminders' },
+  { to: '/assistant', icon: MessageSquare, label: 'AI Assistant' },
 ];
 
 const accountNav = [
-  { to: '/profile',  icon: User,     label: 'Profile'  },
+  { to: '/profile', icon: User, label: 'Profile' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -87,7 +102,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <ScrollArea className="flex-1 px-2">
         <NavSection label="Overview" items={mainNav} onNavigate={onNavigate} />
-        <NavSection label="Tools"    items={toolNav} onNavigate={onNavigate} />
+        <NavSection label="Tools" items={toolNav} onNavigate={onNavigate} />
 
         {isAdmin && (
           <div className="space-y-0.5">

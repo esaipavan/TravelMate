@@ -1,35 +1,10 @@
+import { geocodeLocation } from '@/lib/geocode';
 import type { GeoLocation, WeatherResult, CurrentWeather, ForecastDay } from '../types';
 
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 
 export async function geocodeDestination(query: string): Promise<GeoLocation> {
-  const params = new URLSearchParams({
-    q: query,
-    format: 'json',
-    limit: '1',
-  });
-
-  const res = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
-    headers: { 'Accept-Language': 'en' },
-  });
-
-  if (!res.ok) throw new Error('Geocoding request failed');
-
-  const results = (await res.json()) as Array<{
-    lat: string;
-    lon: string;
-    display_name: string;
-  }>;
-
-  if (!results.length) throw new Error(`No location found for "${query}"`);
-
-  const { lat, lon, display_name } = results[0];
-  return {
-    lat: parseFloat(lat),
-    lon: parseFloat(lon),
-    displayName: display_name,
-  };
+  return geocodeLocation(query);
 }
 
 export async function fetchWeather(lat: number, lon: number): Promise<WeatherResult> {

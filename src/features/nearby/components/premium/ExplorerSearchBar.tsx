@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { MapPin, Search, Loader2, RefreshCw, X } from 'lucide-react';
+import { MapPin, Search, Loader2, RefreshCw, X, LocateFixed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { rv, FADE_VARIANTS } from '@/lib/motion';
@@ -10,7 +10,9 @@ interface Props {
   onChange: (v: string) => void;
   onSearch: () => void;
   onRefresh?: () => void;
+  onNearMe?: () => void;
   isLoading: boolean;
+  isLocating?: boolean;
   hasResults: boolean;
   location?: string;
 }
@@ -20,7 +22,9 @@ export function ExplorerSearchBar({
   onChange,
   onSearch,
   onRefresh,
+  onNearMe,
   isLoading,
+  isLocating,
   hasResults,
   location,
 }: Props) {
@@ -46,7 +50,7 @@ export function ExplorerSearchBar({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search destination — e.g. Bali, Tokyo, Paris…"
+            placeholder="Search restaurants, hotels, attractions, or a location…"
             aria-label="Destination"
             className={cn(
               'h-10 w-full rounded-xl border border-border/60 bg-card/60 pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground',
@@ -96,6 +100,27 @@ export function ExplorerSearchBar({
           </Button>
         )}
       </div>
+
+      {/* Near me — full-width secondary action, deliberately below the
+          search row rather than a cramped icon so it has a real tap target
+          on mobile. */}
+      {onNearMe && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onNearMe}
+          disabled={isLoading || isLocating}
+          className="h-9 w-full gap-1.5 text-xs"
+        >
+          {isLocating ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          {isLocating ? 'Finding you…' : 'Near me'}
+        </Button>
+      )}
 
       {/* Resolved location label */}
       {location && (

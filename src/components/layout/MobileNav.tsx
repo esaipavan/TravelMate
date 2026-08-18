@@ -8,8 +8,8 @@ import {
   MoreHorizontal,
   Cloud,
   DollarSign,
-  MapPin,
   Compass,
+  Globe,
   FolderOpen,
   Bell,
   BarChart2,
@@ -23,21 +23,24 @@ interface MobileNavProps {
   className?: string;
 }
 
+// Explore replaces Profile as a primary tab — Profile remains one tap away
+// via the header avatar menu (rendered on every screen size) and in More
+// below, so nothing becomes harder to reach.
 const mobileItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { to: '/nearby', icon: Compass, label: 'Explore' },
   { to: '/trips', icon: Map, label: 'Trips' },
   { to: '/assistant', icon: MessageSquare, label: 'AI' },
-  { to: '/profile', icon: User, label: 'Profile' },
 ];
 
 const moreItems = [
   { to: '/weather', icon: Cloud, label: 'Weather' },
   { to: '/currency', icon: DollarSign, label: 'Currency' },
-  { to: '/nearby', icon: MapPin, label: 'Nearby' },
-  { to: '/destination', icon: Compass, label: 'Destination' },
+  { to: '/destination', icon: Globe, label: 'Destination' },
   { to: '/documents', icon: FolderOpen, label: 'Documents' },
   { to: '/reminders', icon: Bell, label: 'Reminders' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/profile', icon: User, label: 'Profile' },
 ];
 
 const panelVariants = {

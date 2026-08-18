@@ -83,6 +83,10 @@ export interface NearbyPlace {
   lat: number;
   lon: number;
   distance: number;
+  // Where this place result came from. Always 'geoapify' today — kept
+  // explicit so a future second source (e.g. a places cache, curated data)
+  // can be told apart in the UI rather than presented as equally trustworthy.
+  source: 'geoapify';
   // enriched fields (optional — depends on Geoapify data availability)
   phone?: string;
   website?: string;

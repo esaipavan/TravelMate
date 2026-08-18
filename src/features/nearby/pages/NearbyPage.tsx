@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { MapPinOff } from 'lucide-react';
+import { MapPinOff, LocateFixed } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { rv, PAGE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import { useNearbyPlaces } from '../hooks/useNearby';
+import { getCurrentCoordinates, GeolocationError } from '@/lib/geolocation';
+import { useNearbyPlaces, useNearbyPlacesAtCoords } from '../hooks/useNearby';
 import { useFavorites } from '../hooks/useFavorites';
+import { parseSearchQuery } from '../utils/parseSearchQuery';
 import type { PlaceCategory, NearbyPlace } from '../types';
 
 // Premium components
@@ -21,6 +24,9 @@ import { AIExplorerPanel } from '../components/premium/AIExplorerPanel';
 export default function NearbyPage() {
   const [input, setInput] = useState('');
   const [destination, setDestination] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [category, setCategory] = useState<PlaceCategory | 'all'>('all');
   const [search, setSearch] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
@@ -29,16 +35,80 @@ export default function NearbyPage() {
   const reduced = useReducedMotion();
   const { isFavorite, toggleFavorite } = useFavorites();
 
-  const { data, isLoading, isError, isFetching } = useNearbyPlaces(destination);
+  const stringQuery = useNearbyPlaces(destination);
+  const coordsQuery = useNearbyPlacesAtCoords(coords);
+  const { data, isLoading, isError, isFetching } = coords ? coordsQuery : stringQuery;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
+
+  async function handleNearMe() {
+    setLocationError(null);
+    setIsLocating(true);
+    setSelectedPlace(null);
+    setSearch('');
+    setDestination('');
+    try {
+      const c = await getCurrentCoordinates();
+      setInput('');
+      setCoords(c);
+    } catch (err) {
+      setCoords(null);
+      setLocationError(
+        err instanceof GeolocationError ? err.message : 'Could not determine your location.',
+      );
+    } finally {
+      setIsLocating(false);
+    }
+  }
 
   function handleSearch() {
     const q = input.trim();
     if (!q) return;
     setSearch('');
-    setCategory('all');
     setSelectedPlace(null);
+    setLocationError(null);
+
+    const parsed = parseSearchQuery(q);
+    setCategory(parsed.categoryIntent ?? 'all');
+
+    if (parsed.useCurrentLocation) {
+      void handleNearMe();
+      return;
+    }
+
+    setCoords(null);
+    if (parsed.location === destination) {
+      void qc.invalidateQueries({ queryKey: ['nearby', destination] });
+    } else {
+      setDestination(parsed.location);
+    }
+  }
+
+  function handleRefresh() {
+    setSelectedPlace(null);
+    if (coords) {
+      void qc.invalidateQueries({ queryKey: ['nearby-coords', coords.lat, coords.lon] });
+    } else {
+      void qc.invalidateQueries({ queryKey: ['nearby', destination] });
+    }
+  }
+
+  // Category shortcut tapped from the empty state: search whatever the user
+  // has already typed, filtered to that category — or Near Me if nothing's
+  // typed yet, since a bare category tap has no location to go on otherwise.
+  function handleCategoryShortcut(cat: PlaceCategory) {
+    setSearch('');
+    setSelectedPlace(null);
+    setLocationError(null);
+    setCategory(cat);
+
+    const q = input.trim();
+    if (!q) {
+      void handleNearMe();
+      return;
+    }
+
+    setCoords(null);
     if (q === destination) {
       void qc.invalidateQueries({ queryKey: ['nearby', destination] });
     } else {
@@ -46,14 +116,11 @@ export default function NearbyPage() {
     }
   }
 
-  function handleRefresh() {
-    setSelectedPlace(null);
-    void qc.invalidateQueries({ queryKey: ['nearby', destination] });
-  }
-
   function handleExampleClick(dest: string) {
     setInput(dest);
     setDestination(dest);
+    setCoords(null);
+    setLocationError(null);
     setSearch('');
     setCategory('all');
     setSelectedPlace(null);
@@ -91,9 +158,10 @@ export default function NearbyPage() {
 
   // ── States ────────────────────────────────────────────────────────────────────
 
-  const showEmpty = !destination;
-  const showLoading = destination && isLoading;
-  const showError = destination && isError && !isLoading;
+  const hasQuery = !!destination || !!coords;
+  const showEmpty = !hasQuery && !isLocating;
+  const showLoading = (hasQuery && isLoading) || isLocating;
+  const showError = hasQuery && isError && !isLoading;
   const showResults = !!data && !isError;
 
   return (
@@ -104,16 +172,26 @@ export default function NearbyPage() {
       exit="exit"
       className="flex flex-col gap-5 pb-10"
     >
+      <PageHeader title="Explore" description="Find places anywhere" />
+
       {/* ── Search bar ──────────────────────────────────────────────────────── */}
       <ExplorerSearchBar
         value={input}
         onChange={setInput}
         onSearch={handleSearch}
         onRefresh={handleRefresh}
+        onNearMe={() => void handleNearMe()}
         isLoading={isFetching}
+        isLocating={isLocating}
         hasResults={!!data}
         location={data?.location}
       />
+
+      {locationError && (
+        <p className="text-xs text-muted-foreground" role="status">
+          {locationError}
+        </p>
+      )}
 
       <AnimatePresence mode="wait">
         {/* ── Empty state ─────────────────────────────────────────────────── */}
@@ -125,7 +203,10 @@ export default function NearbyPage() {
             animate="show"
             exit="exit"
           >
-            <ExplorerEmptyState onExampleClick={handleExampleClick} />
+            <ExplorerEmptyState
+              onExampleClick={handleExampleClick}
+              onCategoryShortcut={handleCategoryShortcut}
+            />
           </motion.div>
         )}
 
@@ -154,14 +235,25 @@ export default function NearbyPage() {
           >
             <MapPinOff className="h-10 w-10 text-muted-foreground opacity-40" aria-hidden="true" />
             <div className="space-y-1">
-              <p className="font-semibold text-foreground">Could not load nearby places</p>
+              <p className="font-semibold text-foreground">We couldn't find that location</p>
               <p className="text-sm text-muted-foreground">
-                Check the destination name and try again.
+                Try a nearby city, locality, landmark, or use Near Me.
               </p>
             </div>
-            <Button size="sm" variant="outline" onClick={handleRefresh}>
-              Try again
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleRefresh}>
+                Try again
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleNearMe()}
+                className="gap-1.5"
+              >
+                <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+                Near me
+              </Button>
+            </div>
           </motion.div>
         )}
 

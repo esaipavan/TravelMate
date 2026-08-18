@@ -1,6 +1,6 @@
+import { geocodeLocation } from '@/lib/geocode';
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
-const NOMINATIM = 'https://nominatim.openstreetmap.org';
 const GEOAPIFY = 'https://api.geoapify.com/v2/places';
 const MAX_RESULTS = 200;
 
@@ -79,23 +79,20 @@ if (import.meta.env.DEV) {
   }
 }
 
-async function geocode(query: string): Promise<{ lat: number; lon: number; displayName: string }> {
-  const params = new URLSearchParams({ q: query, format: 'json', limit: '1' });
-  const res = await fetch(`${NOMINATIM}/search?${params.toString()}`, {
-    headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
-  });
-  if (!res.ok) throw new Error('Geocoding request failed');
-  const results = (await res.json()) as Array<{
-    lat: string;
-    lon: string;
-    display_name: string;
-  }>;
-  if (!results.length) throw new Error(`No location found for "${query}"`);
-  return {
-    lat: parseFloat(results[0].lat),
-    lon: parseFloat(results[0].lon),
-    displayName: results[0].display_name,
-  };
+// Great-circle distance in metres. Geoapify's /v2/places response does not
+// include a `distance` property (verified against the live API) despite the
+// field existing on GeoapifyFeature.properties below for other endpoints —
+// so distance is computed here from the search origin instead of trusting a
+// field that is, in practice, always absent.
+function haversineDistanceM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6_371_000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 interface GeoapifyFeature {
@@ -174,15 +171,20 @@ function parseOpenNow(openingHours: string | undefined): boolean | undefined {
   return undefined; // Cannot reliably parse complex hour strings
 }
 
-export async function fetchNearbyPlaces(destination: string): Promise<NearbyResult> {
-  const geo = await geocode(destination);
-
-  // Try each radius in order, stopping at the first one that returns results.
+// Shared by both entry points below (geocoded search and "near me"): tries
+// each radius in order, stopping at the first that returns results, then
+// maps raw Geoapify features into NearbyPlace. Unchanged from the original
+// fetchNearbyPlaces logic except for the distance/source fields.
+async function searchPlacesNear(
+  originLat: number,
+  originLon: number,
+  displayName: string,
+): Promise<NearbyResult> {
   let rawFeatures: GeoapifyFeature[] = [];
   let usedRadius = RETRY_RADII[RETRY_RADII.length - 1];
 
   for (const radiusM of RETRY_RADII) {
-    const data = await fetchGeoapifyPlaces(geo.lat, geo.lon, radiusM);
+    const data = await fetchGeoapifyPlaces(originLat, originLon, radiusM);
 
     if (data.features.length > 0) {
       rawFeatures = data.features;
@@ -241,7 +243,8 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
       category,
       lat,
       lon,
-      distance: Math.round(p.distance ?? 0),
+      distance: Math.round(haversineDistanceM(originLat, originLon, lat, lon)),
+      source: 'geoapify',
       phone: p.contact?.phone,
       website: p.contact?.website,
       openNow: parseOpenNow(p.opening_hours),
@@ -252,10 +255,22 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
   places.sort((a, b) => a.distance - b.distance);
 
   return {
-    location: geo.displayName,
-    lat: geo.lat,
-    lon: geo.lon,
+    location: displayName,
+    lat: originLat,
+    lon: originLon,
     places,
     radiusM: usedRadius,
   };
+}
+
+export async function fetchNearbyPlaces(destination: string): Promise<NearbyResult> {
+  const geo = await geocodeLocation(destination);
+  return searchPlacesNear(geo.lat, geo.lon, geo.displayName);
+}
+
+// "Near me" entry point — skips geocoding entirely and searches directly
+// from the device's coordinates, per the Phase 1 requirement that Near Me
+// "does not require geocoding".
+export async function fetchNearbyPlacesAtCoords(lat: number, lon: number): Promise<NearbyResult> {
+  return searchPlacesNear(lat, lon, 'Your current location');
 }
