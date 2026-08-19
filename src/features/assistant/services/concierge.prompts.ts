@@ -147,7 +147,7 @@ export function buildPackingAssistantPrompt(
       .map((i) => i.label)
       .slice(0, 20)
       .join(', ') ?? 'None';
-  const safetyRating = intel?.safety.overallRating;
+  const safetyRating = intel?.meta?.isFallback ? undefined : intel?.safety.overallRating;
   const safetyNote =
     safetyRating && safetyRating !== 'very-safe' && safetyRating !== 'safe'
       ? `Safety concern level: ${safetyRating}`
