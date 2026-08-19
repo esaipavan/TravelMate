@@ -120,8 +120,8 @@ export default function DestinationIntelPage() {
         travelTips={intel.weather.recommendations}
       />
 
-      {/* AI smart recommendations */}
-      <SmartRecommendations trip={trip} overview={intel.overview} />
+      {/* Local insights (from the already-fetched destination guide — no extra AI call) */}
+      <SmartRecommendations destination={intel.overview.destination} insights={intel.insights} />
 
       {/* Nearby places list (same TanStack Query cache as DestinationMap — no extra API call) */}
       <NearbyExplorer destination={trip.destination} />
