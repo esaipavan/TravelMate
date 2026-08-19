@@ -59,7 +59,7 @@ export default function ExpensesPage() {
   const { id: tripId } = useParams<{ id: string }>();
   const { data, isLoading, isError, refetch } = useExpenseData(tripId!);
 
-  const { members, ownerMemberId, addMember, removeMember, updateRole } = useGroupMembers(tripId!);
+  const { members, ownerMemberId } = useGroupMembers(tripId!);
 
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -294,12 +294,7 @@ export default function ExpensesPage() {
 
         {/* ── Members tab ──────────────────────────────────────────── */}
         <TabsContent value="members" className="mt-6">
-          <MembersPanel
-            members={members}
-            onAdd={addMember}
-            onRemove={removeMember}
-            onUpdateRole={updateRole}
-          />
+          <MembersPanel tripId={tripId!} members={members} />
         </TabsContent>
 
         {/* ── Analytics tab ────────────────────────────────────────── */}

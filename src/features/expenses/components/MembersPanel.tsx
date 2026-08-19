@@ -1,17 +1,8 @@
-import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { UserPlus, Crown, Pencil, Eye, Trash2, Copy, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Crown, Pencil, Eye, Copy, Mail, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import type { TripMember, MemberRole } from '../utils/settlement';
 
@@ -24,34 +15,12 @@ const ROLE_META: Record<MemberRole, { label: string; icon: RoleIcon; color: stri
 };
 
 interface Props {
+  tripId: string;
   members: TripMember[];
-  onAdd: (name: string, email?: string) => void;
-  onRemove: (id: string) => void;
-  onUpdateRole: (id: string, role: MemberRole) => void;
 }
 
-export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) {
+export function MembersPanel({ tripId, members }: Props) {
   const reduced = useReducedMotion();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-
-  function handleAdd() {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setError('Name is required');
-      return;
-    }
-    if (members.some((m) => m.name.toLowerCase() === trimmed.toLowerCase())) {
-      setError('A member with this name already exists');
-      return;
-    }
-    onAdd(trimmed, email.trim());
-    setName('');
-    setEmail('');
-    setError('');
-    toast.success(`${trimmed} added to the group`);
-  }
 
   function handleCopyLink() {
     void navigator.clipboard
@@ -79,6 +48,12 @@ export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) 
           <p className="text-sm font-semibold text-foreground">
             {members.length} member{members.length !== 1 ? 's' : ''}
           </p>
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs" asChild>
+            <Link to={`/trips/${tripId}`}>
+              <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+              Manage members
+            </Link>
+          </Button>
         </div>
 
         {members.map((member) => {
@@ -119,95 +94,14 @@ export function MembersPanel({ members, onAdd, onRemove, onUpdateRole }: Props) 
                 )}
               </div>
 
-              {/* Role + actions */}
-              {member.isOwner ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                  <RoleIcon className={`h-3 w-3 ${roleMeta.color}`} aria-hidden="true" />
-                  {roleMeta.label}
-                </span>
-              ) : (
-                <div className="flex shrink-0 items-center gap-2">
-                  <Select
-                    value={member.role}
-                    onValueChange={(v) => onUpdateRole(member.id, v as MemberRole)}
-                  >
-                    <SelectTrigger className="h-8 w-24 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="editor">Editor</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => onRemove(member.id)}
-                    aria-label={`Remove ${member.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              )}
+              {/* Role — read-only here; changed from the trip's Members section */}
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                <RoleIcon className={`h-3 w-3 ${roleMeta.color}`} aria-hidden="true" />
+                {roleMeta.label}
+              </span>
             </motion.div>
           );
         })}
-      </motion.div>
-
-      {/* Add member form */}
-      <motion.div
-        variants={rv(FADE_VARIANTS, reduced)}
-        initial="hidden"
-        animate="show"
-        className="space-y-4 rounded-2xl border border-border/60 bg-card p-5"
-      >
-        <h3 className="text-sm font-semibold text-foreground">Add a travel companion</h3>
-
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="member-name">Name</Label>
-            <Input
-              id="member-name"
-              placeholder="e.g. Rahul"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAdd();
-                }
-              }}
-              aria-describedby={error ? 'member-name-error' : undefined}
-            />
-            {error && (
-              <p id="member-name-error" className="text-xs text-destructive">
-                {error}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="member-email">
-              Email <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="member-email"
-              type="email"
-              placeholder="e.g. rahul@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <Button className="w-full" onClick={handleAdd} disabled={!name.trim()}>
-            <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
-            Add to group
-          </Button>
-        </div>
       </motion.div>
 
       {/* Invite options */}

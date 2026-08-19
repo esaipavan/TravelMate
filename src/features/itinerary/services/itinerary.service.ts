@@ -100,7 +100,13 @@ async function fetchItineraryData(tripId: string, scaffold: boolean): Promise<It
     .from('itinerary_items')
     .select('*')
     .in('day_id', dayIds)
-    .order('order_index', { ascending: true });
+    // `id` as a secondary key breaks ties deterministically — two items can
+    // share an order_index (e.g. a rapid double-add before the first insert's
+    // order_index-affecting refetch lands), and without a stable tiebreaker
+    // Postgres doesn't guarantee those rows come back in the same order on
+    // every query, so they'd visibly swap position between page loads.
+    .order('order_index', { ascending: true })
+    .order('id', { ascending: true });
 
   if (itemsError) throw new Error(itemsError.message);
 

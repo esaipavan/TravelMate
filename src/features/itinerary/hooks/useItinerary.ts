@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   getItineraryData,
   getItineraryDataReadOnly,
@@ -79,5 +80,13 @@ export function useReorderItems(tripId: string) {
   return useMutation({
     mutationFn: (updates: { id: string; order_index: number }[]) => reorderItems(updates),
     onSuccess: () => invalidate(qc, tripId),
+    // A partial failure (e.g. network drop mid-batch) previously failed
+    // silently — the optimistic local order stayed on screen with no
+    // indication the DB might now disagree. Surfacing the error and
+    // refetching lets the user see the real persisted order.
+    onError: () => {
+      toast.error('Failed to save the new order. Refreshing…');
+      void invalidate(qc, tripId);
+    },
   });
 }

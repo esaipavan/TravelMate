@@ -26,11 +26,6 @@ interface UseGroupMembersResult {
   members: TripMember[];
   ownerMemberId: string;
   isLoading: boolean;
-  // These are no-ops kept for API compatibility with the expenses feature.
-  // Real mutations go through the collaboration feature's hooks.
-  addMember: (name: string, email?: string) => void;
-  removeMember: (id: string) => void;
-  updateRole: (id: string, role: MemberRole) => void;
 }
 
 export function useGroupMembers(tripId: string): UseGroupMembersResult {
@@ -39,17 +34,10 @@ export function useGroupMembers(tripId: string): UseGroupMembersResult {
   const ownerId = collabMembers.find((m) => m.isOwner)?.userId ?? '';
   const members: TripMember[] = collabMembers.map(toTripMember);
 
-  const noop = () => {
-    /* mutations are handled by the collaboration feature */
-  };
-
   return {
     members,
     ownerMemberId: ownerId,
     isLoading,
-    addMember: noop,
-    removeMember: noop,
-    updateRole: noop,
   };
 }
 
