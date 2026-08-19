@@ -76,6 +76,10 @@ export function useDestinationRecommendations(trip: TripRow, overview: Destinati
       ]);
       return parseResponse(response.content);
     },
+    // Matches useDestinationData's readiness gate — this query needs both a
+    // trip and its resolved destination overview, so it must not fire before
+    // either is actually available.
+    enabled: !!trip?.id && !!overview?.destination,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, Sparkles, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
@@ -63,81 +63,67 @@ interface Props {
   trip: TripRow;
 }
 
-export function TripAIPanel({ trip }: Props) {
-  const reduced = useReducedMotion();
-  const [recs, setRecs] = useState<Rec[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  // Generation counter, not a single cancelled boolean: each fetchRecs() call
-  // tags its own request with the generation it started at, and only applies
-  // its result if that generation is still current when it resolves. A plain
-  // shared "cancelled" ref would break under StrictMode's dev-only
-  // mount→cleanup→mount cycle — the first (throwaway) invocation's cleanup
-  // would permanently flip that ref, silently discarding the real request's
-  // result too and leaving the panel stuck on its loading skeleton forever.
-  // Bumping the counter in every cleanup (StrictMode's synthetic one, a real
-  // unmount, or a trip-content change) still invalidates whichever request
-  // — effect-started or button-started — was outstanding at that point.
-  const genRef = useRef(0);
-
-  // Memoized on the specific trip fields the prompt/context actually read
-  // (not the `trip` object itself, which may be a new reference every render
-  // from the parent's query cache) — this keeps `fetchRecs`'s identity
-  // stable across incidental re-renders, so the effect below never tears
-  // down an in-flight request just because something unrelated re-rendered
-  // this component. It only changes identity when the trip content that
-  // feeds the prompt genuinely changes, which is exactly when a stale
-  // in-flight request SHOULD be cancelled.
-  const fetchRecs = useCallback(() => {
-    const myGen = ++genRef.current;
-    setLoading(true);
-    setError(false);
-    setRecs(null);
-
-    const prompt = `You are a travel expert. For a trip to ${trip.destination} (${trip.start_date} to ${trip.end_date}), provide exactly 3 specific, practical travel recommendations.
+async function fetchTripRecommendations(trip: TripRow): Promise<Rec[]> {
+  const prompt = `You are a travel expert. For a trip to ${trip.destination} (${trip.start_date} to ${trip.end_date}), provide exactly 3 specific, practical travel recommendations.
 
 Respond with ONLY a valid JSON array — no explanation, no markdown, no code fences:
 [{"emoji":"🏛️","title":"Short title","tip":"One to two sentence practical tip."},{"emoji":"🍜","title":"Short title","tip":"One to two sentence practical tip."},{"emoji":"📸","title":"Short title","tip":"One to two sentence practical tip."}]`;
 
-    chatWithAI([{ role: 'user', content: prompt }], {
-      tripContext: {
-        tripId: trip.id,
-        destination: trip.destination,
-        startDate: trip.start_date,
-        endDate: trip.end_date,
-        budget: trip.total_budget ?? undefined,
-        currency: trip.currency,
-      },
-    })
-      .then((res) => {
-        if (genRef.current !== myGen) return;
-        const raw = res.content.trim();
-        const match = raw.match(/\[[\s\S]*\]/);
-        if (!match) throw new Error('No JSON array in response');
-        const parsed = JSON.parse(match[0]) as Rec[];
-        if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
-        setRecs(parsed.slice(0, 3));
-      })
-      .catch(() => {
-        if (genRef.current === myGen) setError(true);
-      })
-      .finally(() => {
-        if (genRef.current === myGen) setLoading(false);
-      });
-  }, [trip.id, trip.destination, trip.start_date, trip.end_date, trip.total_budget, trip.currency]);
+  const res = await chatWithAI([{ role: 'user', content: prompt }], {
+    tripContext: {
+      tripId: trip.id,
+      destination: trip.destination,
+      startDate: trip.start_date,
+      endDate: trip.end_date,
+      budget: trip.total_budget ?? undefined,
+      currency: trip.currency,
+    },
+  });
 
-  useEffect(() => {
-    fetchRecs();
-    return () => {
-      // Intentionally reads the LIVE counter, not a value snapshotted when
-      // this effect ran — unlike a DOM-node ref (what this lint rule is
-      // designed for), genRef is a monotonic counter meant to be bumped to
-      // whatever it currently is, invalidating any request outstanding at
-      // cleanup time regardless of which invocation started it.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      genRef.current++;
-    };
-  }, [fetchRecs]);
+  const raw = res.content.trim();
+  const match = raw.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error('No JSON array in response');
+  const parsed = JSON.parse(match[0]) as Rec[];
+  if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
+  return parsed.slice(0, 3);
+}
+
+export function TripAIPanel({ trip }: Props) {
+  const reduced = useReducedMotion();
+
+  const {
+    data: recs,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery<Rec[], Error>({
+    // Includes total_budget/currency because they're spliced into the AI
+    // system prompt server-side (supabase/functions/ai-chat/index.ts) —
+    // without them, editing a trip's budget or currency would keep serving
+    // recommendations generated under the old values until the cache expires.
+    queryKey: [
+      'trip-ai-recommendations',
+      trip.id,
+      trip.destination,
+      trip.start_date,
+      trip.end_date,
+      trip.total_budget,
+      trip.currency,
+    ],
+    queryFn: () => fetchTripRecommendations(trip),
+    // Revisiting the same trip's detail page repeatedly (or navigating away
+    // and back) previously re-fired this on every mount. A multi-hour
+    // staleTime keeps recommendations cached across normal browsing while
+    // the manual Refresh button below (refetch()) still forces a fresh call
+    // on demand regardless of cache freshness.
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    retry: 0,
+  });
+
+  function handleRefresh() {
+    void refetch();
+  }
 
   return (
     <motion.section
@@ -161,11 +147,11 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
         </div>
 
         <div className="flex items-center gap-2">
-          {!loading && (
+          {!isFetching && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchRecs}
+              onClick={handleRefresh}
               className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               aria-label="Refresh recommendations"
             >
@@ -185,16 +171,16 @@ Respond with ONLY a valid JSON array — no explanation, no markdown, no code fe
       </div>
 
       {/* Content */}
-      {loading ? (
+      {isFetching ? (
         <PanelSkeleton />
-      ) : error ? (
+      ) : isError ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 py-10 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Couldn't load recommendations</p>
             <p className="text-xs text-muted-foreground">AI service may be unavailable.</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchRecs}>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             Try again
           </Button>
         </div>
