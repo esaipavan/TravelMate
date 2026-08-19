@@ -46,7 +46,24 @@ async function initializeDays(tripId: string, startDate: string, endDate: string
   await supabase.from('itinerary_days').insert(inserts);
 }
 
-export async function getItineraryData(tripId: string): Promise<ItineraryData> {
+// Read-only existence check — deliberately does NOT call initializeDays().
+// getItineraryData() auto-scaffolds one itinerary_days row per trip day as a
+// side effect of loading the itinerary UI (which needs day placeholders even
+// when empty). A boolean "has the user added anything" check must not carry
+// that side effect, or merely opening the Dashboard/Prepare page would write
+// itinerary_days rows for every trip viewed.
+export async function hasItineraryItems(tripId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('itinerary_items')
+    .select('id, itinerary_days!inner(trip_id)')
+    .eq('itinerary_days.trip_id', tripId)
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
+}
+
+async function fetchItineraryData(tripId: string, scaffold: boolean): Promise<ItineraryData> {
   const { data: trip, error: tripError } = await supabase
     .from('trips')
     .select('title, currency, start_date, end_date')
@@ -60,7 +77,7 @@ export async function getItineraryData(tripId: string): Promise<ItineraryData> {
   const startDate = trip?.start_date ?? '';
   const endDate = trip?.end_date ?? '';
 
-  if (startDate && endDate) {
+  if (scaffold && startDate && endDate) {
     await initializeDays(tripId, startDate, endDate);
   }
 
@@ -100,6 +117,21 @@ export async function getItineraryData(tripId: string): Promise<ItineraryData> {
   }));
 
   return { tripTitle, tripCurrency, startDate, endDate, days: hydratedDays };
+}
+
+export async function getItineraryData(tripId: string): Promise<ItineraryData> {
+  return fetchItineraryData(tripId, true);
+}
+
+// Read-only variant — never scaffolds itinerary_days. For passive summary
+// surfaces (e.g. the Dashboard's "Today's Plan" widget) that display
+// itinerary content but must never write to the database just from being
+// viewed. Days that don't exist yet simply render as absent, matching what
+// initializeDays() would have inserted anyway — the widget only needs to
+// find today's day if one has already been created via the actual Itinerary
+// page.
+export async function getItineraryDataReadOnly(tripId: string): Promise<ItineraryData> {
+  return fetchItineraryData(tripId, false);
 }
 
 export async function createItem(data: ItineraryItemInsert): Promise<ItineraryItemRow> {

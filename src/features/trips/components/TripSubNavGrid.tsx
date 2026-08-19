@@ -13,6 +13,7 @@ import {
   Globe,
   Camera,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 
 /* ── Card config ──────────────────────────────────────────────── */
@@ -26,6 +27,13 @@ interface CardDef {
 
 function buildCards(tripId: string): CardDef[] {
   return [
+    {
+      label: 'Prepare',
+      description: 'Documents, packing, trip guide',
+      href: `/trips/${tripId}/prepare`,
+      icon: Sparkles,
+      rgb: '99,102,241',
+    },
     {
       label: 'Budget',
       description: 'Set budgets by category',

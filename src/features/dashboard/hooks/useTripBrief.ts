@@ -3,6 +3,11 @@ import { supabase } from '@/lib/supabase';
 import { getTripBrief } from '../services/brief.service';
 import type { TripBriefRow } from '../services/brief.service';
 
+// Re-exported so sibling features consume this type through the hooks layer
+// (per this project's feature-slice convention) instead of reaching into
+// dashboard/services/ directly.
+export type { TripBriefRow };
+
 interface UseTripBriefResult {
   brief: TripBriefRow | null;
   isLoading: boolean;
@@ -35,8 +40,13 @@ export function useTripBrief(tripId: string | null): UseTripBriefResult {
 
     void fetchBrief();
 
+    // Channel name includes a per-mount suffix — more than one component can
+    // watch the same trip's brief at once (e.g. the dashboard's Next Action
+    // banner and the Prepare Trip page during a client-side navigation), and
+    // Supabase rejects a second `subscribe()` call reusing an identical,
+    // still-active channel name.
     const channel = supabase
-      .channel(`trip-brief-${id}`)
+      .channel(`trip-brief-${id}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         {

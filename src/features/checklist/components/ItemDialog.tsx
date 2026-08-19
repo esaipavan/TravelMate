@@ -38,11 +38,12 @@ interface Props {
   tripId: string;
   totalItems: number;
   item?: PackingItemRow;
+  existingItems: PackingItemRow[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Props) {
+export function ItemDialog({ tripId, totalItems, item, existingItems, open, onOpenChange }: Props) {
   const isEdit = !!item;
   const { mutateAsync: createItem, isPending: creating } = useCreatePackingItem(tripId);
   const { mutateAsync: updateItem, isPending: updating } = useUpdatePackingItem(tripId);
@@ -54,6 +55,7 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
     reset,
     setValue,
     watch,
+    setError,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -81,6 +83,24 @@ export function ItemDialog({ tripId, totalItems, item, open, onOpenChange }: Pro
   }, [open, item, reset]);
 
   async function onSubmit(values: FormValues) {
+    // Same trip, same name (case-insensitive) already exists — quantity is
+    // the intended way to represent "more than one," so block a second row
+    // for the identical name rather than silently creating a duplicate. Only
+    // check when the name is actually being set/changed — otherwise editing
+    // an unrelated field (quantity, category) on an item would be falsely
+    // blocked whenever some other item on the list happens to share its name.
+    const trimmedName = values.name.trim().toLowerCase();
+    const nameChanged = !isEdit || trimmedName !== item.name.trim().toLowerCase();
+    if (nameChanged) {
+      const duplicate = existingItems.find(
+        (i) => i.id !== item?.id && i.name.trim().toLowerCase() === trimmedName,
+      );
+      if (duplicate) {
+        setError('name', { message: `You already have "${duplicate.name}" on this list.` });
+        return;
+      }
+    }
+
     try {
       const payload: Omit<ItemFormValues, 'quantity'> & { quantity: number } = {
         name: values.name,

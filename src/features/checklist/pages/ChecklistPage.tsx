@@ -228,6 +228,7 @@ export default function ChecklistPage() {
       <ItemDialog
         tripId={tripId!}
         totalItems={items.length}
+        existingItems={items}
         open={addOpen}
         onOpenChange={setAddOpen}
       />
@@ -235,6 +236,7 @@ export default function ChecklistPage() {
         tripId={tripId!}
         totalItems={items.length}
         item={editItem}
+        existingItems={items}
         open={editOpen}
         onOpenChange={(open) => {
           setEditOpen(open);

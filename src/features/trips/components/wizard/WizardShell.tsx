@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { rv, EASE } from '@/lib/motion';
 import { REDUCED_VARIANTS } from '@/lib/motion';
 import { useWizard, canProceed, TOTAL_STEPS } from './WizardContext';
@@ -9,8 +9,6 @@ import { DestinationStep } from './steps/DestinationStep';
 import { TripTypeStep } from './steps/TripTypeStep';
 import { DatesStep } from './steps/DatesStep';
 import { BudgetStep } from './steps/BudgetStep';
-import { TravelersStep } from './steps/TravelersStep';
-import { AIGeneratorStep } from './steps/AIGeneratorStep';
 import { ReviewStep } from './steps/ReviewStep';
 
 /* ── Step metadata ───────────────────────────────────────────────── */
@@ -20,9 +18,7 @@ const STEPS = [
   { label: 'Trip Type', shortLabel: '2' },
   { label: 'Dates', shortLabel: '3' },
   { label: 'Budget', shortLabel: '4' },
-  { label: 'Travelers', shortLabel: '5' },
-  { label: 'AI Preview', shortLabel: '6' },
-  { label: 'Review', shortLabel: '7' },
+  { label: 'Review', shortLabel: '5' },
 ];
 
 /* ── Progress bar ────────────────────────────────────────────────── */
@@ -86,10 +82,6 @@ function StepContent({ step }: { step: number }) {
     case 3:
       return <BudgetStep />;
     case 4:
-      return <TravelersStep />;
-    case 5:
-      return <AIGeneratorStep />;
-    case 6:
       return <ReviewStep />;
     default:
       return null;
@@ -103,14 +95,7 @@ function NextLabel({ step, loading }: { step: number; loading: boolean }) {
     return (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Generating…
-      </>
-    );
-  if (step === 5)
-    return (
-      <>
-        <Sparkles className="mr-2 h-4 w-4" />
-        Continue
+        Creating…
       </>
     );
   if (step === TOTAL_STEPS - 1)
@@ -138,10 +123,10 @@ export function WizardShell({
   const { state, goNext, goBack } = useWizard();
   const reduced = useReducedMotion();
 
-  const { currentStep: step, direction, generationStatus } = state;
+  const { currentStep: step, direction } = state;
   const ok = canProceed(step, state);
   const isLast = step === TOTAL_STEPS - 1;
-  const loading = (step === 5 && generationStatus === 'loading') || (isLast && isSubmitting);
+  const loading = isLast && isSubmitting;
 
   /* Slide variants — direction-aware */
   const slideVariants = {

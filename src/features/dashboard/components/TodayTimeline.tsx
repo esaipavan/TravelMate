@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { useCurrentTrip } from '../hooks/useDashboard';
-import { useItineraryData } from '@/features/itinerary/hooks/useItinerary';
+import { useItineraryDataReadOnly } from '@/features/itinerary/hooks/useItinerary';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { LucideIcon } from 'lucide-react';
 import type { ItineraryCategory } from '@/features/itinerary/types';
@@ -72,7 +72,7 @@ function TimelineSkeleton() {
 export function TodayTimeline() {
   const reduced = useReducedMotion();
   const { data: trip, isLoading: tripLoading } = useCurrentTrip();
-  const { data: itinerary, isLoading: itineraryLoading } = useItineraryData(trip?.id ?? '');
+  const { data: itinerary, isLoading: itineraryLoading } = useItineraryDataReadOnly(trip?.id ?? '');
 
   const now = new Date();
   const currentHour = now.getHours();

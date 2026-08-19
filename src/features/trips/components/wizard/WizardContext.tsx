@@ -32,64 +32,76 @@ export const TRIP_TYPE_META: Record<
   'road-trip': { label: 'Road Trip', emoji: '🚗', description: 'The journey is the destination' },
 };
 
-/* ── Budget ──────────────────────────────────────────────────────── */
+/* ── Budget ──────────────────────────────────────────────────────────────
+ * Plain numeric entry, not sliders: one required-feeling but actually
+ * optional total, plus an optional per-category breakdown. Values are kept
+ * as raw strings while editing (never forced to 0) so an empty field reads
+ * as "not set" rather than "zero", and partial/invalid input never gets
+ * silently coerced or dropped until the user actually submits. Category
+ * keys reuse the existing `expense_category` DB enum — no new categories. */
 
-export interface BudgetAllocation {
-  accommodation: number;
-  food: number;
-  transport: number;
-  activities: number;
-  shopping: number;
-  emergency: number;
-  visa: number;
-  insurance: number;
-}
+export type BudgetCategoryKey = 'hotel' | 'transport' | 'food' | 'activity' | 'misc';
 
-export const BUDGET_CATEGORIES: {
-  key: keyof BudgetAllocation;
-  label: string;
-  icon: string;
-  color: string;
-}[] = [
-  { key: 'accommodation', label: 'Accommodation', icon: '🏨', color: '#6366F1' },
-  { key: 'food', label: 'Food & Dining', icon: '🍽️', color: '#F59E0B' },
-  { key: 'transport', label: 'Transport', icon: '✈️', color: '#0EA5E9' },
-  { key: 'activities', label: 'Activities', icon: '🎯', color: '#10B981' },
-  { key: 'shopping', label: 'Shopping', icon: '🛍️', color: '#EC4899' },
-  { key: 'emergency', label: 'Emergency Fund', icon: '🆘', color: '#EF4444' },
-  { key: 'visa', label: 'Visa & Permits', icon: '📋', color: '#8B5CF6' },
-  { key: 'insurance', label: 'Insurance', icon: '🛡️', color: '#14B8A6' },
+export const BUDGET_CATEGORIES: { key: BudgetCategoryKey; label: string; icon: string }[] = [
+  { key: 'hotel', label: 'Accommodation', icon: '🏨' },
+  { key: 'transport', label: 'Transport', icon: '✈️' },
+  { key: 'food', label: 'Food', icon: '🍽️' },
+  { key: 'activity', label: 'Activities', icon: '🎯' },
+  { key: 'misc', label: 'Other', icon: '📦' },
 ];
 
-export function totalBudget(b: BudgetAllocation): number {
-  return (Object.values(b) as number[]).reduce((s, v) => s + v, 0);
+export interface BudgetState {
+  total: string;
+  breakdown: Record<BudgetCategoryKey, string>;
 }
 
-/* ── Generated content ───────────────────────────────────────────── */
+const EMPTY_BREAKDOWN: Record<BudgetCategoryKey, string> = {
+  hotel: '',
+  transport: '',
+  food: '',
+  activity: '',
+  misc: '',
+};
 
-export interface GeneratedSection {
-  id: string;
-  title: string;
-  icon: string;
-  content: string;
-  enabled: boolean;
+/** Parses a raw budget input string. Empty/whitespace is "not set" (null),
+ * anything else must be a finite non-negative number or it's invalid (null
+ * is also returned for invalid input — callers distinguish the two cases
+ * by checking whether the trimmed raw string was empty). */
+export function parseBudgetValue(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
 }
 
-export type GenerationStatus = 'idle' | 'loading' | 'done' | 'error';
+export function isBudgetValueValid(raw: string): boolean {
+  return raw.trim() === '' || parseBudgetValue(raw) !== null;
+}
 
-export const SECTION_META: { id: string; title: string; icon: string }[] = [
-  { id: 'itinerary', title: 'Suggested Itinerary', icon: '🗺️' },
-  { id: 'packing', title: 'Packing Checklist', icon: '🧳' },
-  { id: 'weather', title: 'Weather Summary', icon: '⛅' },
-  { id: 'currency', title: 'Currency & Money', icon: '💱' },
-  { id: 'language', title: 'Language & Phrases', icon: '🗣️' },
-  { id: 'emergency', title: 'Emergency Contacts', icon: '🆘' },
-  { id: 'attractions', title: 'Top Attractions', icon: '🏛️' },
-  { id: 'food', title: 'Local Cuisine', icon: '🍜' },
-  { id: 'transport', title: 'Getting Around', icon: '🚌' },
-  { id: 'tips', title: 'Travel Tips', icon: '💡' },
-  { id: 'dailyBudget', title: 'Daily Budget Guide', icon: '💰' },
-];
+export function allocatedTotal(breakdown: Record<BudgetCategoryKey, string>): number {
+  return BUDGET_CATEGORIES.reduce(
+    (sum, cat) => sum + (parseBudgetValue(breakdown[cat.key]) ?? 0),
+    0,
+  );
+}
+
+/** Total to persist onto `trips.total_budget` — null when not entered. */
+export function resolveTotalBudget(budget: BudgetState): number | null {
+  return parseBudgetValue(budget.total);
+}
+
+/** Only the meaningfully-entered category amounts (never zero-value rows). */
+export function resolveBudgetBreakdown(
+  budget: BudgetState,
+): Partial<Record<BudgetCategoryKey, number>> {
+  const result: Partial<Record<BudgetCategoryKey, number>> = {};
+  for (const cat of BUDGET_CATEGORIES) {
+    const value = parseBudgetValue(budget.breakdown[cat.key]);
+    if (value !== null && value > 0) result[cat.key] = value;
+  }
+  return result;
+}
 
 /* ── State ───────────────────────────────────────────────────────── */
 
@@ -105,13 +117,8 @@ export interface WizardState {
   startDate: string;
   endDate: string;
   // Step 4
-  budget: BudgetAllocation;
+  budget: BudgetState;
   currency: string;
-  // Step 5
-  inviteEmails: string[];
-  // Step 6
-  generationStatus: GenerationStatus;
-  generatedSections: GeneratedSection[];
 }
 
 /* ── Actions ─────────────────────────────────────────────────────── */
@@ -121,27 +128,11 @@ export type WizardAction =
   | { type: 'SET_DESTINATION'; destination: string; meta: DestinationInfo | null }
   | { type: 'SET_TRIP_TYPE'; tripType: TripType }
   | { type: 'SET_DATES'; startDate: string; endDate: string }
-  | { type: 'SET_BUDGET'; category: keyof BudgetAllocation; value: number }
-  | { type: 'SET_BUDGET_ALL'; budget: BudgetAllocation }
-  | { type: 'SET_CURRENCY'; currency: string }
-  | { type: 'ADD_EMAIL'; email: string }
-  | { type: 'REMOVE_EMAIL'; email: string }
-  | { type: 'SET_GENERATION_STATUS'; status: GenerationStatus }
-  | { type: 'SET_GENERATED_SECTIONS'; sections: GeneratedSection[] }
-  | { type: 'TOGGLE_SECTION'; id: string };
+  | { type: 'SET_BUDGET_TOTAL'; value: string }
+  | { type: 'SET_BUDGET_CATEGORY'; category: BudgetCategoryKey; value: string }
+  | { type: 'SET_CURRENCY'; currency: string };
 
 /* ── Reducer ─────────────────────────────────────────────────────── */
-
-const INIT_BUDGET: BudgetAllocation = {
-  accommodation: 0,
-  food: 0,
-  transport: 0,
-  activities: 0,
-  shopping: 0,
-  emergency: 0,
-  visa: 0,
-  insurance: 0,
-};
 
 const INITIAL: WizardState = {
   currentStep: 0,
@@ -151,11 +142,8 @@ const INITIAL: WizardState = {
   tripType: null,
   startDate: '',
   endDate: '',
-  budget: INIT_BUDGET,
+  budget: { total: '', breakdown: { ...EMPTY_BREAKDOWN } },
   currency: 'INR',
-  inviteEmails: [],
-  generationStatus: 'idle',
-  generatedSections: [],
 };
 
 function reduce(state: WizardState, action: WizardAction): WizardState {
@@ -168,28 +156,18 @@ function reduce(state: WizardState, action: WizardAction): WizardState {
       return { ...state, tripType: action.tripType };
     case 'SET_DATES':
       return { ...state, startDate: action.startDate, endDate: action.endDate };
-    case 'SET_BUDGET':
-      return { ...state, budget: { ...state.budget, [action.category]: action.value } };
-    case 'SET_BUDGET_ALL':
-      return { ...state, budget: action.budget };
-    case 'SET_CURRENCY':
-      return { ...state, currency: action.currency };
-    case 'ADD_EMAIL':
-      if (state.inviteEmails.includes(action.email)) return state;
-      return { ...state, inviteEmails: [...state.inviteEmails, action.email] };
-    case 'REMOVE_EMAIL':
-      return { ...state, inviteEmails: state.inviteEmails.filter((e) => e !== action.email) };
-    case 'SET_GENERATION_STATUS':
-      return { ...state, generationStatus: action.status };
-    case 'SET_GENERATED_SECTIONS':
-      return { ...state, generatedSections: action.sections };
-    case 'TOGGLE_SECTION':
+    case 'SET_BUDGET_TOTAL':
+      return { ...state, budget: { ...state.budget, total: action.value } };
+    case 'SET_BUDGET_CATEGORY':
       return {
         ...state,
-        generatedSections: state.generatedSections.map((s) =>
-          s.id === action.id ? { ...s, enabled: !s.enabled } : s,
-        ),
+        budget: {
+          ...state.budget,
+          breakdown: { ...state.budget.breakdown, [action.category]: action.value },
+        },
       };
+    case 'SET_CURRENCY':
+      return { ...state, currency: action.currency };
     default:
       return state;
   }
@@ -197,7 +175,7 @@ function reduce(state: WizardState, action: WizardAction): WizardState {
 
 /* ── Context ─────────────────────────────────────────────────────── */
 
-export const TOTAL_STEPS = 7;
+export const TOTAL_STEPS = 5;
 
 export function canProceed(step: number, state: WizardState): boolean {
   switch (step) {
@@ -208,12 +186,11 @@ export function canProceed(step: number, state: WizardState): boolean {
     case 2:
       return state.startDate !== '' && state.endDate !== '' && state.endDate >= state.startDate;
     case 3:
-      return true;
+      return (
+        isBudgetValueValid(state.budget.total) &&
+        BUDGET_CATEGORIES.every((cat) => isBudgetValueValid(state.budget.breakdown[cat.key]))
+      );
     case 4:
-      return true;
-    case 5:
-      return state.generationStatus === 'done' || state.generationStatus === 'error';
-    case 6:
       return true;
     default:
       return false;

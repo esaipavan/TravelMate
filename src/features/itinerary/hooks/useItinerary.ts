@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getItineraryData,
+  getItineraryDataReadOnly,
+  hasItineraryItems,
   createItem,
   updateItem,
   deleteItem,
@@ -17,6 +19,32 @@ export function useItineraryData(tripId: string) {
   return useQuery({
     queryKey: ['itinerary', tripId],
     queryFn: () => getItineraryData(tripId),
+    staleTime: 3 * 60 * 1000,
+    enabled: !!tripId,
+  });
+}
+
+// For a boolean "has this trip got any itinerary items" check only — does not
+// scaffold itinerary_days rows the way useItineraryData()/getItineraryData()
+// does. Used by trip-preparation state (Dashboard, Prepare) so merely viewing
+// those pages never writes to itinerary_days.
+export function useHasItineraryItems(tripId: string) {
+  return useQuery({
+    queryKey: ['itinerary', tripId, 'hasItems'],
+    queryFn: () => hasItineraryItems(tripId),
+    staleTime: 3 * 60 * 1000,
+    enabled: !!tripId,
+  });
+}
+
+// Read-only counterpart to useItineraryData() — same shape, but never
+// scaffolds itinerary_days. For passive display surfaces (e.g. the
+// Dashboard's "Today's Plan" widget) that need real day/item content but
+// must not write to the database just from being viewed.
+export function useItineraryDataReadOnly(tripId: string) {
+  return useQuery({
+    queryKey: ['itinerary', tripId, 'readOnly'],
+    queryFn: () => getItineraryDataReadOnly(tripId),
     staleTime: 3 * 60 * 1000,
     enabled: !!tripId,
   });

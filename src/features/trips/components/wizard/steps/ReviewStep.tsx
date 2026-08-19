@@ -1,11 +1,16 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { MapPin, Calendar, Wallet, Users, Sparkles, Edit2 } from 'lucide-react';
+import { MapPin, Calendar, Wallet, Edit2 } from 'lucide-react';
 import { parseISO, differenceInDays } from 'date-fns';
 import { rv, FADE_VARIANTS, HERO_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
 import { formatCurrency, formatDateRange } from '@/utils/formatters';
-import { getCurrencyMeta } from '../destinationData';
-import { useWizard, totalBudget, TRIP_TYPE_META } from '../WizardContext';
+import {
+  useWizard,
+  resolveTotalBudget,
+  resolveBudgetBreakdown,
+  BUDGET_CATEGORIES,
+  TRIP_TYPE_META,
+} from '../WizardContext';
 
 /* ── Summary row ─────────────────────────────────────────────────── */
 
@@ -42,22 +47,12 @@ export function ReviewStep() {
   const reduced = useReducedMotion();
   const { state } = useWizard();
 
-  const {
-    destination,
-    destinationMeta,
-    tripType,
-    startDate,
-    endDate,
-    budget,
-    currency,
-    inviteEmails,
-    generatedSections,
-  } = state;
+  const { destination, destinationMeta, tripType, startDate, endDate, budget, currency } = state;
 
   const imageUrl = resolveDestinationImageUrl(destination);
-  const meta = getCurrencyMeta(currency);
-  const total = totalBudget(budget);
-  const enabledSecs = generatedSections.filter((s) => s.enabled);
+  const total = resolveTotalBudget(budget);
+  const breakdown = resolveBudgetBreakdown(budget);
+  const breakdownEntries = BUDGET_CATEGORIES.filter((cat) => breakdown[cat.key] !== undefined);
   const tripTypeLabel = tripType ? TRIP_TYPE_META[tripType].label : '—';
   const tripTypeEmoji = tripType ? TRIP_TYPE_META[tripType].emoji : '';
 
@@ -68,14 +63,9 @@ export function ReviewStep() {
 
   const dateRange = startDate && endDate ? formatDateRange(startDate, endDate) : '—';
   const budgetStr =
-    total > 0
-      ? `${formatCurrency(total, currency)} · ${meta.symbol}${Math.round(total / Math.max(duration, 1)).toLocaleString()} per day`
+    total !== null && total > 0
+      ? `${formatCurrency(total, currency)} · ${formatCurrency(Math.round(total / Math.max(duration, 1)), currency)} per day`
       : 'Not set';
-
-  const travelersStr =
-    inviteEmails.length > 0
-      ? `You + ${inviteEmails.length} traveler${inviteEmails.length !== 1 ? 's' : ''}`
-      : 'Just you';
 
   return (
     <div className="space-y-8">
@@ -87,7 +77,7 @@ export function ReviewStep() {
           initial="hidden"
           animate="show"
         >
-          Step 7 of 7
+          Step 5 of 5
         </motion.p>
         <motion.h1
           className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
@@ -177,12 +167,11 @@ export function ReviewStep() {
             sub={duration > 0 ? `${duration} days` : undefined}
           />
           <SummaryRow icon={Wallet} label="Budget" value={budgetStr} />
-          <SummaryRow icon={Users} label="Travelers" value={travelersStr} />
         </div>
       </motion.div>
 
-      {/* AI sections preview */}
-      {enabledSecs.length > 0 && (
+      {/* Budget breakdown preview — only if the user entered one */}
+      {breakdownEntries.length > 0 && (
         <motion.div
           variants={rv(FADE_VARIANTS, reduced)}
           initial="hidden"
@@ -190,38 +179,30 @@ export function ReviewStep() {
           transition={{ delay: 0.2 }}
           className="space-y-3"
         >
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-            <p className="text-sm font-semibold text-foreground">
-              AI Travel Guide — {enabledSecs.length} section{enabledSecs.length !== 1 ? 's' : ''}
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-foreground">Budget breakdown</p>
           <motion.div
-            className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-3"
             variants={rv(LIST_VARIANTS, reduced)}
             initial="hidden"
             animate="show"
           >
-            {enabledSecs.slice(0, 8).map((s) => (
+            {breakdownEntries.map((cat) => (
               <motion.div
-                key={s.id}
+                key={cat.key}
                 variants={rv(LIST_ITEM_VARIANTS, reduced)}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/60 bg-card py-3 text-center"
+                className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2.5"
               >
-                <span className="text-xl leading-none" aria-hidden="true">
-                  {s.icon}
+                <span className="text-lg leading-none" aria-hidden="true">
+                  {cat.icon}
                 </span>
-                <p className="text-[10px] font-semibold leading-tight text-muted-foreground">
-                  {s.title}
-                </p>
+                <div className="min-w-0">
+                  <p className="truncate text-xs text-muted-foreground">{cat.label}</p>
+                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                    {formatCurrency(breakdown[cat.key]!, currency)}
+                  </p>
+                </div>
               </motion.div>
             ))}
-            {enabledSecs.length > 8 && (
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border/60 py-3 text-center">
-                <p className="text-sm font-bold text-muted-foreground">+{enabledSecs.length - 8}</p>
-                <p className="text-[10px] text-muted-foreground">more</p>
-              </div>
-            )}
           </motion.div>
         </motion.div>
       )}

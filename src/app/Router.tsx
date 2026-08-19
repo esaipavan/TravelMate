@@ -35,6 +35,7 @@ const BudgetPage = lazy(() => import('@/features/budget/pages/BudgetPage'));
 const ExpensesPage = lazy(() => import('@/features/expenses/pages/ExpensesPage'));
 const ItineraryPage = lazy(() => import('@/features/itinerary/pages/ItineraryPage'));
 const ChecklistPage = lazy(() => import('@/features/checklist/pages/ChecklistPage'));
+const PrepareTripPage = lazy(() => import('@/features/prepare/pages/PrepareTripPage'));
 const JournalPage = lazy(() => import('@/features/journal/pages/JournalPage'));
 const WeatherPage = lazy(() => import('@/features/weather/pages/WeatherPage'));
 const CurrencyPage = lazy(() => import('@/features/currency/pages/CurrencyPage'));
@@ -326,6 +327,14 @@ const router = createBrowserRouter([
         element: (
           <Wrap>
             <ChecklistPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/trips/:id/prepare',
+        element: (
+          <Wrap>
+            <PrepareTripPage />
           </Wrap>
         ),
       },

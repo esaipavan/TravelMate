@@ -1,7 +1,7 @@
 ﻿import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { PlaneTakeoff, ArrowRight, Sparkles } from 'lucide-react';
+import { PlaneTakeoff, ArrowRight, Sparkles, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -128,20 +128,33 @@ export function UpcomingTripsSection() {
   const hasTripFromOnboarding = onboardingState.completed && !!onboardingState.data.tripId;
 
   return (
-    <section aria-label="Upcoming trips">
+    <section aria-label="My trips">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Upcoming Trips</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Link to="/trips">
-            View all
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        </Button>
+        <h2 className="text-sm font-semibold text-foreground">My Trips</h2>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/trips/new">
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              New trip
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/trips">
+              View all
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {isError && (

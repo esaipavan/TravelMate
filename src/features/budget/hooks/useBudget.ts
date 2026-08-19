@@ -62,3 +62,27 @@ export function useBatchUpsertBudgets(tripId: string) {
     },
   });
 }
+
+/**
+ * Same as `useBatchUpsertBudgets`, but takes `tripId` per-call instead of at
+ * hook-creation time — for callers (like trip creation) that don't have a
+ * trip id yet when the component first renders.
+ */
+export function useBatchUpsertBudgetsMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      tripId,
+      allocations,
+      currency,
+    }: {
+      tripId: string;
+      allocations: Partial<Record<ExpenseCategory, number>>;
+      currency: string;
+    }) => batchUpsertCategoryBudgets(tripId, allocations, currency),
+    onSuccess: (_result, { tripId }) => {
+      void qc.invalidateQueries({ queryKey: ['budget', tripId] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}

@@ -100,7 +100,7 @@ export function TripTypeStep() {
           initial="hidden"
           animate="show"
         >
-          Step 2 of 7
+          Step 2 of 5
         </motion.p>
         <motion.h1
           className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"

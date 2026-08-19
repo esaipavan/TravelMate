@@ -100,8 +100,13 @@ Return only the JSON array.`;
   async function addSelected() {
     if (selected.size === 0) return;
     setAdding(true);
+    // Re-check against the latest existingItems right before writing — the
+    // AI prompt only asks the model to avoid these names as a soft
+    // instruction, so a repeated suggestion (or a stale suggestions list)
+    // must still be filtered out here to avoid a duplicate packing_items row.
+    const existingLower = new Set(existingItems.map((n) => n.toLowerCase()));
     const items = suggestions
-      .filter((s) => selected.has(s.name))
+      .filter((s) => selected.has(s.name) && !existingLower.has(s.name.toLowerCase()))
       .map((s) => ({
         trip_id: tripId,
         name: s.name,
@@ -110,6 +115,12 @@ Return only the JSON array.`;
         is_essential: s.is_essential,
         is_packed: false,
       }));
+
+    if (items.length === 0) {
+      setOpen(false);
+      setAdding(false);
+      return;
+    }
 
     const { error } = await supabase.from('packing_items').insert(items);
     if (error) {

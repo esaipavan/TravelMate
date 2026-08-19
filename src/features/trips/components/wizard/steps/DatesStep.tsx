@@ -251,7 +251,7 @@ export function DatesStep() {
           initial="hidden"
           animate="show"
         >
-          Step 3 of 7
+          Step 3 of 5
         </motion.p>
         <motion.h1
           className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
