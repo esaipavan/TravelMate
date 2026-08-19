@@ -32,6 +32,8 @@ export interface MorningBriefData {
   todayReminders: ReminderRow[];
   aiSummary: string | null;
   isAILoading: boolean;
+  isAIError: boolean;
+  refetchAI: () => void;
   isLoading: boolean;
 }
 
@@ -70,8 +72,29 @@ export function useMorningBrief(trip: TripRow | null): MorningBriefData {
 
   const aiEnabled = !!trip && !!weather && !weatherLoading && !itinLoading;
 
-  const { data: aiSummary, isLoading: isAILoading } = useQuery<string | null, Error>({
-    queryKey: ['ai-morning-brief', tripId, TODAY, destination],
+  // Stable, primitive signals for the exact prompt inputs that aren't already
+  // in the key (see buildMorningBriefPrompt) — a plain object/array reference
+  // would change every render and defeat caching, so each is reduced to a
+  // short derived string that only changes when the content it represents
+  // actually changes.
+  const weatherKey = weather
+    ? `${weather.current.weathercode}-${Math.round(weather.current.temperature)}-${Math.round(weather.current.feelsLike)}`
+    : 'no-weather';
+  const scheduleKey = todayItems
+    .map((i) => i.title)
+    .slice(0, 5)
+    .join('|');
+  const budgetKey = budgetAnalysis
+    ? `${Math.round(budgetAnalysis.percentUsed)}-${budgetAnalysis.status}`
+    : 'no-budget';
+
+  const {
+    data: aiSummary,
+    isLoading: isAILoading,
+    isError: isAIError,
+    refetch: refetchAI,
+  } = useQuery<string | null, Error>({
+    queryKey: ['ai-morning-brief', tripId, TODAY, destination, weatherKey, scheduleKey, budgetKey],
     queryFn: async () => {
       if (!trip || !weather) return null;
       const itemTitles = todayItems.map((i) => i.title);
@@ -96,6 +119,8 @@ export function useMorningBrief(trip: TripRow | null): MorningBriefData {
     todayReminders,
     aiSummary: aiSummary ?? null,
     isAILoading,
+    isAIError,
+    refetchAI: () => void refetchAI(),
     isLoading: weatherLoading || itinLoading || expenseLoading || remindersLoading,
   };
 }

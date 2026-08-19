@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { Wallet, TrendingUp, TrendingDown, Loader2, Sparkles } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
@@ -54,7 +55,7 @@ interface Props {
 
 export function BudgetAdvisor({ trip }: Props) {
   const reduced = useReducedMotion();
-  const { budgetAnalysis, categoryBreakdown, tips, isLoading, isAILoading } =
+  const { budgetAnalysis, categoryBreakdown, tips, isLoading, isAILoading, isAIError, refetchAI } =
     useBudgetAdvisor(trip);
 
   if (isLoading) {
@@ -234,9 +235,19 @@ export function BudgetAdvisor({ trip }: Props) {
             <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
             <span>Analysing your spending patterns…</span>
           </div>
+        ) : isAIError ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-border/50 bg-card p-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+              <span>Couldn&apos;t load AI budget tips.</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={refetchAI}>
+              Retry
+            </Button>
+          </div>
         ) : tips.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/50 py-6 text-center text-sm text-muted-foreground">
-            No AI tips available — check your connection.
+            No AI tips available for your current spending.
           </div>
         ) : (
           <div className="space-y-2">

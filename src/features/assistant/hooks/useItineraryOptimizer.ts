@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { useItineraryData } from '@/features/itinerary/hooks/useItinerary';
 import { chatWithAI } from '@/services/ai/ai.service';
@@ -57,6 +58,7 @@ export function useItineraryOptimizer(trip: TripRow | null): ItineraryOptimizerD
             : null,
       };
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   return {

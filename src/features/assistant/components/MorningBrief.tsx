@@ -9,7 +9,9 @@ import {
   Bell,
   Loader2,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { rv, FADE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
@@ -155,7 +157,7 @@ export function MorningBrief({ trip }: Props) {
       </motion.div>
 
       {/* AI Summary */}
-      {(brief.aiSummary || brief.isAILoading) && (
+      {(brief.aiSummary || brief.isAILoading || brief.isAIError) && (
         <motion.div
           variants={rv(LIST_ITEM_VARIANTS, reduced)}
           className="rounded-2xl border border-primary/15 bg-primary/5 p-4"
@@ -170,6 +172,16 @@ export function MorningBrief({ trip }: Props) {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
               <span>Personalising your morning brief…</span>
+            </div>
+          ) : brief.isAIError ? (
+            <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>Couldn&apos;t personalise your brief right now.</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={brief.refetchAI}>
+                Retry
+              </Button>
             </div>
           ) : (
             <div className="text-sm leading-relaxed text-foreground/90 [&_em]:italic [&_p]:mb-1 [&_strong]:font-semibold">

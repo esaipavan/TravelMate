@@ -21,6 +21,8 @@ export interface PackingAssistantData {
   leaveHome: string[];
   isLoading: boolean;
   isAILoading: boolean;
+  isAIError: boolean;
+  refetchAI: () => void;
 }
 
 function isSuggestion(x: unknown): x is PackingSuggestion {
@@ -44,7 +46,12 @@ export function usePackingAssistant(trip: TripRow | null): PackingAssistantData 
 
   const aiEnabled = !!trip && !weatherLoading && !intelLoading;
 
-  const { data: aiResult, isLoading: isAILoading } = useQuery<
+  const {
+    data: aiResult,
+    isLoading: isAILoading,
+    isError: isAIError,
+    refetch: refetchAI,
+  } = useQuery<
     {
       mustHave: PackingSuggestion[];
       recommended: PackingSuggestion[];
@@ -62,22 +69,26 @@ export function usePackingAssistant(trip: TripRow | null): PackingAssistantData 
         intel ?? null,
       );
       const res = await chatWithAI(messages);
-      const match = res.content.match(/\{[\s\S]*\}/);
-      if (!match) return { mustHave: [], recommended: [], leaveHome: [] };
-      const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+      try {
+        const match = res.content.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('AI response did not contain the expected JSON object.');
+        const parsed = JSON.parse(match[0]) as Record<string, unknown>;
 
-      const toSuggestions = (arr: unknown): PackingSuggestion[] =>
-        Array.isArray(arr) ? arr.filter(isSuggestion) : [];
+        const toSuggestions = (arr: unknown): PackingSuggestion[] =>
+          Array.isArray(arr) ? arr.filter(isSuggestion) : [];
 
-      const leaveHome = Array.isArray(parsed.leaveHome)
-        ? (parsed.leaveHome as unknown[]).filter((x): x is string => typeof x === 'string')
-        : [];
+        const leaveHome = Array.isArray(parsed.leaveHome)
+          ? (parsed.leaveHome as unknown[]).filter((x): x is string => typeof x === 'string')
+          : [];
 
-      return {
-        mustHave: toSuggestions(parsed.mustHave),
-        recommended: toSuggestions(parsed.recommended),
-        leaveHome,
-      };
+        return {
+          mustHave: toSuggestions(parsed.mustHave),
+          recommended: toSuggestions(parsed.recommended),
+          leaveHome,
+        };
+      } catch (err) {
+        throw err instanceof Error ? err : new Error('Failed to parse AI packing suggestions.');
+      }
     },
     enabled: aiEnabled,
     staleTime: 24 * 60 * 60 * 1000,
@@ -92,5 +103,7 @@ export function usePackingAssistant(trip: TripRow | null): PackingAssistantData 
     leaveHome: aiResult?.leaveHome ?? [],
     isLoading: weatherLoading || intelLoading,
     isAILoading,
+    isAIError,
+    refetchAI: () => void refetchAI(),
   };
 }

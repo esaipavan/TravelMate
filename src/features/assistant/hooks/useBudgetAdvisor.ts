@@ -20,6 +20,8 @@ export interface BudgetAdvisorData {
   tips: BudgetTip[];
   isLoading: boolean;
   isAILoading: boolean;
+  isAIError: boolean;
+  refetchAI: () => void;
 }
 
 function isBudgetTip(x: unknown): x is BudgetTip {
@@ -71,21 +73,39 @@ export function useBudgetAdvisor(trip: TripRow | null): BudgetAdvisorData {
 
   const aiEnabled = !!trip && !!budgetAnalysis && !isLoading;
 
-  const { data: tips = [], isLoading: isAILoading } = useQuery<BudgetTip[], Error>({
-    queryKey: ['ai-budget-advisor', trip?.id, TODAY, expenseData?.expenses.length],
+  // Stable, content-derived signal — changes when any category's spend total
+  // changes (amount edits, category re-assignment), not just when the number
+  // of expenses changes. Plain sorted "category:amount" pairs joined into a
+  // string keep this a primitive, so it's safe to use directly in queryKey.
+  const budgetContentKey = Object.entries(rawBreakdown)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([category, amount]) => `${category}:${amount}`)
+    .join('|');
+
+  const {
+    data: tips = [],
+    isLoading: isAILoading,
+    isError: isAIError,
+    refetch: refetchAI,
+  } = useQuery<BudgetTip[], Error>({
+    queryKey: ['ai-budget-advisor', trip?.id, TODAY, budgetContentKey],
     queryFn: async () => {
       if (!trip || !budgetAnalysis) return [];
       const messages = buildBudgetAdvisorPrompt(trip, budgetAnalysis, rawBreakdown);
       const res = await chatWithAI(messages);
-      const match = res.content.match(/\[[\s\S]*\]/);
-      if (!match) return [];
-      const parsed = JSON.parse(match[0]) as unknown[];
-      return parsed.filter(isBudgetTip).map((t) => ({
-        title: t.title,
-        body: t.body,
-        emoji: t.emoji ?? '💡',
-        severity: ['info', 'warning', 'critical'].includes(t.severity) ? t.severity : 'info',
-      }));
+      try {
+        const match = res.content.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('AI response did not contain the expected JSON array.');
+        const parsed = JSON.parse(match[0]) as unknown[];
+        return parsed.filter(isBudgetTip).map((t) => ({
+          title: t.title,
+          body: t.body,
+          emoji: t.emoji ?? '💡',
+          severity: ['info', 'warning', 'critical'].includes(t.severity) ? t.severity : 'info',
+        }));
+      } catch (err) {
+        throw err instanceof Error ? err : new Error('Failed to parse AI budget tips.');
+      }
     },
     enabled: aiEnabled,
     staleTime: 60 * 60 * 1000,
@@ -99,5 +119,7 @@ export function useBudgetAdvisor(trip: TripRow | null): BudgetAdvisorData {
     tips,
     isLoading,
     isAILoading,
+    isAIError,
+    refetchAI: () => void refetchAI(),
   };
 }

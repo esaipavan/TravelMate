@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useJournalEntries } from '@/features/journal/hooks/useJournal';
 import { useItineraryData } from '@/features/itinerary/hooks/useItinerary';
 import { useExpenseData } from '@/features/expenses/hooks/useExpenses';
@@ -49,6 +50,7 @@ export function useAIJournal(trip: TripRow | null): AIJournalData {
       const res = await chatWithAI(messages);
       return res.content;
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   return {

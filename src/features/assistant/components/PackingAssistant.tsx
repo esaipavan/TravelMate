@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { Package, Loader2, CheckCircle, Sparkles, XCircle } from 'lucide-react';
+import { Package, Loader2, CheckCircle, Sparkles, XCircle, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { usePackingAssistant } from '../hooks/usePackingAssistant';
@@ -33,8 +34,16 @@ interface Props {
 
 export function PackingAssistant({ trip }: Props) {
   const reduced = useReducedMotion();
-  const { packingAnalysis, mustHave, recommended, leaveHome, isLoading, isAILoading } =
-    usePackingAssistant(trip);
+  const {
+    packingAnalysis,
+    mustHave,
+    recommended,
+    leaveHome,
+    isLoading,
+    isAILoading,
+    isAIError,
+    refetchAI,
+  } = usePackingAssistant(trip);
 
   if (isLoading) {
     return (
@@ -117,12 +126,20 @@ export function PackingAssistant({ trip }: Props) {
             <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
             <span>Personalising packing list for {trip.destination}…</span>
           </div>
+        ) : isAIError ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/50 py-8 text-center">
+            <AlertCircle className="h-6 w-6 text-muted-foreground/40" aria-hidden />
+            <p className="text-sm text-muted-foreground">
+              Couldn&apos;t load AI packing suggestions.
+            </p>
+            <Button variant="outline" size="sm" onClick={refetchAI}>
+              Retry
+            </Button>
+          </div>
         ) : mustHave.length === 0 && recommended.length === 0 && leaveHome.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border/50 py-8 text-center">
             <Package className="h-6 w-6 text-muted-foreground/40" aria-hidden />
-            <p className="text-sm text-muted-foreground">
-              No AI suggestions available. Check your connection.
-            </p>
+            <p className="text-sm text-muted-foreground">No AI suggestions available.</p>
           </div>
         ) : (
           <motion.div

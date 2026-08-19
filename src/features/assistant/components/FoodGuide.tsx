@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { Utensils, Coffee, Sun, Moon, MapPin, Loader2, Sparkles } from 'lucide-react';
+import { Utensils, Coffee, Sun, Moon, MapPin, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
@@ -30,8 +31,17 @@ interface Props {
 
 export function FoodGuide({ trip }: Props) {
   const reduced = useReducedMotion();
-  const { restaurants, foodIntel, suggestions, mealTime, setMealTime, isLoading, isAILoading } =
-    useFoodGuide(trip);
+  const {
+    restaurants,
+    foodIntel,
+    suggestions,
+    mealTime,
+    setMealTime,
+    isLoading,
+    isAILoading,
+    isAIError,
+    refetchAI,
+  } = useFoodGuide(trip);
 
   if (isLoading) {
     return (
@@ -93,6 +103,16 @@ export function FoodGuide({ trip }: Props) {
             <span>
               Finding the best {mealTime} options in {trip.destination}…
             </span>
+          </div>
+        ) : isAIError ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/50 py-8 text-center">
+            <AlertCircle className="h-6 w-6 text-muted-foreground/40" aria-hidden />
+            <p className="text-sm text-muted-foreground">
+              Couldn&apos;t load {mealTime} suggestions.
+            </p>
+            <Button variant="outline" size="sm" onClick={refetchAI}>
+              Retry
+            </Button>
           </div>
         ) : suggestions.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border/50 py-8 text-center">

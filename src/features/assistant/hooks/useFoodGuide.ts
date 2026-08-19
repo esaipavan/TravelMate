@@ -27,6 +27,8 @@ export interface FoodGuideData {
   setMealTime: (m: MealTime) => void;
   isLoading: boolean;
   isAILoading: boolean;
+  isAIError: boolean;
+  refetchAI: () => void;
 }
 
 function getDefaultMealTime(): MealTime {
@@ -35,6 +37,13 @@ function getDefaultMealTime(): MealTime {
   if (hour < 15) return 'lunch';
   return 'dinner';
 }
+
+// Module-level (per trip), not component state — Radix unmounts inactive
+// TabsContent, which would otherwise reset a manually-picked meal time back
+// to the current-hour default every time the user leaves and returns to the
+// Eat tab. Keyed by tripId so switching between trips doesn't leak one
+// trip's selection into another's.
+const lastMealTimeByTrip = new Map<string, MealTime>();
 
 function isFoodSuggestion(x: unknown): x is FoodSuggestion {
   return (
@@ -47,8 +56,16 @@ function isFoodSuggestion(x: unknown): x is FoodSuggestion {
 
 export function useFoodGuide(trip: TripRow | null): FoodGuideData {
   const destination = trip?.destination ?? '';
+  const tripId = trip?.id ?? '';
 
-  const [mealTime, setMealTime] = useState<MealTime>(getDefaultMealTime());
+  const [mealTime, setMealTimeState] = useState<MealTime>(
+    () => lastMealTimeByTrip.get(tripId) ?? getDefaultMealTime(),
+  );
+
+  function setMealTime(m: MealTime) {
+    if (tripId) lastMealTimeByTrip.set(tripId, m);
+    setMealTimeState(m);
+  }
 
   const { data: nearbyResult, isLoading: nearbyLoading } = useNearbyPlaces(destination);
   const { data: intel, isLoading: intelLoading } = useDestinationData(destination);
@@ -57,22 +74,31 @@ export function useFoodGuide(trip: TripRow | null): FoodGuideData {
 
   const aiEnabled = !!trip && !nearbyLoading && !intelLoading;
 
-  const { data: rawSuggestions, isLoading: isAILoading } = useQuery<FoodSuggestion[], Error>({
+  const {
+    data: rawSuggestions,
+    isLoading: isAILoading,
+    isError: isAIError,
+    refetch: refetchAI,
+  } = useQuery<FoodSuggestion[], Error>({
     queryKey: ['ai-food-guide', destination, mealTime],
     queryFn: async () => {
       const messages = buildFoodGuidePrompt(destination, restaurants, intel ?? null, mealTime);
       const res = await chatWithAI(messages);
-      const match = res.content.match(/\[[\s\S]*\]/);
-      if (!match) return [];
-      const parsed = JSON.parse(match[0]) as unknown[];
-      return parsed.filter(isFoodSuggestion).map((s) => ({
-        name: s.name,
-        type: s.type ?? 'local_dish',
-        description: s.description,
-        emoji: s.emoji ?? '🍽️',
-        priceRange: s.priceRange ?? '$',
-        tip: s.tip ?? '',
-      }));
+      try {
+        const match = res.content.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('AI response did not contain the expected JSON array.');
+        const parsed = JSON.parse(match[0]) as unknown[];
+        return parsed.filter(isFoodSuggestion).map((s) => ({
+          name: s.name,
+          type: s.type ?? 'local_dish',
+          description: s.description,
+          emoji: s.emoji ?? '🍽️',
+          priceRange: s.priceRange ?? '$',
+          tip: s.tip ?? '',
+        }));
+      } catch (err) {
+        throw err instanceof Error ? err : new Error('Failed to parse AI food suggestions.');
+      }
     },
     enabled: aiEnabled,
     staleTime: 4 * 60 * 60 * 1000,
@@ -88,5 +114,7 @@ export function useFoodGuide(trip: TripRow | null): FoodGuideData {
     setMealTime,
     isLoading: nearbyLoading || intelLoading,
     isAILoading,
+    isAIError,
+    refetchAI: () => void refetchAI(),
   };
 }
