@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,6 +40,7 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
   const [open, setOpen] = useState(false);
   const [generated, setGenerated] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activePrompt, setActivePrompt] = useState<number | null>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,13 +56,14 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
   async function generate(idx: number) {
     setActivePrompt(idx);
     setGenerated('');
+    setHasError(false);
     setLoading(true);
     try {
       const promptFn = PROMPTS[idx].prompt;
       const result = await chatWithAI([{ role: 'user', content: promptFn(dest) }]);
       setGenerated(result.content.trim());
     } catch {
-      setGenerated('Could not generate text. Please try again.');
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -93,6 +95,7 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
           setOpen(v);
           if (!v) {
             setGenerated('');
+            setHasError(false);
             setActivePrompt(null);
           }
         }}
@@ -127,27 +130,51 @@ export function AIJournalWriter({ tripDestination, onUse }: Props) {
               ))}
             </div>
 
-            {/* Generated text */}
-            {generated && (
+            {/* Generated text / error state */}
+            {hasError ? (
               <div className="space-y-2">
-                <div className="max-h-56 overflow-y-auto rounded-xl border bg-muted/40 p-4 text-sm leading-relaxed text-foreground">
-                  {generated}
+                <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+                  <span>Could not generate text. Please try again.</span>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={useText} className="flex-1">
-                    Use this entry
+                {activePrompt !== null && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void generate(activePrompt)}
+                    className="w-full"
+                  >
+                    Retry
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => void copy()} className="w-24">
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? 'Copied' : 'Copy'}
-                  </Button>
-                  {activePrompt !== null && (
-                    <Button variant="ghost" size="sm" onClick={() => void generate(activePrompt)}>
-                      Retry
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
+            ) : (
+              generated && (
+                <div className="space-y-2">
+                  <div className="max-h-56 overflow-y-auto rounded-xl border bg-muted/40 p-4 text-sm leading-relaxed text-foreground">
+                    {generated}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={useText} className="flex-1">
+                      Use this entry
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void copy()}
+                      className="w-24"
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copied ? 'Copied' : 'Copy'}
+                    </Button>
+                    {activePrompt !== null && (
+                      <Button variant="ghost" size="sm" onClick={() => void generate(activePrompt)}>
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
             )}
           </div>
         </DialogContent>

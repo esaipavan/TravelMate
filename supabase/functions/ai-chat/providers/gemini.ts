@@ -21,7 +21,7 @@ export class GeminiProvider implements IAIProvider {
       parts: [{ text: m.content }],
     }));
 
-    const body: Record<string, unknown> = { contents };
+    const body: Record<string, unknown> = { contents, generationConfig: { maxOutputTokens: 2048 } };
     if (systemPrompt) {
       body.systemInstruction = { parts: [{ text: systemPrompt }] };
     }

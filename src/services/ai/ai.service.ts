@@ -7,6 +7,12 @@ import type {
   TripBriefPayload,
 } from './ai.types';
 
+// Default request timeout for chatWithAI/streamChatWithAI — uses the Supabase
+// SDK's native `timeout` option, which aborts the underlying request (not
+// just a client-side race), so a hung provider can't hang the UI or keep
+// consuming edge-function/provider time indefinitely.
+const DEFAULT_CHAT_TIMEOUT_MS = 30_000;
+
 /** Single public function the entire app uses for AI — never calls a provider directly. */
 export async function chatWithAI(
   messages: AIMessage[],
@@ -14,6 +20,7 @@ export async function chatWithAI(
 ): Promise<AIResponse> {
   const result = await supabase.functions.invoke<AIResponse>('ai-chat', {
     body: { messages, options },
+    timeout: DEFAULT_CHAT_TIMEOUT_MS,
   });
 
   if (result.error) {
@@ -174,6 +181,7 @@ export async function streamChatWithAI(
 ): Promise<void> {
   const result = await supabase.functions.invoke<AIResponse>('ai-chat', {
     body: { messages, options, stream: true },
+    timeout: DEFAULT_CHAT_TIMEOUT_MS,
   });
 
   if (result.error) {

@@ -43,6 +43,7 @@ export function AIPackingSuggest({
   const [suggestions, setSuggestions] = useState<SuggestedItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const validCategories = PACKING_CATEGORIES.map((c) => c.value);
 
@@ -50,6 +51,7 @@ export function AIPackingSuggest({
     setLoading(true);
     setSuggestions([]);
     setSelected(new Set());
+    setFetchError(false);
 
     const dest = destination || 'the destination';
     const days =
@@ -82,6 +84,7 @@ Return only the JSON array.`;
       // Pre-select essentials
       setSelected(new Set(clean.filter((i) => i.is_essential).map((i) => i.name)));
     } catch {
+      setFetchError(true);
       toast.error('Could not generate suggestions. Please try again.');
     } finally {
       setLoading(false);
@@ -179,7 +182,11 @@ Return only the JSON array.`;
             {!loading && suggestions.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <PackageOpen className="h-8 w-8 text-muted-foreground opacity-40" />
-                <p className="text-sm text-muted-foreground">No suggestions generated</p>
+                <p className="text-sm text-muted-foreground">
+                  {fetchError
+                    ? 'Something went wrong generating suggestions.'
+                    : 'No suggestions generated'}
+                </p>
                 <Button variant="outline" size="sm" onClick={() => void fetchSuggestions()}>
                   Try again
                 </Button>

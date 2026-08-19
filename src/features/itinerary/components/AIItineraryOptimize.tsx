@@ -33,11 +33,13 @@ export function AIItineraryOptimize({ tripId: _tripId, destination, days }: Prop
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<OptimizationResult | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   async function optimize() {
     setOpen(true);
     setLoading(true);
     setResult(null);
+    setHasError(false);
 
     const daysSummary = days
       .map((d) => {
@@ -65,11 +67,7 @@ Return only the JSON object.`;
       const parsed = JSON.parse(text) as OptimizationResult;
       setResult(parsed);
     } catch {
-      setResult({
-        suggestions: ['Could not parse AI response. Try again.'],
-        warnings: [],
-        reorderHint: '',
-      });
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -103,6 +101,18 @@ Return only the JSON object.`;
             <div className="flex flex-col items-center gap-3 py-10">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Analyzing your itinerary…</p>
+            </div>
+          )}
+
+          {!loading && hasError && (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <AlertTriangle className="h-7 w-7 text-destructive" aria-hidden />
+              <p className="text-sm text-muted-foreground">
+                Couldn&apos;t analyze your itinerary. Please try again.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => void optimize()}>
+                Retry
+              </Button>
             </div>
           )}
 
