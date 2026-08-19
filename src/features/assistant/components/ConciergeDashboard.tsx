@@ -76,7 +76,11 @@ export function ConciergeDashboard({ trip }: Props) {
             <AIJournal trip={trip} />
           </TabsContent>
           <TabsContent value="chat" className="mt-0 focus-visible:outline-none">
-            <CompanionChat trip={trip} />
+            {/* Keyed by trip so switching trips while the Chat tab stays
+                mounted remounts the conversation instead of carrying the
+                previous trip's messages (and any in-flight response) into
+                the new trip's context. */}
+            <CompanionChat key={trip.id} trip={trip} />
           </TabsContent>
         </div>
       </Tabs>
