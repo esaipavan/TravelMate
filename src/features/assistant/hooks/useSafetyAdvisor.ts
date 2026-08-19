@@ -86,7 +86,21 @@ export function useSafetyAdvisor(trip: TripRow | null): SafetyAdvisorData {
       }
     }
 
-    if (intel?.safety) {
+    if (intel?.meta?.isFallback) {
+      // Destination safety analysis could not be completed (AI/provider
+      // failure) and only generic fallback data is available. Its safety
+      // fields (overallRating/scams/avoidAreas) must never be read as a
+      // real assessment — surface the uncertainty instead of staying silent.
+      result.push({
+        id: 'safety-data-unavailable',
+        type: 'area',
+        severity: 'info',
+        title: 'Limited safety information',
+        description:
+          "We couldn't complete a full safety analysis for this destination. Check official travel advisories for the latest guidance.",
+        emoji: 'ℹ️',
+      });
+    } else if (intel?.safety) {
       const { overallRating, ratingNote, scams, avoidAreas } = intel.safety;
 
       if (overallRating === 'high-risk') {

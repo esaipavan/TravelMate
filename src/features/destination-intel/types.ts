@@ -204,4 +204,9 @@ export interface DestinationData {
   safety: SafetyInfo;
   checklist: ChecklistItem[];
   insights: AIInsight[];
+  /** Present and true only when this data is the generic fallback returned
+   * after an AI/provider failure — never set on real AI or curated data. */
+  meta?: {
+    isFallback: boolean;
+  };
 }

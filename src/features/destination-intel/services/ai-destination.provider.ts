@@ -650,7 +650,7 @@ export class AIDestinationProvider implements DestinationProvider {
           err,
         );
       }
-      return buildGenericData(destination);
+      return { ...buildGenericData(destination), meta: { isFallback: true } };
     }
   }
 }
