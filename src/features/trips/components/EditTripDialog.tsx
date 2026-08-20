@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TripForm } from './TripForm';
 import { useUpdateTrip } from '../hooks/useTrips';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { TripRow, TripFormValues } from '../types';
 
 interface EditTripDialogProps {
@@ -26,6 +26,10 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
     try {
       const destinationChanged = values.destination !== trip.destination;
       const needsCoverUpdate = destinationChanged || trip.cover_image_url === null;
+      // Re-select on destination change: curated → real Wikipedia image → null.
+      const nextCover = needsCoverUpdate
+        ? await selectTripCoverImage(values.destination)
+        : undefined;
 
       await mutateAsync({
         id: trip.id,
@@ -39,9 +43,7 @@ export function EditTripDialog({ trip, open, onOpenChange }: EditTripDialogProps
           status: values.status,
           notes: values.notes || null,
           is_public: values.is_public,
-          ...(needsCoverUpdate && {
-            cover_image_url: resolveDestinationImageUrl(values.destination),
-          }),
+          ...(needsCoverUpdate && { cover_image_url: nextCover }),
         },
       });
       toast.success('Trip updated.');

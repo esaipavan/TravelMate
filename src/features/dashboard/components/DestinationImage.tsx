@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface Props {
-  src: string;
+  /** Image URL, or null when the place isn't recognised — renders the honest
+   *  colour/gradient treatment instead of a guessed photo. */
+  src: string | null;
   alt: string;
   className?: string;
   fallbackAccent?: string;
@@ -12,7 +14,7 @@ export function DestinationImage({ src, alt, className, fallbackAccent = '#6366F
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  if (error) {
+  if (!src || error) {
     return (
       <div
         className={cn('absolute inset-0', className)}

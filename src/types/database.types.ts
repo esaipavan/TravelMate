@@ -3,6 +3,84 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          id: string;
+          user_id: string;
+          trip_id: string | null;
+          mode: string;
+          title: string;
+          subtitle: string | null;
+          destination: string;
+          check_in: string | null;
+          check_out: string | null;
+          start_time: string | null;
+          end_time: string | null;
+          guests: number | null;
+          nights: number;
+          unit_price: number;
+          total: number;
+          currency: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          trip_id?: string | null;
+          mode?: string;
+          title: string;
+          subtitle?: string | null;
+          destination: string;
+          check_in?: string | null;
+          check_out?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+          guests?: number | null;
+          nights?: number;
+          unit_price?: number;
+          total?: number;
+          currency?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          trip_id?: string | null;
+          mode?: string;
+          title?: string;
+          subtitle?: string | null;
+          destination?: string;
+          check_in?: string | null;
+          check_out?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+          guests?: number | null;
+          nights?: number;
+          unit_price?: number;
+          total?: number;
+          currency?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bookings_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'bookings_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           id: string;

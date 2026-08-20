@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import { resolveDestinationTheme } from '@/utils/destinationTheme';
+import { resolveDestinationTheme, resolveTripCoverImage } from '@/utils/destinationTheme';
 import { getTripStatus } from '@/utils/tripStatus';
 import { tripDuration } from '@/utils/formatters';
 import type { TripRow } from '../types';
@@ -16,7 +16,7 @@ interface MemoryCardProps {
 
 function MemoryCard({ trip, reduced }: MemoryCardProps) {
   const theme = useMemo(() => resolveDestinationTheme(trip.destination), [trip.destination]);
-  const imageUrl = trip.cover_image_url ?? theme.imageUrl;
+  const imageUrl = resolveTripCoverImage(trip.destination, trip.cover_image_url);
   const [imgError, setImgError] = useState(false);
   const year = trip.end_date.slice(0, 4);
   const endFmt = format(new Date(trip.end_date + 'T00:00:00'), 'MMM yyyy');
@@ -35,7 +35,7 @@ function MemoryCard({ trip, reduced }: MemoryCardProps) {
         className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <div className="relative h-36 overflow-hidden rounded-2xl bg-muted">
-          {imgError ? (
+          {!imageUrl || imgError ? (
             <div
               className="absolute inset-0"
               style={{

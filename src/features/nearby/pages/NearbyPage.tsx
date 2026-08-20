@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { MapPinOff, LocateFixed } from 'lucide-react';
+import { MapPinOff, LocateFixed, BedDouble, ArrowRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -277,6 +278,20 @@ export default function NearbyPage() {
               counts={counts}
               total={data.places.length}
             />
+
+            {/* Discovery → hotels: search stays in this discovered place */}
+            <Link
+              to={`/hotels?destination=${encodeURIComponent(data.location)}`}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 transition-colors hover:bg-accent"
+            >
+              <span className="flex items-center gap-2.5 text-sm">
+                <BedDouble className="h-4 w-4 text-primary" aria-hidden />
+                <span className="font-medium text-foreground">
+                  Search hotels in {data.location.split(',')[0]}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+            </Link>
 
             {/* Main workspace: list + map */}
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start">

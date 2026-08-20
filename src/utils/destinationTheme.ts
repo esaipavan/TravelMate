@@ -4,9 +4,12 @@ export interface DestinationTheme {
   accent: string;
   accentRgb: string;
   secondary: string;
-  /** Primary image URL — backward-compatible single value. */
-  imageUrl: string;
-  /** All available images for carousels / galleries (first = primary). */
+  /** Primary image URL, or null when we don't confidently recognise the
+   *  place. Null means "show the honest colour/gradient treatment" rather
+   *  than a guessed stock photo — never render a fabricated image. */
+  imageUrl: string | null;
+  /** All recognised images for carousels / galleries (first = primary).
+   *  Empty when the place isn't confidently recognised. */
   imageUrls: string[];
 }
 
@@ -19,21 +22,11 @@ interface ColorSet {
 }
 
 /**
- * Semantic rules — checked BEFORE destination lookup.
- * If the destination string contains one of these keywords the associated
- * images are used regardless of the city/country name.
- * Order matters: first match wins.
- */
-interface SemanticRule {
-  keywords: string[];
-  images: string[];
-}
-
-/**
  * A destination entry covers one or more place names (city aliases, country,
- * region). `keys` are lowercase substrings matched against the destination
- * string. More-specific entries (city names) must appear BEFORE less-specific
- * ones (country names) so "Paris, France" matches `paris` not `france`.
+ * region). `keys` are lowercase whole-word tokens matched against the
+ * destination string (see `matchesKey` — delimited by edges/punctuation, not raw
+ * substrings). More-specific entries (city names) must appear BEFORE less-
+ * specific ones (country names) so "Paris, France" matches `paris` not `france`.
  *
  * `images` should contain 2–5 diverse Unsplash photo IDs for the same place.
  */
@@ -43,286 +36,12 @@ interface DestinationEntry {
   colors: ColorSet;
 }
 
-// ── Semantic rules (highest priority) ────────────────────────────────────────
-// Checked against the full destination string before any city/country lookup.
-// Any destination whose name contains one of these keywords uses the semantic
-// image pool rather than the city-level mapping.
-
-const SEMANTIC_RULES: SemanticRule[] = [
-  {
-    // Religious architecture — temples, churches, mosques, shrines, monasteries, pilgrimage sites
-    keywords: [
-      'temple',
-      'church',
-      'mosque',
-      'shrine',
-      'monastery',
-      'pilgrimage',
-      'cathedral',
-      'basilica',
-      'pagoda',
-      'gurudwara',
-      'mandir',
-      'masjid',
-      'synagogue',
-    ],
-    images: [
-      'photo-1545569341-9eb8b30979d9', // Fushimi Inari torii gates, Kyoto
-      'photo-1528181304800-259b08848526', // Angkor Wat temple complex
-      'photo-1561361058-c24cecae35ca', // Varanasi ghats with temples
-      'photo-1557482011-7b5e68abedc6', // Golden Temple, Amritsar
-      'photo-1524231757912-21f4fe3a7200', // Blue Mosque / Hagia Sophia, Istanbul
-      'photo-1531572753322-ad063cecc140', // St. Peter's Basilica, Vatican
-      'photo-1604999333679-b86d54738315', // Borobudur Buddhist temple
-      'photo-1580674684081-7617fbf3d745', // Dome of the Rock, Jerusalem
-      'photo-1506197603052-3cc9c3a201bd', // Bagan pagodas, Myanmar
-      'photo-1539037116277-4db20889f2d4', // Sagrada Família, Barcelona
-    ],
-  },
-  {
-    // Islands — standalone island destinations (checked before beach/coast)
-    keywords: ['island', 'islands', 'atoll', 'archipelago'],
-    images: [
-      'photo-1519046904884-53103b34b206', // Maldives aerial island
-      'photo-1544551763-46a013bb70d5', // tropical island aerial view
-      'photo-1559494007-9f5847c49d94', // Phuket limestone island karsts
-      'photo-1552537638-08d20886f33f', // Caribbean turquoise island
-      'photo-1560115246-d3d5e4a6b9e4', // Bora Bora overwater bungalows
-      'photo-1569346383633-afa69c8d0f33', // tropical island paradise aerial
-    ],
-  },
-  {
-    // Beaches & coastal (islands handled separately above)
-    keywords: ['beach', 'coast', 'lagoon', 'bay', 'shore', 'reef'],
-    images: [
-      'photo-1507525428034-b723cf961d3e', // classic tropical beach
-      'photo-1519046904884-53103b34b206', // Maldives overwater bungalow
-      'photo-1559494007-9f5847c49d94', // Phuket limestone karsts
-      'photo-1512343879784-a960bf40e7f2', // Goa beach sunset
-      'photo-1552537638-08d20886f33f', // Caribbean turquoise water
-      'photo-1488646953014-85cb44e25828', // aerial beach shot
-      'photo-1527631746610-bca00a040d60', // warm waves on beach
-      'photo-1537996194471-e657df975ab4', // Bali coast / rice terraces
-    ],
-  },
-  {
-    // Mountains & high altitude
-    keywords: [
-      'mountain',
-      'peak',
-      'summit',
-      'glacier',
-      'alpine',
-      'highlands',
-      'hill station',
-      'trek',
-      'base camp',
-    ],
-    images: [
-      'photo-1506905925346-21bda4d32df4', // Swiss Alps reflection
-      'photo-1585016495481-91b5b6a52bcd', // Manali snowy peaks
-      'photo-1546517379-b35f0b5c7da8', // Ladakh high altitude
-      'photo-1558618666-fcd25c85cd64', // Himachal Pradesh mountains
-      'photo-1579546929518-9e396f3cc809', // Kashmir valley
-      'photo-1421789665209-c9b2a435e3dc', // misty mountain forest
-      'photo-1549366021-9f761d450615', // alpine lake and peaks
-      'photo-1513519245088-0e12902e5a38', // Norwegian fjord / mountains
-    ],
-  },
-  {
-    // Waterfalls — checked before lakes/rivers
-    keywords: ['waterfall', 'falls', 'cascade'],
-    images: [
-      'photo-1500534314209-a25ddb2bd429', // tall waterfall in lush valley
-      'photo-1564348468680-eef5bd80cfee', // multi-tiered waterfall
-      'photo-1503614472-8c93d56e92ce', // tropical jungle waterfall
-      'photo-1536060011697-a6c074d0c31d', // Plitvice-style waterfall
-      'photo-1444090542259-0af8fa96557e', // misty waterfall in forest
-    ],
-  },
-  {
-    // Lakes & waterways (waterfalls handled separately above)
-    keywords: ['lake', 'river', 'backwater', 'canal', 'fjord'],
-    images: [
-      'photo-1506905925346-21bda4d32df4', // alpine lake (Brienz)
-      'photo-1549366021-9f761d450615', // alpine mountain lake
-      'photo-1602216056096-3b40cc0c9944', // Kerala backwaters
-      'photo-1509356843151-3e7d96241e11', // Scandinavian lake / fjord
-      'photo-1513519245088-0e12902e5a38', // Norwegian waterway
-    ],
-  },
-  {
-    // Safari & wildlife
-    keywords: [
-      'safari',
-      'wildlife',
-      'reserve',
-      'national game',
-      'savanna',
-      'serengeti',
-      'masai mara',
-    ],
-    images: [
-      'photo-1547471080-7cc2caa01a7e', // Kenyan savanna with acacia trees
-      'photo-1516426122078-c23e76319801', // African wildlife / lion
-      'photo-1528547873016-a17a5ded399e', // elephant in the wild
-    ],
-  },
-  {
-    // Deserts & arid landscapes
-    keywords: ['desert', 'dunes', 'sahara', 'thar', 'wadi'],
-    images: [
-      'photo-1599661046289-e31897846e41', // Rajasthan sand dunes
-      'photo-1539768942893-daf53e448371', // Pyramids in desert landscape
-      'photo-1512453979798-5ea266f8880c', // Dubai desert skyline
-      'photo-1545167496-c3e7df4c9bca', // Petra, Jordanian desert
-    ],
-  },
-  {
-    // Museums & cultural institutions
-    keywords: ['museum', 'gallery', 'exhibition', 'archive', 'heritage site'],
-    images: [
-      'photo-1566127992631-137a642a90f4', // grand museum hall with dome
-      'photo-1513475382585-d06e58bcb0e0', // museum gallery with artworks
-      'photo-1526413232644-8a40f03cc03b', // classical museum interior
-    ],
-  },
-  {
-    // Airports & aviation hubs
-    keywords: ['airport', 'aviation', 'aerodrome'],
-    images: [
-      'photo-1436491865332-7a61a109cc05', // airplane wing above clouds
-      'photo-1476514525535-07fb3b4ae5f1', // view from airplane window
-      'photo-1542296332-2e4473faf563', // modern airport terminal interior
-    ],
-  },
-  {
-    // Palaces — checked before castle/fort rule
-    keywords: ['palace', 'chateau', 'château', 'manor', 'versailles'],
-    images: [
-      'photo-1549880338-65ddcdfd017b', // ornate European palace with gardens
-      'photo-1575559944042-9a7c82e6d72b', // grand French chateau
-      'photo-1586379893622-03c4a3f18f79', // Hawa Mahal / Indian palace
-      'photo-1570168007204-dfb528c6958f', // palace with ornate facade
-      'photo-1555685812-4b943f1cb0eb', // palace corridor and arches
-    ],
-  },
-  {
-    // Forts & fortresses — checked before castle rule
-    keywords: ['fort', 'fortress', 'citadel', 'rampart', 'battlement'],
-    images: [
-      'photo-1587474260584-136574528ed5', // Mehrangarh Fort, Jodhpur
-      'photo-1548661710-7f540a4c7b7e', // medieval European castle/fort
-      'photo-1565117220934-e5a7d2a3d9a6', // Hohensalzburg fortress
-      'photo-1506905925346-21bda4d32df4', // fortress on cliffs
-      'photo-1503754444-d869c4abf896', // fort on hilltop
-    ],
-  },
-  {
-    // Castles (palaces and forts handled separately above)
-    keywords: ['castle'],
-    images: [
-      'photo-1565117220934-e5a7d2a3d9a6', // Hohensalzburg castle, Austria
-      'photo-1548661710-7f540a4c7b7e', // medieval European castle
-      'photo-1503754444-d869c4abf896', // castle on hilltop with foggy forest
-      'photo-1587474260584-136574528ed5', // Indian fort / Mehrangarh
-    ],
-  },
-  {
-    // National parks & natural reserves (forests handled separately)
-    keywords: ['national park', 'nature reserve', 'wilderness', 'rainforest', 'jungle'],
-    images: [
-      'photo-1469854523086-cc02fe5d8800', // scenic mountain road through park
-      'photo-1421789665209-c9b2a435e3dc', // misty ancient forest
-      'photo-1441974231531-c6227db76b6e', // redwood / tall forest path
-      'photo-1472214103451-9374bd1c798e', // lush green landscape / meadow
-    ],
-  },
-  {
-    // Forests & woodland
-    keywords: ['forest', 'woodland', 'woods', 'grove', 'arboretum', 'bamboo'],
-    images: [
-      'photo-1448375240586-882707db888b', // dense green forest canopy
-      'photo-1511497584788-876760111969', // misty morning forest path
-      'photo-1425913397330-cf8af2ff40a1', // forest with rays of sunlight
-      'photo-1441974231531-c6227db76b6e', // redwood tall trees path
-      'photo-1473448912268-2022ce9509d8', // golden autumn forest
-    ],
-  },
-  {
-    // Snow & winter destinations
-    keywords: [
-      'snow',
-      'winter',
-      'skiing',
-      'ski resort',
-      'snowfall',
-      'frozen',
-      'aurora',
-      'northern lights',
-    ],
-    images: [
-      'photo-1491466424936-e304919aada7', // snowy winter forest landscape
-      'photo-1548777123-e216912f54be', // snow-capped mountain peaks
-      'photo-1551524559-8af4e6624178', // winter wonderland village
-      'photo-1516912481808-3406841bd33c', // snow covered alpine scene
-      'photo-1518156677180-95a2893f3499', // frozen lake winter reflection
-      'photo-1534559651411-9ca6f02c4cbb', // northern lights / aurora borealis
-    ],
-  },
-  {
-    // City skylines & urban destinations
-    keywords: ['city', 'skyline', 'downtown', 'metro', 'urban', 'manhattan', 'midtown'],
-    images: [
-      'photo-1477959858617-67f85cf4f1df', // city skyline at dusk
-      'photo-1480714378408-67cf0d13bc1b', // modern city skyline reflection
-      'photo-1514565131-fce0801e6173', // urban glass buildings
-      'photo-1534430480872-3498386e7856', // aerial city skyline at night
-      'photo-1500462918059-b1a0cb512f1d', // city streets at night
-    ],
-  },
-  {
-    // Villages & rural towns
-    keywords: [
-      'village',
-      'town',
-      'hamlet',
-      'countryside',
-      'rural',
-      'vineyard',
-      'farmhouse',
-      'cottage',
-    ],
-    images: [
-      'photo-1439337153520-7082a56a81f4', // charming European village street
-      'photo-1513584684374-8bab748fbf90', // colorful village row houses
-      'photo-1512100357200-a34caff9e5bc', // rustic stone village
-      'photo-1529973625058-a665431328fb', // scenic hillside village
-      'photo-1524758631624-e2822e304c36', // countryside village with church
-    ],
-  },
-  {
-    // Bridges & iconic crossings
-    keywords: ['bridge', 'viaduct', 'aqueduct', 'golden gate', 'brooklyn bridge', 'tower bridge'],
-    images: [
-      'photo-1474487548417-781cb71495f3', // Golden Gate Bridge San Francisco
-      'photo-1513635269975-59663e0ac1ad', // Tower Bridge, London
-      'photo-1548550026-169aa6f68c1e', // suspension bridge in mountains
-      'photo-1523474438810-b04a2480633c', // city bridge at night
-      'photo-1477959858617-67f85cf4f1df', // bridge with city skyline
-    ],
-  },
-];
-
 // ── Destination entries ───────────────────────────────────────────────────────
 // Ordered: specific (city) → general (country). First match wins.
 // Each entry provides 2–5 diverse photos of the same place.
 
 const DESTINATIONS: DestinationEntry[] = [
   // ── India — religious cities ─────────────────────────────────────────────
-  // (Note: destinations that literally contain "temple", "mandir", etc. are
-  // caught by SEMANTIC_RULES first. These entries serve as fallback when the
-  // user types just the city name without a religious keyword.)
   {
     keys: ['varanasi', 'benares'],
     images: [
@@ -1326,33 +1045,8 @@ const DESTINATIONS: DestinationEntry[] = [
   },
 ];
 
-// ── Fallback images ───────────────────────────────────────────────────────────
-// Used when neither semantic rules nor destination entries match.
-// 20 diverse, high-quality travel photos to minimise collision probability.
-
-const FALLBACKS: string[] = [
-  'photo-1469854523086-cc02fe5d8800', // winding mountain road at sunrise
-  'photo-1476514525535-07fb3b4ae5f1', // view from airplane window over clouds
-  'photo-1503220317375-aaad61436b1b', // travel map with compass on wooden table
-  'photo-1527631746610-bca00a040d60', // tropical beach with turquoise water
-  'photo-1488646953014-85cb44e25828', // beach overhead aerial
-  'photo-1500530855697-b586d89ba3ee', // European cobblestone street at dusk
-  'photo-1436491865332-7a61a109cc05', // airplane wing above clouds at sunset
-  'photo-1506905925346-21bda4d32df4', // Swiss alpine lake reflection
-  'photo-1549366021-9f761d450615', // alpine lake with mountain reflection
-  'photo-1502791451862-7bd8c1df43a7', // city skyline at twilight
-  'photo-1526772662000-3f88f10405ff', // medieval European town square
-  'photo-1421789665209-c9b2a435e3dc', // misty ancient mountain forest
-  'photo-1553361371-9b22f78e8b1d', // aerial coastal city view
-  'photo-1507003211169-0a1dd7228f2d', // backpacker on mountain with sunset view
-  'photo-1476611338391-6f395a0ebc7b', // colourful houses on a hillside
-  'photo-1549451371-64aa98a6f660', // travel flat-lay with passport and camera
-  'photo-1488085061387-422e29b40080', // window seat overlooking city at night
-  'photo-1542314831-068cd1dbfeeb', // hotel pool overlooking tropical coastline
-  'photo-1414235077428-338989a2e8c0', // elegant fine dining with candle light
-  'photo-1513415431748-1b1cda8abced', // backpacking traveller with sunset panorama
-];
-
+// Neutral colour treatment for places we don't confidently recognise. Used
+// for the honest gradient fallback — never paired with a guessed photo.
 const DEFAULT_COLORS: ColorSet = {
   accent: '#6366F1',
   accentRgb: '99,102,241',
@@ -1365,11 +1059,6 @@ function toUnsplashUrl(photoId: string): string {
   return `https://images.unsplash.com/${photoId}?w=1600&h=900&fit=crop&crop=entropy&q=80`;
 }
 
-/** Stable hash of a string → deterministic index into an array. */
-function stableHash(s: string): number {
-  return s.split('').reduce((acc, c) => (acc + c.charCodeAt(0)) | 0, 0);
-}
-
 // ── Core resolver ─────────────────────────────────────────────────────────────
 
 interface ResolvedImages {
@@ -1377,70 +1066,492 @@ interface ResolvedImages {
   colors: ColorSet;
 }
 
+// Whole-word (token) key match. A key matches only when it is delimited by the
+// string edges or non-alphanumeric characters — NOT as a raw substring. This
+// prevents false hits that used to assign unrelated covers, e.g. `la`
+// (Los Angeles) inside "Pa·la·ni" or `bali` inside "Maha·bali·puram". Unicode
+// safe (checks the neighbouring chars directly rather than relying on \b).
+function matchesKey(haystack: string, key: string): boolean {
+  let idx = haystack.indexOf(key);
+  while (idx !== -1) {
+    const before = idx === 0 ? '' : haystack[idx - 1];
+    const after = idx + key.length >= haystack.length ? '' : haystack[idx + key.length];
+    const okBefore = before === '' || !/[a-z0-9]/i.test(before);
+    const okAfter = after === '' || !/[a-z0-9]/i.test(after);
+    if (okBefore && okAfter) return true;
+    idx = haystack.indexOf(key, idx + 1);
+  }
+  return false;
+}
+
+// ── Temple-relevant fallback ──────────────────────────────────────────────────
+// A South-Indian gopuram is a strong, honest "place of worship" image, used only
+// when a destination is CLEARLY temple-related but isn't curated by city name.
+const TEMPLE_IMAGE = 'photo-1618477461853-cf6ed80faba5';
+const TEMPLE_COLORS: ColorSet = {
+  accent: '#F59E0B',
+  accentRgb: '245,158,11',
+  secondary: '#F97316',
+};
+
+// Well-known temple destinations not already curated above (city-name matched).
+const TEMPLE_PLACES = [
+  'palani',
+  'madurai',
+  'meenakshi',
+  'rameswaram',
+  'rameshwaram',
+  'mahabalipuram',
+  'mamallapuram',
+  'tiruvannamalai',
+  'srikalahasti',
+  'kanchipuram',
+  'sabarimala',
+  'somnath',
+  'dwarka',
+  'kedarnath',
+  'badrinath',
+  'konark',
+  'khajuraho',
+  'hampi',
+  'srirangam',
+  'chidambaram',
+  'guruvayur',
+  'sringeri',
+  'udupi',
+  'kamakhya',
+  'ayodhya',
+  'bodhgaya',
+  'bodh gaya',
+  'sarnath',
+  'thanjavur',
+  'tanjore',
+];
+// Unambiguous place-of-worship markers (whole-word matched, so "Templeton" or
+// the already-curated "Mathura" are never caught).
+const TEMPLE_MARKERS = [
+  'temple',
+  'mandir',
+  'kovil',
+  'koil',
+  'devasthanam',
+  'jyotirlinga',
+  'gopuram',
+  'shrine',
+  'basadi',
+];
+// Well-known places literally named "Temple" that are NOT places of worship —
+// keeps temple imagery off unrelated destinations.
+const TEMPLE_DENY = ['temple bar', 'temple university', 'temple, tx', 'temple, texas'];
+
+function isTempleDestination(lower: string): boolean {
+  if (TEMPLE_DENY.some((d) => lower.includes(d))) return false;
+  if (TEMPLE_PLACES.some((p) => matchesKey(lower, p))) return true;
+  return TEMPLE_MARKERS.some((m) => matchesKey(lower, m));
+}
+
+// ── Duplicate-name disambiguation ─────────────────────────────────────────────
+// A handful of famous cities share their name with smaller towns elsewhere
+// ("Paris, Texas"). The curated entry is always the famous international city, so
+// when the destination names a DIFFERENT region (a US state, Ontario, …) and the
+// famous city's own home country is absent, we suppress the match and fall back
+// honestly rather than show e.g. the Eiffel Tower for Paris, Texas.
+
+// Regions that commonly host a same-named duplicate of a famous city (US states
+// as full names + collision-free abbreviations, plus Ontario). Abbreviations
+// that are common English words (in, or, me, ok, hi, id, wa, la) are omitted.
+const DUP_REGION_TOKENS = [
+  'alabama',
+  'alaska',
+  'arizona',
+  'arkansas',
+  'california',
+  'colorado',
+  'connecticut',
+  'delaware',
+  'florida',
+  'georgia',
+  'hawaii',
+  'idaho',
+  'illinois',
+  'indiana',
+  'iowa',
+  'kansas',
+  'kentucky',
+  'louisiana',
+  'maine',
+  'maryland',
+  'massachusetts',
+  'michigan',
+  'minnesota',
+  'mississippi',
+  'missouri',
+  'montana',
+  'nebraska',
+  'nevada',
+  'new hampshire',
+  'new jersey',
+  'new mexico',
+  'north carolina',
+  'north dakota',
+  'ohio',
+  'oklahoma',
+  'oregon',
+  'pennsylvania',
+  'rhode island',
+  'south carolina',
+  'south dakota',
+  'tennessee',
+  'texas',
+  'utah',
+  'vermont',
+  'virginia',
+  'washington',
+  'west virginia',
+  'wisconsin',
+  'wyoming',
+  'tx',
+  'fl',
+  'ga',
+  'ky',
+  'oh',
+  'ny',
+  'ca',
+  'il',
+  'tn',
+  'sc',
+  'va',
+  'nc',
+  'pa',
+  'mi',
+  'mo',
+  'az',
+  'co',
+  'wi',
+  'mn',
+  'md',
+  'nj',
+  'nm',
+  'nv',
+  'ct',
+  'ri',
+  'ks',
+  'ar',
+  'nd',
+  'sd',
+  'wv',
+  'wy',
+  'mt',
+  'ut',
+  'vt',
+  'nh',
+  'ontario',
+];
+
+// Curated key → its HOME context tokens. Only these keys are disambiguated; all
+// other curated matches (and the unambiguous aliases like "firenze"/"napoli") are
+// unaffected.
+const AMBIGUOUS_HOME: Record<string, string[]> = {
+  paris: ['france'],
+  london: ['uk', 'england', 'britain', 'united kingdom'],
+  melbourne: ['australia'],
+  athens: ['greece'],
+  rome: ['italy'],
+  naples: ['italy'],
+  venice: ['italy'],
+  florence: ['italy'],
+  cairo: ['egypt'],
+  berlin: ['germany', 'deutschland'],
+  vienna: ['austria'],
+};
+
+// True when a curated entry matched via an ambiguous key but the destination
+// points at a different same-named place (home country absent, a duplicate
+// region present) — so the famous-city image should NOT be used.
+function isAmbiguousMismatch(lower: string, matchedKey: string): boolean {
+  const home = AMBIGUOUS_HOME[matchedKey];
+  if (!home) return false;
+  if (home.some((h) => matchesKey(lower, h))) return false; // the famous one
+  return DUP_REGION_TOKENS.some((r) => matchesKey(lower, r)); // a same-named duplicate
+}
+
+// ── India-only scope ──────────────────────────────────────────────────────────
+// This is an India-only travel product, so only INDIAN curated entries may
+// resolve to a photo. A curated match whose key is a foreign city (Paris, Tokyo,
+// …) is ignored, so a non-India destination falls back to the honest gradient
+// instead of showing a foreign landmark. Indian landmarks/temples resolve via
+// these keys or the temple fallback below; foreign curated entries in the list
+// are retained but unreachable (kept only to avoid a large deletion).
+const INDIA_KEYS = new Set<string>([
+  // religious cities / temple towns
+  'varanasi',
+  'benares',
+  'rishikesh',
+  'haridwar',
+  'amritsar',
+  'mathura',
+  'vrindavan',
+  'brindavan',
+  'tirupati',
+  'tirumala',
+  'puri',
+  'shirdi',
+  // cities / regions
+  'goa',
+  'kerala',
+  'jaipur',
+  'udaipur',
+  'jodhpur',
+  'agra',
+  'manali',
+  'shimla',
+  'dharamshala',
+  'mcleod',
+  'leh',
+  'ladakh',
+  'kashmir',
+  'srinagar',
+  'mumbai',
+  'bombay',
+  'delhi',
+  'new delhi',
+  // country / state fallbacks
+  'india',
+  'rajasthan',
+  'himachal',
+  'uttarakhand',
+]);
+
+// Explicit foreign context — a neighbouring country or any clearly foreign
+// country named in the destination. Used to veto a curated Indian match that
+// only collides on a shared region name (e.g. "Kashmir, Pakistan" must NOT show
+// the Indian Kashmir photo) and to disqualify a legacy Wikipedia cover.
+const FOREIGN_TOKENS = [
+  'pakistan',
+  'nepal',
+  'bangladesh',
+  'sri lanka',
+  'srilanka',
+  'bhutan',
+  'myanmar',
+  'burma',
+  'china',
+  'tibet',
+  'afghanistan',
+  'maldives',
+  'france',
+  'japan',
+  'usa',
+  'united states',
+  'america',
+  'uk',
+  'united kingdom',
+  'england',
+  'italy',
+  'spain',
+  'germany',
+  'thailand',
+  'indonesia',
+  'singapore',
+  'malaysia',
+  'vietnam',
+  'cambodia',
+  'uae',
+  'emirates',
+  'dubai',
+  'qatar',
+  'saudi',
+  'egypt',
+  'turkey',
+  'greece',
+  'australia',
+  'canada',
+  'brazil',
+  'mexico',
+  'korea',
+];
+
+function hasForeignContext(lower: string): boolean {
+  return FOREIGN_TOKENS.some((f) => matchesKey(lower, f));
+}
+
+// Only returns photos for an INDIAN place we actually recognise in the curated
+// list (or a clearly temple-related destination). There is deliberately NO
+// keyword-guessing or hashed-stock fallback: an unrecognised place (a village, a
+// small locality, anything offbeat) — or any foreign place — returns an empty
+// photo list and the neutral colour set, so callers show an honest gradient
+// rather than a mismatched / out-of-scope stock image.
 function resolveCore(destination: string): ResolvedImages {
   const lower = destination.trim().toLowerCase();
 
-  // 1. Semantic keyword matching — highest priority.
-  //    Checks the full destination string for content-type keywords.
-  for (const rule of SEMANTIC_RULES) {
-    if (rule.keywords.some((kw) => lower.includes(kw))) {
-      // Find destination entry just for colors (semantic rules don't carry colors).
-      const colorEntry = DESTINATIONS.find(({ keys }) => keys.some((k) => lower.includes(k)));
-      return {
-        photoIds: rule.images,
-        colors: colorEntry?.colors ?? DEFAULT_COLORS,
-      };
-    }
-  }
-
-  // 2. Destination-specific match.
   for (const entry of DESTINATIONS) {
-    if (entry.keys.some((k) => lower.includes(k))) {
-      return { photoIds: entry.images, colors: entry.colors };
-    }
+    const matched = entry.keys.find((k) => matchesKey(lower, k));
+    if (!matched) continue;
+    // India-only: never resolve a foreign city's image (out of product scope).
+    if (!INDIA_KEYS.has(matched)) continue;
+    // …and veto a curated Indian match when the destination names a foreign
+    // country (e.g. "Kashmir, Pakistan" / "Ladakh, China") — out of scope.
+    if (hasForeignContext(lower)) continue;
+    // Guard retained from same-name disambiguation (now subsumed by the India
+    // gate, since no Indian key is duplicate-prone) — harmless belt-and-braces.
+    if (isAmbiguousMismatch(lower, matched)) continue;
+    return { photoIds: entry.images, colors: entry.colors };
   }
 
-  // 3. Fallback — deterministic selection based on destination name.
-  const seed = stableHash(lower);
-  const picked = [
-    FALLBACKS[seed % FALLBACKS.length],
-    FALLBACKS[(seed + 7) % FALLBACKS.length],
-    FALLBACKS[(seed + 13) % FALLBACKS.length],
-  ].filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+  // Clearly temple-related but not curated by city name → honest temple imagery.
+  if (isTempleDestination(lower)) {
+    return { photoIds: [TEMPLE_IMAGE], colors: TEMPLE_COLORS };
+  }
 
-  return { photoIds: picked, colors: DEFAULT_COLORS };
+  return { photoIds: [], colors: DEFAULT_COLORS };
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
- * Returns all available image URLs for a destination (2–5 images).
- * Use for carousels, galleries, and anywhere multiple images improve UX.
+ * Returns the recognised image URLs for a destination (empty when the place
+ * isn't in the curated list — callers should fall back to a colour/gradient
+ * treatment rather than show a guessed image).
  */
 export function resolveDestinationImages(destination: string): string[] {
-  const { photoIds } = resolveCore(destination || 'travel');
+  const { photoIds } = resolveCore(destination || '');
   return photoIds.map(toUnsplashUrl);
 }
 
 /**
- * Returns the primary (first) image URL for a destination.
- * Backward-compatible with all existing consumers.
+ * Returns the primary image URL for a destination, or `null` when the place
+ * isn't confidently recognised. Callers MUST treat `null` as "no photo" and
+ * render their colour/gradient fallback — never an <img> with an empty src.
  */
-export function resolveDestinationImageUrl(destination: string): string {
-  return resolveDestinationImages(destination)[0];
+export function resolveDestinationImageUrl(destination: string): string | null {
+  return resolveDestinationImages(destination)[0] ?? null;
+}
+
+// Auto-generated stock covers came from our own image resolver (Unsplash).
+function isAutoGeneratedCover(url: string): boolean {
+  return url.includes('images.unsplash.com');
+}
+
+// Auto-selected enrichment covers came from Wikipedia. Unlike a user upload,
+// these were picked by the app — so under the India-only scope they must be
+// re-verified as Indian before being trusted (see resolveTripCoverImage).
+function isWikipediaCover(url: string): boolean {
+  return url.includes('wikimedia.org') || url.includes('wikipedia.org');
+}
+
+// India context tokens ("India"/"Bharat" + every state / union-territory) used
+// to confirm a legacy Wikipedia cover really belongs to an Indian destination.
+const INDIA_CONTEXT = [
+  'india',
+  'bharat',
+  'andhra pradesh',
+  'arunachal pradesh',
+  'assam',
+  'bihar',
+  'chhattisgarh',
+  'goa',
+  'gujarat',
+  'haryana',
+  'himachal pradesh',
+  'jharkhand',
+  'karnataka',
+  'kerala',
+  'madhya pradesh',
+  'maharashtra',
+  'manipur',
+  'meghalaya',
+  'mizoram',
+  'nagaland',
+  'odisha',
+  'orissa',
+  'punjab',
+  'rajasthan',
+  'sikkim',
+  'tamil nadu',
+  'telangana',
+  'tripura',
+  'uttar pradesh',
+  'uttarakhand',
+  'west bengal',
+  'bengal',
+  'andaman',
+  'nicobar',
+  'chandigarh',
+  'dadra',
+  'daman',
+  'diu',
+  'delhi',
+  'jammu',
+  'kashmir',
+  'ladakh',
+  'lakshadweep',
+  'puducherry',
+  'pondicherry',
+];
+
+const INDIA_KEY_LIST = [...INDIA_KEYS];
+
+// True when a destination is confidently Indian: an explicit foreign context
+// vetoes it; otherwise a curated Indian city, an (Indian) temple destination, or
+// an India/state/UT token confirms it. Anything unverifiable → false (fail safe).
+function isIndianDestination(destination: string): boolean {
+  const lower = destination.trim().toLowerCase();
+  if (hasForeignContext(lower)) return false;
+  if (INDIA_KEY_LIST.some((k) => matchesKey(lower, k))) return true;
+  if (isTempleDestination(lower)) return true;
+  return INDIA_CONTEXT.some((t) => matchesKey(lower, t));
 }
 
 /**
- * Returns the full theme — colors + images — for a destination.
- * The `imageUrl` field is the primary image (backward compatible).
- * The `imageUrls` field contains all available images.
+ * Reconciles a persisted trip `cover_image_url` against the honest resolver —
+ * the single source of truth for what a trip card / hero should actually show.
+ *
+ * Legacy trips may still carry a stock cover that the OLD guessing logic
+ * assigned to an unrecognised place. Rather than trust the stored value, we
+ * re-derive auto-generated covers from the current resolver: a recognised
+ * place gets its correct curated image, and an unrecognised place gets `null`
+ * so the UI shows its gradient fallback instead of a stale guessed photo.
+ *
+ * Cover sources are treated differently under the India-only scope:
+ *   • Unsplash stock (auto)      → re-derived from the India-only resolver.
+ *   • Wikipedia enrichment (auto)→ kept ONLY when the destination is verifiably
+ *     Indian; a legacy foreign Wikipedia cover is dropped → gradient. If we
+ *     cannot confirm India, we fail safely to the fallback.
+ *   • Anything else (user upload / custom URL) → always kept.
+ *
+ * Non-destructive: this normalises at render time, so stale/foreign rows stop
+ * rendering out-of-scope images without any database rewrite.
+ */
+export function resolveTripCoverImage(
+  destination: string,
+  storedCover: string | null | undefined,
+): string | null {
+  if (storedCover) {
+    if (isAutoGeneratedCover(storedCover)) {
+      // Unsplash stock → re-derive from the resolver below.
+    } else if (isWikipediaCover(storedCover)) {
+      // Auto-selected Wikipedia enrichment → India-only gate.
+      if (isIndianDestination(destination)) return storedCover;
+      // Not verifiably Indian → drop (fall through to the resolver → gradient).
+    } else {
+      // Genuinely user-provided (storage upload / custom URL) → always kept.
+      return storedCover;
+    }
+  }
+  return resolveDestinationImageUrl(destination);
+}
+
+/**
+ * Returns the full theme — colours + images — for a destination.
+ * `imageUrl` is the primary image or `null` when unrecognised; `imageUrls` is
+ * the (possibly empty) list of recognised images.
  */
 export function resolveDestinationTheme(destination: string): DestinationTheme {
-  const { photoIds, colors } = resolveCore(destination || 'travel');
+  const { photoIds, colors } = resolveCore(destination || '');
   const imageUrls = photoIds.map(toUnsplashUrl);
   return {
     ...colors,
-    imageUrl: imageUrls[0],
+    imageUrl: imageUrls[0] ?? null,
     imageUrls,
   };
 }

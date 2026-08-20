@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDateRange, tripDuration } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
+import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { usePlaceImage } from '@/hooks/usePlaceImage';
 import type { TripRow } from '../types';
 
 /* ── Destination gradient themes ──────────────────────────────── */
@@ -139,6 +141,10 @@ export function TripDetailHero({ trip, onEdit, onDelete, onFavToggle, isFavPendi
   const imgY = useTransform(scrollY, [0, 500], [0, 120]);
 
   const theme = getDestTheme(trip.destination);
+  const reconciledCover = resolveTripCoverImage(trip.destination, trip.cover_image_url);
+  // Non-curated place with no cover → try a real Wikipedia photo; gradient otherwise.
+  const { imageUrl: enriched } = usePlaceImage(trip.destination, { enabled: !reconciledCover });
+  const cover = reconciledCover ?? enriched;
   const duration = tripDuration(trip.start_date, trip.end_date);
   const status = getTripStatus(trip);
   const statusCfg = STATUS_LABEL[status] ?? STATUS_LABEL['upcoming'];
@@ -156,9 +162,9 @@ export function TripDetailHero({ trip, onEdit, onDelete, onFavToggle, isFavPendi
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* ── Background ── */}
-        {trip.cover_image_url ? (
+        {cover ? (
           <motion.img
-            src={trip.cover_image_url}
+            src={cover}
             alt={trip.destination}
             className="absolute inset-0 h-[130%] w-full object-cover"
             style={reduced ? undefined : { y: imgY, top: '-15%' }}

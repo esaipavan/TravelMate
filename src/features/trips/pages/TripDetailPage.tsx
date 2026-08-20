@@ -8,6 +8,9 @@ import { TripDetailSkeleton } from '../components/TripDetailSkeleton';
 import { TripStatsRow } from '../components/TripStatsRow';
 import { TripBudgetCard } from '../components/TripBudgetCard';
 import { TripNotesCard } from '../components/TripNotesCard';
+import { TripBookingsSection } from '../components/TripBookingsSection';
+import { TripItinerary } from '../components/TripItinerary';
+import { TripShareControl } from '../components/TripShareControl';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { TripSubNavGrid } from '../components/TripSubNavGrid';
 import { TripAIPanel } from '../components/TripAIPanel';
@@ -113,6 +116,22 @@ export default function TripDetailPage() {
           <Section delay={0.14}>
             <TripSubNavGrid tripId={trip.id} />
           </Section>
+
+          {/* Attached bookings (all transport modes) */}
+          <Section delay={0.16}>
+            <TripBookingsSection trip={trip} />
+          </Section>
+
+          {/* Day-by-day itinerary derived from attached bookings.
+              Renders nothing (no wrapper gap) when the trip has no bookings. */}
+          <TripItinerary trip={trip} />
+
+          {/* Owner-only public share control */}
+          {canEdit && (
+            <Section delay={0.18}>
+              <TripShareControl trip={trip} />
+            </Section>
+          )}
 
           {/* AI Recommendations */}
           <Section delay={0.18}>

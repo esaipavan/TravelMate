@@ -5,7 +5,7 @@ import { MapPin, Loader2, ArrowRight, Check } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { APP_NAME } from '@/utils/constants';
 import { createTrip } from '@/features/trips/services/trips.service';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { OnboardingDates } from '../types';
 
 const SPRING = { type: 'spring', damping: 28, stiffness: 120 } as const;
@@ -43,6 +43,7 @@ export function CreateTripStep({
     try {
       const from = dates?.from ?? today;
       const to = dates?.to ?? defaultEnd;
+      const coverImageUrl = await selectTripCoverImage(destination);
       const trip = await createTrip({
         user_id: userId,
         title: title.trim(),
@@ -54,7 +55,7 @@ export function CreateTripStep({
         status: 'planning',
         is_public: false,
         notes: `Created during ${APP_NAME} onboarding`,
-        cover_image_url: resolveDestinationImageUrl(destination),
+        cover_image_url: coverImageUrl,
       });
       setStatus('done');
       setTimeout(() => onDone(trip.id), 900);

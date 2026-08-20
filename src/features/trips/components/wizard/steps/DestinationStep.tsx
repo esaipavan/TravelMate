@@ -22,12 +22,24 @@ function DestinationPreview({ info }: { info: DestinationInfo }) {
     >
       {/* Hero image */}
       <div className="relative h-52 overflow-hidden sm:h-64">
-        <img
-          src={imageUrl}
-          alt={info.name}
-          className="h-full w-full object-cover"
-          loading="eager"
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={info.name}
+            className="h-full w-full object-cover"
+            loading="eager"
+          />
+        ) : (
+          <div
+            className="h-full w-full"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(99,102,241,0.75) 0%, rgba(139,92,246,0.55) 100%)',
+            }}
+            role="img"
+            aria-label={info.name}
+          />
+        )}
         <div
           className="absolute inset-0"
           style={{

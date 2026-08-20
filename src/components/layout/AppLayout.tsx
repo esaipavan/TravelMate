@@ -9,6 +9,7 @@ import { FeedbackWidget } from '@/features/feedback/components/FeedbackWidget';
 import { FloatingAI } from '@/features/ai/components/FloatingAI';
 import { PAGE_VARIANTS, REDUCED_VARIANTS } from '@/lib/motion';
 import { useRouteFocus } from '@/hooks/useRouteFocus';
+import { useCoverBackfill } from '@/features/trips/hooks/useCoverBackfill';
 import { track } from '@/lib/analytics';
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -23,6 +24,11 @@ const ROUTE_TITLES: Record<string, string> = {
   '/weather': 'Weather',
   '/currency': 'Currency',
   '/nearby': 'Nearby Places',
+  '/hotels': 'Hotels',
+  '/trains': 'Trains',
+  '/buses': 'Buses',
+  '/flights': 'Flights',
+  '/local': 'Local transport',
   '/destinations': 'Destinations',
   '/documents': 'Documents',
   '/reminders': 'Reminders',
@@ -78,6 +84,9 @@ export function AppLayout() {
   // Move keyboard focus to #main-content on every route change so screen
   // readers announce the new page without manual navigation.
   useRouteFocus();
+
+  // One-time, idempotent, background upgrade of legacy trip cover images.
+  useCoverBackfill();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

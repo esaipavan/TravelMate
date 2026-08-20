@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import { useAuthStore } from '@/store/auth.store';
 import { useBatchUpsertBudgetsMutation } from '@/features/budget/hooks/useBudget';
 import { useCreateTrip } from '../hooks/useTrips';
@@ -32,8 +32,8 @@ function WizardPage() {
     const total = resolveTotalBudget(budget);
     const breakdown = resolveBudgetBreakdown(budget);
 
-    /* Derive cover image */
-    const coverUrl = resolveDestinationImageUrl(destination);
+    /* Select cover: curated → real Wikipedia image → null (never a guess) */
+    const coverUrl = await selectTripCoverImage(destination);
 
     /* Build title from destination + trip type */
     const title = generateTripTitle(destination, tripType);

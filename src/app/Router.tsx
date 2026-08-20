@@ -40,6 +40,11 @@ const JournalPage = lazy(() => import('@/features/journal/pages/JournalPage'));
 const WeatherPage = lazy(() => import('@/features/weather/pages/WeatherPage'));
 const CurrencyPage = lazy(() => import('@/features/currency/pages/CurrencyPage'));
 const NearbyPage = lazy(() => import('@/features/nearby/pages/NearbyPage'));
+const HotelsPage = lazy(() => import('@/features/hotels/pages/HotelsPage'));
+const TrainsPage = lazy(() => import('@/features/trains/pages/TrainsPage'));
+const BusesPage = lazy(() => import('@/features/buses/pages/BusesPage'));
+const FlightsPage = lazy(() => import('@/features/flights/pages/FlightsPage'));
+const LocalPage = lazy(() => import('@/features/local/pages/LocalPage'));
 const DestinationPage = lazy(() => import('@/features/destination/pages/DestinationPage'));
 const DestinationIntelPage = lazy(
   () => import('@/features/destination-intel/pages/DestinationIntelPage'),
@@ -66,6 +71,7 @@ const AdminAIPage = lazy(() => import('@/features/admin/pages/AIUsagePage'));
 
 // Share (public)
 const SharePage = lazy(() => import('@/features/trips/pages/SharePage'));
+const PublicTripPage = lazy(() => import('@/features/trips/pages/PublicTripPage'));
 
 // Trust pages (public)
 const PrivacyPage = lazy(() => import('@/features/trust/pages/PrivacyPage'));
@@ -220,6 +226,17 @@ const router = createBrowserRouter([
     element: (
       <Wrap>
         <SharePage />
+      </Wrap>
+    ),
+  },
+
+  // Public read-only trip itinerary (no auth required; gated by is_public).
+  // Uses a short /p/ prefix — avoids Vite's reserved /public/ static path.
+  {
+    path: '/p/:id',
+    element: (
+      <Wrap>
+        <PublicTripPage />
       </Wrap>
     ),
   },
@@ -399,6 +416,46 @@ const router = createBrowserRouter([
         element: (
           <Wrap>
             <NearbyPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/hotels',
+        element: (
+          <Wrap>
+            <HotelsPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/trains',
+        element: (
+          <Wrap>
+            <TrainsPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/buses',
+        element: (
+          <Wrap>
+            <BusesPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/flights',
+        element: (
+          <Wrap>
+            <FlightsPage />
+          </Wrap>
+        ),
+      },
+      {
+        path: '/local',
+        element: (
+          <Wrap>
+            <LocalPage />
           </Wrap>
         ),
       },

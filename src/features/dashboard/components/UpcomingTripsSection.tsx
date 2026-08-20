@@ -10,6 +10,7 @@ import { formatDateRange } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
 import { useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
+import { resolveTripCoverImage } from '@/utils/destinationTheme';
 import { DestinationImage } from './DestinationImage';
 import { useOnboarding } from '@/features/onboarding/hooks/useOnboarding';
 import type { UpcomingTrip } from '../types';
@@ -53,7 +54,7 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
         >
           <div className="relative h-44 overflow-hidden rounded-2xl">
             <DestinationImage
-              src={trip.cover_image_url ?? theme.imageUrl}
+              src={resolveTripCoverImage(trip.destination, trip.cover_image_url)}
               alt={trip.destination}
               fallbackAccent={theme.accent}
             />

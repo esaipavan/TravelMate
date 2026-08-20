@@ -6,7 +6,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-type-checked',
     'plugin:react-hooks/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', 'supabase/functions'],
+  ignorePatterns: ['dist', '.eslintrc.cjs', 'supabase/functions', 'api'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',

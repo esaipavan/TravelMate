@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { differenceInDays, parseISO } from 'date-fns';
 import { CalendarDays, Clock, CreditCard, Globe, Thermometer } from 'lucide-react';
 import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { usePlaceImage } from '@/hooks/usePlaceImage';
 import { rv, HERO_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import type { ReactNode } from 'react';
 import type { WeatherResult } from '@/features/weather/types';
@@ -50,10 +51,14 @@ function Chip({ icon, label }: { icon: ReactNode; label: string }) {
 
 export function DestinationHero({ overview, weather, startDate, endDate }: Props) {
   const reduced = useReducedMotion();
-  const imageUrl = useMemo(
+  const curated = useMemo(
     () => resolveDestinationImageUrl(overview.destination),
     [overview.destination],
   );
+  // Recognised but non-curated place → try a real Wikipedia photo; only fetch
+  // when we don't already have a curated image. Null → honest gradient.
+  const { imageUrl: enriched } = usePlaceImage(overview.destination, { enabled: !curated });
+  const imageUrl = curated ?? enriched;
 
   const today = new Date();
   const start = parseISO(startDate + 'T00:00:00');
@@ -74,13 +79,25 @@ export function DestinationHero({ overview, weather, startDate, endDate }: Props
         initial="hidden"
         animate="show"
       >
-        <img
-          src={imageUrl}
-          alt={`${overview.destination}, ${overview.country}`}
-          className="h-full w-full object-cover"
-          loading="eager"
-          fetchPriority="high"
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${overview.destination}, ${overview.country}`}
+            className="h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+          />
+        ) : (
+          <div
+            className="h-full w-full"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(99,102,241,0.75) 0%, rgba(139,92,246,0.55) 100%)',
+            }}
+            role="img"
+            aria-label={`${overview.destination}, ${overview.country}`}
+          />
+        )}
       </motion.div>
 
       {/* Gradient layers */}

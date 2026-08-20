@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
 import { rv, FADE_VARIANTS, CARD_VARIANTS } from '@/lib/motion';
+import { TravelIntentDiscovery } from './TravelIntentDiscovery';
 import type { PlaceCategory } from '../../types';
 
 const EXAMPLES = ['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA'];
@@ -58,11 +59,17 @@ export function ExplorerEmptyState({ onExampleClick, onCategoryShortcut }: Props
       </motion.div>
 
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">Search any city or neighborhood</h2>
+        <h2 className="text-xl font-bold text-foreground">
+          Start anywhere — no destination needed
+        </h2>
         <p className="max-w-sm text-sm text-muted-foreground">
-          No predefined list — type any place, or tap Near Me to see what's around you right now.
+          Search any city, town, village, or landmark, tap Near Me for what's around you, or pick a
+          vibe below to discover places without a fixed destination.
         </p>
       </div>
+
+      {/* Travel-intent discovery — the "no destination yet" entry point. */}
+      <TravelIntentDiscovery onPlacePick={onExampleClick} />
 
       {/* Category shortcuts — tap a category to search it near you, or near
           whatever you've already typed in the search box. */}

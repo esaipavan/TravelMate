@@ -9,6 +9,8 @@ import { getTripStatus } from '@/utils/tripStatus';
 import { formatDateRange } from '@/utils/formatters';
 import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
+import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { usePlaceImage } from '@/hooks/usePlaceImage';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { DestinationImage } from './DestinationImage';
 
@@ -132,6 +134,11 @@ export function TripCommandHero() {
   const theme = useDestinationTheme(destination || 'travel');
   const { data: weather } = useWeather(destination);
 
+  const reconciledCover = resolveTripCoverImage(destination, displayTrip?.cover_image_url);
+  // Non-curated place with no cover → try a real Wikipedia photo; gradient otherwise.
+  const { imageUrl: enrichedCover } = usePlaceImage(destination, { enabled: !reconciledCover });
+  const coverSrc = reconciledCover ?? enrichedCover;
+
   if (loadingCurr || loadingUp) return <HeroSkeleton />;
 
   if (errCurr || errUp) {
@@ -181,7 +188,7 @@ export function TripCommandHero() {
     >
       {/* Background image — prefer the URL stored in the DB so all pages agree */}
       <DestinationImage
-        src={displayTrip?.cover_image_url ?? theme.imageUrl}
+        src={coverSrc}
         alt={destination || 'Travel destination'}
         fallbackAccent={theme.accent}
       />

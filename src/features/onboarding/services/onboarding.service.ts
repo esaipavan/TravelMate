@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import { generateTripBrief } from '@/services/ai/ai.service';
 import type { TripBriefParams, TripBriefPayload, TripBriefStatus } from '@/services/ai/ai.types';
 import type { Json } from '@/types/database.types';
@@ -43,6 +43,10 @@ export async function createTripWithBrief(
   const { userId, destination, destinationCategory, startDate, endDate, groupType, budgetTier } =
     params;
 
+  // Curated → real Wikipedia image → null. Persisted once so lists render the
+  // correct photo without per-card fetches; never a guessed image.
+  const coverImageUrl = await selectTripCoverImage(destination);
+
   // ── 1. Create trip ────────────────────────────────────────────────────────
   const { data: trip, error: tripError } = await supabase
     .from('trips')
@@ -51,7 +55,7 @@ export async function createTripWithBrief(
       title: tripTitle(destination),
       destination,
       country_code: null,
-      cover_image_url: resolveDestinationImageUrl(destination),
+      cover_image_url: coverImageUrl,
       start_date: startDate,
       end_date: endDate,
       status: 'planning' as const,

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDateRange } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
+import { resolveTripCoverImage } from '@/utils/destinationTheme';
 import type { UpcomingTrip } from '../types';
 
 /* ── Countdown hook ───────────────────────────────────────────── */
@@ -210,6 +211,7 @@ export function CurrentTripCard({ trip, isLoading }: Props) {
   const progress =
     status === 'active' ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 0;
   const gradient = gradientForTrip(trip.id);
+  const cover = resolveTripCoverImage(trip.destination, trip.cover_image_url);
   const isActive = status === 'active';
   const isUpcoming = status === 'upcoming';
 
@@ -244,9 +246,9 @@ export function CurrentTripCard({ trip, isLoading }: Props) {
 
       {/* Cover / gradient header */}
       <div className="relative h-36 overflow-hidden">
-        {trip.cover_image_url ? (
+        {cover ? (
           <img
-            src={trip.cover_image_url}
+            src={cover}
             alt={trip.destination}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />

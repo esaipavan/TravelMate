@@ -1,5 +1,8 @@
 {
-  "rewrites": [{ "source": "/((?!api/.*).*)", "destination": "/" }],
+  "rewrites": [
+    { "source": "/p/:id", "destination": "/api/og?id=:id" },
+    { "source": "/((?!api/.*).*)", "destination": "/" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

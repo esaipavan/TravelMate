@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { TripRow, TripInsert, TripUpdate } from '../types';
 
 export async function getTrips(_userId: string): Promise<TripRow[]> {
@@ -15,6 +16,22 @@ export async function getTrips(_userId: string): Promise<TripRow[]> {
 
 export async function getTripById(id: string): Promise<TripRow | null> {
   const { data, error } = await supabase.from('trips').select('*').eq('id', id).single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Fetch a trip for the PUBLIC read-only itinerary page. Only returns the trip
+ * when it is marked is_public — RLS + this explicit filter keep private trips
+ * private even for unauthenticated viewers. Returns null when not found/public.
+ */
+export async function getPublicTripById(id: string): Promise<TripRow | null> {
+  const { data, error } = await supabase
+    .from('trips')
+    .select('*')
+    .eq('id', id)
+    .eq('is_public', true)
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return data;
 }
@@ -42,6 +59,11 @@ export async function deleteTrip(id: string): Promise<void> {
 }
 
 export async function duplicateTrip(trip: TripRow): Promise<TripRow> {
+  // Reconcile the source cover (drops legacy guesses, keeps curated/custom),
+  // then enrich if the place has no image yet — never copy a guessed image.
+  const cover =
+    resolveTripCoverImage(trip.destination, trip.cover_image_url) ??
+    (await selectTripCoverImage(trip.destination));
   const { data, error } = await supabase
     .from('trips')
     .insert({
@@ -49,7 +71,7 @@ export async function duplicateTrip(trip: TripRow): Promise<TripRow> {
       title: `${trip.title} (Copy)`,
       destination: trip.destination,
       country_code: trip.country_code,
-      cover_image_url: trip.cover_image_url ?? resolveDestinationImageUrl(trip.destination),
+      cover_image_url: cover,
       start_date: trip.start_date,
       end_date: trip.end_date,
       currency: trip.currency,

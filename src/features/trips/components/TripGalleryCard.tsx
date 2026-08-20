@@ -6,7 +6,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, rg, LIST_ITEM_VARIANTS, PRESS, SPRING } from '@/lib/motion';
 import { getTripStatus } from '@/utils/tripStatus';
-import { resolveDestinationTheme } from '@/utils/destinationTheme';
+import { resolveDestinationTheme, resolveTripCoverImage } from '@/utils/destinationTheme';
 import { formatCurrency, formatDateRange, tripDuration } from '@/utils/formatters';
 import { useAuthStore } from '@/store/auth.store';
 import { useWeather } from '@/features/weather/hooks/useWeather';
@@ -163,7 +163,7 @@ export const TripGalleryCard = memo(function TripGalleryCard({ trip, index: _ind
   /* Computed values */
   const theme = useMemo(() => resolveDestinationTheme(trip.destination), [trip.destination]);
   const status = useMemo(() => getTripStatus(trip), [trip]);
-  const imageUrl = trip.cover_image_url ?? theme.imageUrl;
+  const imageUrl = resolveTripCoverImage(trip.destination, trip.cover_image_url);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -210,7 +210,7 @@ export const TripGalleryCard = memo(function TripGalleryCard({ trip, index: _ind
           transition={SPRING.normal}
         >
           {/* ── Background image ─────────────────────────────────── */}
-          {!imgError ? (
+          {imageUrl && !imgError ? (
             <motion.img
               src={imageUrl}
               alt={trip.destination}

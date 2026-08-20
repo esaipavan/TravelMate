@@ -14,6 +14,10 @@ import {
   Settings,
   Shield,
   Plane,
+  BedDouble,
+  TrainFront,
+  Bus,
+  Car,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +33,11 @@ interface SidebarProps {
 const mainNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/nearby', icon: Compass, label: 'Explore' },
+  { to: '/hotels', icon: BedDouble, label: 'Hotels' },
+  { to: '/trains', icon: TrainFront, label: 'Trains' },
+  { to: '/buses', icon: Bus, label: 'Buses' },
+  { to: '/flights', icon: Plane, label: 'Flights' },
+  { to: '/local', icon: Car, label: 'Local' },
   { to: '/trips', icon: Map, label: 'My Trips' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
 ];
