@@ -46,22 +46,21 @@ const DESTINATIONS: DestinationEntry[] = [
     keys: ['varanasi', 'benares'],
     images: [
       'photo-1561361058-c24cecae35ca', // Ghats and temples at sunrise
-      'photo-1592394533824-9440e5d68530', // Ganga aarti ceremony
     ],
     colors: { accent: '#F97316', accentRgb: '249,115,22', secondary: '#F59E0B' },
   },
   {
     keys: ['rishikesh', 'haridwar'],
     images: [
-      'photo-1592394533824-9440e5d68530', // Ganga and ashrams
-      'photo-1561361058-c24cecae35ca', // riverside temples
+      'photo-1561361058-c24cecae35ca', // Ganga riverside ghats
     ],
     colors: { accent: '#F97316', accentRgb: '249,115,22', secondary: '#F59E0B' },
   },
   {
     keys: ['amritsar'],
     images: [
-      'photo-1557482011-7b5e68abedc6', // Golden Temple reflection
+      'photo-1609947017136-9daf32a5eb16', // Golden Temple by day, causeway
+      'photo-1583821017783-4333717df070', // Golden Temple illuminated at night
     ],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#D97706' },
   },
@@ -83,14 +82,14 @@ const DESTINATIONS: DestinationEntry[] = [
   {
     keys: ['puri'],
     images: [
-      'photo-1545494097-1545e22ee878', // Puri beach / temple town
+      'photo-1708346561250-ea0f8b54bc1c', // temple town — ornate gopuram
     ],
     colors: { accent: '#0EA5E9', accentRgb: '14,165,233', secondary: '#F97316' },
   },
   {
     keys: ['shirdi'],
     images: [
-      'photo-1571896349842-33c89424de2d', // pilgrimage site / domed architecture
+      'photo-1708346561250-ea0f8b54bc1c', // pilgrimage temple town
     ],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#D97706' },
   },
@@ -100,7 +99,6 @@ const DESTINATIONS: DestinationEntry[] = [
     keys: ['goa'],
     images: [
       'photo-1512343879784-a960bf40e7f2', // Baga / Calangute beach sunset
-      'photo-1527631746610-bca00a040d60', // tropical coastal beach
     ],
     colors: { accent: '#0EA5E9', accentRgb: '14,165,233', secondary: '#06B6D4' },
   },
@@ -115,22 +113,21 @@ const DESTINATIONS: DestinationEntry[] = [
   {
     keys: ['jaipur'],
     images: [
-      'photo-1586379893622-03c4a3f18f79', // Hawa Mahal / City Palace
-      'photo-1599661046289-e31897846e41', // Rajasthan desert landscape
+      'photo-1599661046289-e31897846e41', // Amber Fort, Jaipur
     ],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#EA580C' },
   },
   {
     keys: ['udaipur'],
     images: [
-      'photo-1586379893622-03c4a3f18f79', // Lake palace / City Palace
+      'photo-1599661046289-e31897846e41', // Rajasthan palace heritage
     ],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#EA580C' },
   },
   {
     keys: ['jodhpur'],
     images: [
-      'photo-1587474260584-136574528ed5', // Mehrangarh Fort blue city
+      'photo-1521182369863-7c68f43ee5cf', // Jodhpur blue city walls
     ],
     colors: { accent: '#3B82F6', accentRgb: '59,130,246', secondary: '#F97316' },
   },
@@ -144,38 +141,38 @@ const DESTINATIONS: DestinationEntry[] = [
   {
     keys: ['manali'],
     images: [
-      'photo-1585016495481-91b5b6a52bcd', // Manali snow peaks
-      'photo-1558618666-fcd25c85cd64', // Himachal valley
+      'photo-1616942986550-ea6469c08530', // Himalayan snow peaks & valley
+      'photo-1591331554229-f614ee904bcd', // pine-forested hillside
     ],
     colors: { accent: '#38BDF8', accentRgb: '56,189,248', secondary: '#0EA5E9' },
   },
   {
     keys: ['shimla'],
     images: [
-      'photo-1558618666-fcd25c85cd64', // Shimla hill station
+      'photo-1591331554229-f614ee904bcd', // Himalayan hill station
     ],
     colors: { accent: '#38BDF8', accentRgb: '56,189,248', secondary: '#0EA5E9' },
   },
   {
     keys: ['dharamshala', 'mcleod'],
     images: [
-      'photo-1558618666-fcd25c85cd64', // Himalayan hill town
+      'photo-1616942986550-ea6469c08530', // Himalayan hill town
     ],
     colors: { accent: '#818CF8', accentRgb: '129,140,248', secondary: '#6366F1' },
   },
   {
     keys: ['leh', 'ladakh'],
     images: [
-      'photo-1546517379-b35f0b5c7da8', // Ladakh high altitude landscape
-      'photo-1579546929518-9e396f3cc809', // Kashmir / Ladakh valleys
+      'photo-1648851460314-ba293ba2cdcf', // Pangong Lake, Ladakh
+      'photo-1581285090568-378f43fc4f19', // Leh valley panorama
     ],
     colors: { accent: '#818CF8', accentRgb: '129,140,248', secondary: '#A78BFA' },
   },
   {
     keys: ['kashmir', 'srinagar'],
     images: [
-      'photo-1579546929518-9e396f3cc809', // Dal Lake / Mughal gardens
-      'photo-1546517379-b35f0b5c7da8', // Kashmir mountains
+      'photo-1577500588651-5603d971f338', // Dal Lake houseboats, Srinagar
+      'photo-1564329494258-3f72215ba175', // shikara on Dal Lake
     ],
     colors: { accent: '#818CF8', accentRgb: '129,140,248', secondary: '#A78BFA' },
   },
@@ -189,7 +186,7 @@ const DESTINATIONS: DestinationEntry[] = [
   {
     keys: ['delhi', 'new delhi'],
     images: [
-      'photo-1570168007204-dfb528c6958f', // Delhi Red Fort / India Gate
+      'photo-1587474260584-136574528ed5', // India Gate, New Delhi
     ],
     colors: { accent: '#EF4444', accentRgb: '239,68,68', secondary: '#F97316' },
   },
@@ -990,12 +987,12 @@ const DESTINATIONS: DestinationEntry[] = [
   },
   {
     keys: ['rajasthan'],
-    images: ['photo-1586379893622-03c4a3f18f79', 'photo-1599661046289-e31897846e41'],
+    images: ['photo-1599661046289-e31897846e41'],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#EA580C' },
   },
   {
     keys: ['himachal', 'uttarakhand'],
-    images: ['photo-1558618666-fcd25c85cd64', 'photo-1585016495481-91b5b6a52bcd'],
+    images: ['photo-1616942986550-ea6469c08530', 'photo-1591331554229-f614ee904bcd'],
     colors: { accent: '#38BDF8', accentRgb: '56,189,248', secondary: '#0EA5E9' },
   },
   {
