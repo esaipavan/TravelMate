@@ -69,14 +69,14 @@ const DESTINATIONS: DestinationEntry[] = [
     keys: ['mathura', 'vrindavan', 'brindavan'],
     images: [
       'photo-1561361058-c24cecae35ca', // temple riverside
-      'photo-1618477461853-cf6ed80faba5', // ornate Hindu temple gopuram
+      'photo-1708346561250-ea0f8b54bc1c', // ornate Hindu temple gopuram
     ],
     colors: { accent: '#F97316', accentRgb: '249,115,22', secondary: '#F59E0B' },
   },
   {
     keys: ['tirupati', 'tirumala'],
     images: [
-      'photo-1618477461853-cf6ed80faba5', // South Indian temple gopuram
+      'photo-1708346561250-ea0f8b54bc1c', // South Indian temple gopuram
     ],
     colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#D97706' },
   },
@@ -1087,7 +1087,7 @@ function matchesKey(haystack: string, key: string): boolean {
 // ── Temple-relevant fallback ──────────────────────────────────────────────────
 // A South-Indian gopuram is a strong, honest "place of worship" image, used only
 // when a destination is CLEARLY temple-related but isn't curated by city name.
-const TEMPLE_IMAGE = 'photo-1618477461853-cf6ed80faba5';
+const TEMPLE_IMAGE = 'photo-1708346561250-ea0f8b54bc1c';
 const TEMPLE_COLORS: ColorSet = {
   accent: '#F59E0B',
   accentRgb: '245,158,11',
