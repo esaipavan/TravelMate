@@ -633,24 +633,41 @@ async function generateAIDestination(destination: string): Promise<DestinationDa
 
 /* ── Provider ─────────────────────────────────────────────────────── */
 
+// P0 integrity kill-switch. LLM-generated destination guides invented
+// attractions, restaurants, transport costs, and safety tips that were then
+// shown as verified destination facts. While this is false, any destination
+// without curated data degrades to the honest fallback (empty sections flagged
+// `meta.isFallback`, which the UI and the safety advisor already surface as
+// "not available") instead of an AI guess. The generator below is preserved but
+// unused, and must only be re-enabled once its output is clearly presented to
+// the user as AI-generated / unverified — never as a verified fact.
+const AI_DESTINATION_GENERATION_ENABLED: boolean = false;
+
 export class AIDestinationProvider implements DestinationProvider {
   async getDestinationData(destination: string): Promise<DestinationData> {
-    // Static curated data takes precedence — it's hand-crafted and higher quality
+    // Static curated data takes precedence — it's hand-crafted and verified.
     if (hasStaticData(destination)) {
       return getDestinationData(destination);
     }
 
-    // AI-generate for any destination outside the curated database
-    try {
-      return await generateAIDestination(destination);
-    } catch (err) {
-      if (import.meta.env.DEV) {
-        console.warn(
-          '[destination-intel] AI generation failed, falling back to generic data:',
-          err,
-        );
+    // No trustworthy curated data for this destination. We must NOT present an
+    // AI-generated guess as verified destination information, so we degrade
+    // honestly: the section components render their "not available for this
+    // destination" empty states from this fallback, and downstream advisors
+    // (safety/packing/companion) already branch on `meta.isFallback`.
+    if (AI_DESTINATION_GENERATION_ENABLED) {
+      try {
+        return await generateAIDestination(destination);
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[destination-intel] AI generation failed, falling back to generic data:',
+            err,
+          );
+        }
       }
-      return { ...buildGenericData(destination), meta: { isFallback: true } };
     }
+
+    return { ...buildGenericData(destination), meta: { isFallback: true } };
   }
 }

@@ -534,7 +534,9 @@ const FOREIGN_TOKENS = [
   'korea',
 ];
 
-function hasForeignContext(lower: string): boolean {
+// Exported so the India-only geocoder can reuse the exact same foreign-place
+// veto (keeps "what counts as foreign" defined in one place).
+export function hasForeignContext(lower: string): boolean {
   return FOREIGN_TOKENS.some((f) => matchesKey(lower, f));
 }
 
