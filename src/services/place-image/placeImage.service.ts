@@ -11,6 +11,7 @@
 // returns null so the caller shows its honest gradient instead of a photo.
 
 import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
+import { geocodeRegionName } from '@/lib/geocode';
 
 const WIKI_SEARCH = 'https://en.wikipedia.org/w/api.php';
 const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
@@ -48,42 +49,71 @@ async function fetchWikiSummary(title: string): Promise<WikiSummary | null> {
 }
 
 /**
- * Returns a real, place-relevant image URL for a recognised destination, or
- * `null` when we can't confidently source one. Confidence bar:
- *   1. Wikipedia search resolves the query to a page.
- *   2. That page is a `standard` article (not a disambiguation / missing page).
- *   3. The page carries geographic `coordinates` — i.e. it's an actual place,
- *      not a person, film, or concept that happens to share the name.
- *   4. The page has an image.
- * Only when all four hold do we return the image (preferring the full-size
- * `originalimage`); otherwise `null`.
+ * Validate a single Wikipedia query and return its image URL, or `null`.
+ * Confidence bar: search resolves a page; the page is a `standard` article (not
+ * a disambiguation/missing page); it carries geographic `coordinates` inside
+ * India (excludes people/films/concepts and foreign namesakes); the article
+ * names India; and it has a real photo (not a locator map / flag / SVG).
  */
-export async function fetchPlaceImage(destination: string): Promise<string | null> {
-  const query = destination.trim();
-  if (!query) return null;
-
+async function tryWikiImage(query: string): Promise<string | null> {
   const title = await searchWikiTitle(query);
   if (!title) return null;
 
   const summary = await fetchWikiSummary(title);
   if (!summary) return null;
 
-  // Must be a real geographic place article with an image — never a guess.
   if (summary.type !== 'standard') return null;
   if (!summary.coordinates) return null;
-
-  // India-only product scope: only enrich places that actually sit inside India.
-  // A generous bounding box excludes far-away places (Paris, Tokyo); the text
-  // check additionally excludes neighbouring-country places that fall inside the
-  // box (Kathmandu, Colombo, Dhaka, Lahore …) by requiring the article to name
-  // India. Both must hold, else return null → honest gradient.
   if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
   if (!mentionsIndia(summary)) return null;
 
   const image = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
-  // Reject non-photograph lead images (locator maps, flags, seals, SVG logos)
-  // that some place articles carry — we only want a real photo of the place.
   return image && isUsablePhoto(image) ? image : null;
+}
+
+/**
+ * Returns a real, place-relevant image URL for a destination, or `null` when we
+ * can't confidently source one (→ the caller shows its honest gradient).
+ *
+ * Tries the destination exactly as typed first. If that yields no photo — an
+ * obscure locality, a name that collides with a person/film, or an article with
+ * no image — it falls back through the destination's REAL geocoded hierarchy
+ * (canonical name → parent city/district → state), so e.g. "Swarnagiri,
+ * Hyderabad" inherits Hyderabad's photo instead of a blank card. Every fallback
+ * is the destination's actual region from the India-only geocoder, so it never
+ * shows an unrelated or foreign place; a foreign query fails the geocoder and
+ * resolves to `null`.
+ */
+export async function fetchPlaceImage(destination: string): Promise<string | null> {
+  const query = destination.trim();
+  if (!query) return null;
+
+  // Tier 1 — the destination exactly as typed.
+  const direct = await tryWikiImage(query);
+  if (direct) return direct;
+
+  // Tier 2 — the India-only geocoder's canonical hierarchy, most specific first.
+  const displayName = await geocodeRegionName(query);
+  if (!displayName) return null; // not a resolvable Indian place (e.g. foreign) → gradient
+  const parts = displayName
+    .split(',')
+    .map((p) => p.trim())
+    .filter((p) => p && p.toLowerCase() !== 'india' && !/^\d+$/.test(p));
+
+  const queryLower = query.toLowerCase();
+  const candidates: string[] = [];
+  const add = (p: string | undefined) => {
+    if (p && p.toLowerCase() !== queryLower && !candidates.includes(p)) candidates.push(p);
+  };
+  add(parts[0]); // canonical primary name
+  add(parts[parts.length - 2]); // parent city / district
+  add(parts[parts.length - 1]); // state
+
+  for (const c of candidates) {
+    const img = await tryWikiImage(c);
+    if (img) return img;
+  }
+  return null;
 }
 
 // Wikipedia article lead images are usually a real photo, but some places carry
