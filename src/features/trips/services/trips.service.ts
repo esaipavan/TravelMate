@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { TripRow, TripInsert, TripUpdate } from '../types';
 
@@ -60,10 +60,13 @@ export async function deleteTrip(id: string): Promise<void> {
 
 export async function duplicateTrip(trip: TripRow): Promise<TripRow> {
   // Reconcile the source cover (drops legacy guesses, keeps curated/custom),
-  // then enrich if the place has no image yet — never copy a guessed image.
+  // then enrich if the place has no image yet OR only the generic temple-gopuram
+  // stand-in — never copy a guessed image.
+  const reconciled = resolveTripCoverImage(trip.destination, trip.cover_image_url);
   const cover =
-    resolveTripCoverImage(trip.destination, trip.cover_image_url) ??
-    (await selectTripCoverImage(trip.destination));
+    reconciled && !isGenericTempleCover(reconciled)
+      ? reconciled
+      : ((await selectTripCoverImage(trip.destination)) ?? reconciled);
   const { data, error } = await supabase
     .from('trips')
     .insert({

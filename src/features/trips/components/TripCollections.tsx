@@ -4,7 +4,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import { resolveDestinationTheme, resolveTripCoverImage } from '@/utils/destinationTheme';
+import { resolveDestinationTheme } from '@/utils/destinationTheme';
+import { useTripCover } from '@/hooks/useTripCover';
 import { getTripStatus } from '@/utils/tripStatus';
 import type { TripRow } from '../types';
 
@@ -128,7 +129,7 @@ interface MiniCardProps {
 
 function MiniCard({ trip, reduced }: MiniCardProps) {
   const theme = useMemo(() => resolveDestinationTheme(trip.destination), [trip.destination]);
-  const imageUrl = resolveTripCoverImage(trip.destination, trip.cover_image_url);
+  const imageUrl = useTripCover(trip.destination, trip.cover_image_url);
   const [imgError, setImgError] = useState(false);
 
   return (

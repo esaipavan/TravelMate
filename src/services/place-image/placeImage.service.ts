@@ -10,7 +10,7 @@
 // people / films / concepts / disambiguation pages. Anything short of that
 // returns null so the caller shows its honest gradient instead of a photo.
 
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
 
 const WIKI_SEARCH = 'https://en.wikipedia.org/w/api.php';
 const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
@@ -80,7 +80,18 @@ export async function fetchPlaceImage(destination: string): Promise<string | nul
   if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
   if (!mentionsIndia(summary)) return null;
 
-  return summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
+  const image = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
+  // Reject non-photograph lead images (locator maps, flags, seals, SVG logos)
+  // that some place articles carry — we only want a real photo of the place.
+  return image && isUsablePhoto(image) ? image : null;
+}
+
+// Wikipedia article lead images are usually a real photo, but some places carry
+// a locator map / flag / seal / SVG emblem instead. Exclude those by filename.
+function isUsablePhoto(url: string): boolean {
+  const u = url.toLowerCase();
+  if (u.endsWith('.svg')) return false;
+  return !/(flag|coat[_%]|locator|location_map|_map[._]|seal[_%]|emblem|\blogo\b|\bicon\b)/.test(u);
 }
 
 // Generous bounding box for India (mainland + Andaman/Nicobar + Lakshadweep).
@@ -108,11 +119,17 @@ function mentionsIndia(summary: WikiSummary): boolean {
  * guessed or unrelated image — a failed enrichment resolves to `null`.
  */
 export async function selectTripCoverImage(destination: string): Promise<string | null> {
-  const curated = resolveDestinationImageUrl(destination);
-  if (curated) return curated;
+  const { url: curated, generic } = resolveDestinationImageDetail(destination);
+  // A place-specific curated image (verified, hand-picked, no network) wins.
+  if (curated && !generic) return curated;
+  // Otherwise prefer a REAL place-specific photo (e.g. the actual Tirumala
+  // temple for "Tirupati") over the generic temple gopuram stand-in.
   try {
-    return await fetchPlaceImage(destination);
+    const real = await fetchPlaceImage(destination);
+    if (real) return real;
   } catch {
-    return null;
+    // ignore — fall through to the generic curated fallback / gradient
   }
+  // Last resort: the generic curated fallback (gopuram) if one exists, else null.
+  return curated;
 }

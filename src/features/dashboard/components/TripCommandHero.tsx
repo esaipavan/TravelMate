@@ -9,7 +9,7 @@ import { getTripStatus } from '@/utils/tripStatus';
 import { formatDateRange } from '@/utils/formatters';
 import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
-import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
 import { usePlaceImage } from '@/hooks/usePlaceImage';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { DestinationImage } from './DestinationImage';
@@ -135,9 +135,11 @@ export function TripCommandHero() {
   const { data: weather } = useWeather(destination);
 
   const reconciledCover = resolveTripCoverImage(destination, displayTrip?.cover_image_url);
-  // Non-curated place with no cover → try a real Wikipedia photo; gradient otherwise.
-  const { imageUrl: enrichedCover } = usePlaceImage(destination, { enabled: !reconciledCover });
-  const coverSrc = reconciledCover ?? enrichedCover;
+  // No cover, or only the generic temple-gopuram stand-in → try a real,
+  // place-specific Wikipedia photo; gradient otherwise.
+  const wantsRealPhoto = !reconciledCover || isGenericTempleCover(reconciledCover);
+  const { imageUrl: enrichedCover } = usePlaceImage(destination, { enabled: wantsRealPhoto });
+  const coverSrc = wantsRealPhoto ? (enrichedCover ?? reconciledCover) : reconciledCover;
 
   if (loadingCurr || loadingUp) return <HeroSkeleton />;
 

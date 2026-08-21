@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { backfillTripCovers } from '../services/coverBackfill.service';
 
 // Bump when the backfill logic changes materially and every user should
 // re-run it once. Older keys are simply left behind (harmless).
-const VERSION = 'v1';
+const VERSION = 'v2';
 // Small delay so the one-time backfill never competes with the app's initial
 // critical data fetches on login.
 const START_DELAY_MS = 4000;
@@ -20,6 +21,7 @@ const START_DELAY_MS = 4000;
  */
 export function useCoverBackfill(): void {
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const qc = useQueryClient();
   const startedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -33,8 +35,11 @@ export function useCoverBackfill(): void {
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          await backfillTripCovers(userId);
+          const { updated } = await backfillTripCovers(userId);
           localStorage.setItem(key, String(Date.now()));
+          // Covers were rewritten in the DB → refresh trip lists so the real
+          // photos appear without a manual reload.
+          if (updated > 0) void qc.invalidateQueries({ queryKey: ['trips'] });
         } catch (err) {
           // Leave the flag unset so a later session can retry; safe because the
           // job is idempotent.
@@ -46,5 +51,5 @@ export function useCoverBackfill(): void {
     }, START_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [userId]);
+  }, [userId, qc]);
 }

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { TripRow } from '../types';
 
@@ -44,11 +44,15 @@ export async function backfillTripCovers(userId: string): Promise<BackfillResult
       const reconciled = resolveTripCoverImage(trip.destination, stored);
       let target: string | null;
 
-      if (reconciled) {
+      // A place-specific / custom / Wikipedia cover is kept. A generic
+      // temple-gopuram cover is treated like "no confident cover" so we spend
+      // the enrichment budget on a real, place-specific photo (e.g. the actual
+      // temple for Tirupati); if none exists, the gopuram is kept as-is.
+      if (reconciled && !isGenericTempleCover(reconciled)) {
         target = reconciled;
       } else if (enrichBudget > 0) {
         enrichBudget -= 1;
-        target = await selectTripCoverImage(trip.destination);
+        target = (await selectTripCoverImage(trip.destination)) ?? reconciled;
       } else {
         // Out of enrichment budget this run — leave for a later pass. It still
         // renders correctly via the render-time reconciliation (Task 2).

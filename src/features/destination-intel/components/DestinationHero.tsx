@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { differenceInDays, parseISO } from 'date-fns';
 import { CalendarDays, Clock, CreditCard, Globe, Thermometer } from 'lucide-react';
-import { resolveDestinationImageUrl } from '@/utils/destinationTheme';
+import { resolveDestinationImageUrl, isGenericTempleCover } from '@/utils/destinationTheme';
 import { usePlaceImage } from '@/hooks/usePlaceImage';
 import { rv, HERO_VARIANTS, FADE_VARIANTS } from '@/lib/motion';
 import type { ReactNode } from 'react';
@@ -55,10 +55,12 @@ export function DestinationHero({ overview, weather, startDate, endDate }: Props
     () => resolveDestinationImageUrl(overview.destination),
     [overview.destination],
   );
-  // Recognised but non-curated place → try a real Wikipedia photo; only fetch
-  // when we don't already have a curated image. Null → honest gradient.
-  const { imageUrl: enriched } = usePlaceImage(overview.destination, { enabled: !curated });
-  const imageUrl = curated ?? enriched;
+  // No curated image, or only the generic temple-gopuram stand-in → try a real,
+  // place-specific Wikipedia photo (e.g. the actual Tirumala temple for
+  // Tirupati). Null → honest gradient.
+  const wantsRealPhoto = !curated || isGenericTempleCover(curated);
+  const { imageUrl: enriched } = usePlaceImage(overview.destination, { enabled: wantsRealPhoto });
+  const imageUrl = wantsRealPhoto ? (enriched ?? curated) : curated;
 
   const today = new Date();
   const start = parseISO(startDate + 'T00:00:00');

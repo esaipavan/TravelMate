@@ -3,7 +3,7 @@ import { Heart, MapPin, CalendarDays } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDateRange, formatCurrency, tripDuration } from '@/utils/formatters';
-import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { useTripCover } from '@/hooks/useTripCover';
 import { TripStatusBadge } from './TripStatusBadge';
 import { useToggleFavourite } from '../hooks/useTrips';
 import type { TripRow } from '../types';
@@ -109,7 +109,7 @@ export function TripCard({ trip }: TripCardProps) {
   const destTheme = getDestTheme(trip.destination);
   // Reconcile the persisted cover against the honest resolver so a legacy
   // guessed image for an unrecognised place falls back to the gradient.
-  const cover = resolveTripCoverImage(trip.destination, trip.cover_image_url);
+  const cover = useTripCover(trip.destination, trip.cover_image_url);
 
   function handleFavourite(e: React.MouseEvent) {
     e.preventDefault();

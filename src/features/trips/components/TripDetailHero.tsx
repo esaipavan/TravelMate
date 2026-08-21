@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDateRange, tripDuration } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
-import { resolveTripCoverImage } from '@/utils/destinationTheme';
+import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
 import { usePlaceImage } from '@/hooks/usePlaceImage';
 import type { TripRow } from '../types';
 
@@ -142,9 +142,12 @@ export function TripDetailHero({ trip, onEdit, onDelete, onFavToggle, isFavPendi
 
   const theme = getDestTheme(trip.destination);
   const reconciledCover = resolveTripCoverImage(trip.destination, trip.cover_image_url);
-  // Non-curated place with no cover → try a real Wikipedia photo; gradient otherwise.
-  const { imageUrl: enriched } = usePlaceImage(trip.destination, { enabled: !reconciledCover });
-  const cover = reconciledCover ?? enriched;
+  // No cover, or only the generic temple-gopuram stand-in → try a real,
+  // place-specific Wikipedia photo (e.g. the actual Tirumala temple for
+  // Tirupati); gradient otherwise.
+  const wantsRealPhoto = !reconciledCover || isGenericTempleCover(reconciledCover);
+  const { imageUrl: enriched } = usePlaceImage(trip.destination, { enabled: wantsRealPhoto });
+  const cover = wantsRealPhoto ? (enriched ?? reconciledCover) : reconciledCover;
   const duration = tripDuration(trip.start_date, trip.end_date);
   const status = getTripStatus(trip);
   const statusCfg = STATUS_LABEL[status] ?? STATUS_LABEL['upcoming'];
