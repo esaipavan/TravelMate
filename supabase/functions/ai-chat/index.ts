@@ -65,6 +65,25 @@ function sanitizeProviderError(err: unknown): string {
     .slice(0, 300);
 }
 
+export interface ProviderFailure {
+  provider: ProviderName;
+  error: string;
+}
+
+// Thrown when every provider in the chain fails. Carries the sanitized
+// per-provider failures so the handler can log them and return a safe
+// diagnostic summary (which provider failed, and why) to the client.
+export class AllProvidersFailedError extends Error {
+  readonly failures: ProviderFailure[];
+  constructor(failures: ProviderFailure[]) {
+    super(
+      `All AI providers failed — ${failures.map((f) => `${f.provider}: ${f.error}`).join(' | ')}`,
+    );
+    this.name = 'AllProvidersFailedError';
+    this.failures = failures;
+  }
+}
+
 async function tryProviders(
   messages: AIRequestBody['messages'],
   systemPrompt: string,
@@ -75,22 +94,22 @@ async function tryProviders(
   // two hardcoded fallbacks below.
   const order: ProviderName[] = [getProviderName(), 'gemini', 'openrouter'];
   const uniqueNames = order.filter((name, i) => order.indexOf(name) === i);
-  const chain: (() => IAIProvider)[] = uniqueNames.map((name) => PROVIDER_FACTORIES[name]);
 
-  let lastError: Error | null = null;
+  const failures: ProviderFailure[] = [];
 
-  for (const makeProvider of chain) {
+  for (const name of uniqueNames) {
     try {
-      const provider = makeProvider();
+      const provider = PROVIDER_FACTORIES[name]();
       const result = await provider.chat(messages, systemPrompt);
       return { result, provider };
     } catch (err) {
-      lastError = new Error(sanitizeProviderError(err));
-      console.error(`Provider failed, trying next: ${lastError.message}`);
+      const error = sanitizeProviderError(err);
+      failures.push({ provider: name, error });
+      console.error(`Provider ${name} failed, trying next: ${error}`);
     }
   }
 
-  throw lastError ?? new Error('All AI providers failed');
+  throw new AllProvidersFailedError(failures);
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -172,14 +191,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
     errorMessage = sanitizeProviderError(err);
     console.error('AI chat error:', errorMessage);
 
-    // Never echo raw provider/network error text to the client — it can
-    // carry a request URL, header value, or other internal detail. The
-    // sanitized version above still reaches server logs and the usage-log
-    // table below for debugging.
-    return new Response(JSON.stringify({ error: 'AI request failed. Please try again shortly.' }), {
-      status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    });
+    // Never echo RAW provider/network error text to the client — it can carry
+    // a request URL, header value, or other internal detail. We do surface a
+    // SANITIZED per-provider summary (`detail`) so a misconfiguration (a
+    // missing key, a decommissioned model, a timeout) is diagnosable from the
+    // client and logs instead of a silent generic failure. Each entry's text
+    // has already passed through sanitizeProviderError (URLs + key/token-like
+    // substrings redacted).
+    const detail = err instanceof AllProvidersFailedError ? err.failures : undefined;
+    return new Response(
+      JSON.stringify({ error: 'AI request failed. Please try again shortly.', detail }),
+      {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      },
+    );
   } finally {
     // Log usage (best-effort, uses service role to bypass RLS)
     try {

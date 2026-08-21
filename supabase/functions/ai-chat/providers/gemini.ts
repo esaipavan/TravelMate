@@ -1,8 +1,11 @@
 import type { IAIProvider, AIMessage } from '../types.ts';
+import { fetchWithTimeout, isAbortError } from '../utils.ts';
 
 export class GeminiProvider implements IAIProvider {
   readonly name = 'gemini';
-  readonly model = 'gemini-1.5-flash';
+  // gemini-1.5-flash was retired by Google in 2025; use the current free-tier
+  // flash model so this fallback actually works when a GEMINI_API_KEY is set.
+  readonly model = 'gemini-2.0-flash';
 
   private apiKey: string;
 
@@ -30,11 +33,17 @@ export class GeminiProvider implements IAIProvider {
     // up embedded in error messages (network failures, logs), which would
     // otherwise leak the key wherever those messages surface.
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      if (isAbortError(err)) throw new Error('Gemini request timed out');
+      throw err;
+    }
 
     if (!response.ok) {
       const error = await response.text();
