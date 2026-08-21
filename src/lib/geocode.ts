@@ -163,37 +163,3 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
     kind,
   };
 }
-
-/**
- * Lenient region lookup for IMAGE FALLBACK ONLY. Returns the best Nominatim
- * `display_name` (which always carries the correct district/state) for a query,
- * or `null`. Unlike `geocodeLocation` it does NOT apply the genuine-place gate:
- * even when the best match is a road or POI (e.g. "Swarnagiri, Hyderabad"
- * resolves to a highway), its address still names the right region, which is
- * all the regional image fallback needs. The foreign-place veto is kept, so a
- * foreign query returns `null` → no image. This never selects a trip target;
- * it only helps pick a relevant regional photo.
- */
-export async function geocodeRegionName(query: string): Promise<string | null> {
-  const trimmed = query.trim();
-  if (!trimmed) return null;
-  if (hasForeignContext(trimmed.toLowerCase())) return null;
-
-  const params = new URLSearchParams({
-    q: trimmed,
-    format: 'json',
-    limit: '8',
-    addressdetails: '1',
-    countrycodes: 'in',
-  });
-
-  const res = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
-    headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
-  });
-  if (!res.ok) return null;
-
-  const results = (await res.json()) as NominatimPlace[];
-  if (!results.length) return null;
-
-  return pickBest(trimmed, results).display_name;
-}

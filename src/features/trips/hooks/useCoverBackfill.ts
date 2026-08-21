@@ -5,7 +5,7 @@ import { backfillTripCovers } from '../services/coverBackfill.service';
 
 // Bump when the backfill logic changes materially and every user should
 // re-run it once. Older keys are simply left behind (harmless).
-const VERSION = 'v2';
+const VERSION = 'v3';
 // Small delay so the one-time backfill never competes with the app's initial
 // critical data fetches on login.
 const START_DELAY_MS = 4000;

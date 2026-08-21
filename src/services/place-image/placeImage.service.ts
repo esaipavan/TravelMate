@@ -11,7 +11,6 @@
 // returns null so the caller shows its honest gradient instead of a photo.
 
 import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
-import { geocodeRegionName } from '@/lib/geocode';
 
 const WIKI_SEARCH = 'https://en.wikipedia.org/w/api.php';
 const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
@@ -72,42 +71,25 @@ async function tryWikiImage(query: string): Promise<string | null> {
 }
 
 /**
- * Returns a real, place-relevant image URL for a destination, or `null` when we
+ * Returns a real, place-SPECIFIC image URL for a destination, or `null` when we
  * can't confidently source one (→ the caller shows its honest gradient).
  *
- * Tries the destination exactly as typed first. If that yields no photo — an
- * obscure locality, a name that collides with a person/film, or an article with
- * no image — it falls back through the destination's REAL geocoded hierarchy
- * (canonical name → parent city/district → state), so e.g. "Swarnagiri,
- * Hyderabad" inherits Hyderabad's photo instead of a blank card. Every fallback
- * is the destination's actual region from the India-only geocoder, so it never
- * shows an unrelated or foreign place; a foreign query fails the geocoder and
- * resolves to `null`.
+ * The cover must be a photo of the PLACE itself — never a loosely-related city
+ * or state landmark. We try the destination exactly as typed, then — for a
+ * "Place, City/State" string — the place name on its own (so "Gachibowli,
+ * Hyderabad" still resolves to Gachibowli even if the full string doesn't).
+ * We deliberately do NOT fall back to the parent city or state: an obscure
+ * locality with no photo of its own (e.g. "Swarnagiri, Hyderabad") shows the
+ * honest gradient rather than an unrelated regional photo. The India-only +
+ * geographic-article gates in `tryWikiImage` keep foreign/wrong matches out.
  */
 export async function fetchPlaceImage(destination: string): Promise<string | null> {
   const query = destination.trim();
   if (!query) return null;
 
-  // Tier 1 — the destination exactly as typed.
-  const direct = await tryWikiImage(query);
-  if (direct) return direct;
-
-  // Tier 2 — the India-only geocoder's canonical hierarchy, most specific first.
-  const displayName = await geocodeRegionName(query);
-  if (!displayName) return null; // not a resolvable Indian place (e.g. foreign) → gradient
-  const parts = displayName
-    .split(',')
-    .map((p) => p.trim())
-    .filter((p) => p && p.toLowerCase() !== 'india' && !/^\d+$/.test(p));
-
-  const queryLower = query.toLowerCase();
-  const candidates: string[] = [];
-  const add = (p: string | undefined) => {
-    if (p && p.toLowerCase() !== queryLower && !candidates.includes(p)) candidates.push(p);
-  };
-  add(parts[0]); // canonical primary name
-  add(parts[parts.length - 2]); // parent city / district
-  add(parts[parts.length - 1]); // state
+  const candidates: string[] = [query];
+  const firstPart = query.split(',')[0]?.trim();
+  if (firstPart && firstPart.toLowerCase() !== query.toLowerCase()) candidates.push(firstPart);
 
   for (const c of candidates) {
     const img = await tryWikiImage(c);

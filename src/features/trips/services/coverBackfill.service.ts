@@ -1,20 +1,30 @@
 import { supabase } from '@/lib/supabase';
-import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
+import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
 import type { TripRow } from '../types';
 
-// One-time, idempotent backfill of legacy `cover_image_url` values for a user's
-// own trips. It applies the SAME honest selection path used at creation
-// (Task 4) — reusing the Task 2 reconciliation and Task 3 enrichment gate — so
-// it never introduces a guessed image:
+// One-time, idempotent backfill of `cover_image_url` for a user's own trips.
+// It RE-DERIVES the honest cover from scratch, so a stale or guessed auto-cover
+// (e.g. a loosely-related regional photo) is corrected to the current
+// place-specific result:
 //
-//   • curated / custom cover        → kept
-//   • legacy guessed cover          → re-derived (curated → real image → null)
-//   • null cover, recognised place  → real curated / Wikipedia image
-//   • weak / unknown place          → left null
+//   • genuine user upload / custom URL → always kept, never touched
+//   • auto cover (our Unsplash stock or a Wikipedia enrichment) OR null →
+//     re-derived: place-specific curated → strict place-specific Wikipedia
+//     photo → null (honest gradient)
 //
 // A row is written only when the honest target differs from what's stored, so
-// re-running the job is a no-op after the first successful pass.
+// re-running the job is a no-op once every cover already matches.
+
+// Auto-selected covers (our Unsplash stock or a Wikipedia enrichment) are
+// re-derivable; a genuine user upload / custom URL is not, and must be kept.
+function isAutoCover(url: string): boolean {
+  return (
+    url.includes('images.unsplash.com') ||
+    url.includes('wikimedia.org') ||
+    url.includes('wikipedia.org')
+  );
+}
 
 // Cap enrichment (Wikipedia) lookups per run so a large account can't fan out
 // unbounded external calls in one pass. Idempotent, so any remainder is picked
@@ -38,28 +48,25 @@ export async function backfillTripCovers(userId: string): Promise<BackfillResult
     try {
       const stored = trip.cover_image_url;
 
-      // Sync reconcile first — resolves curated / custom / legacy without any
-      // network call. Only genuinely uncovered (null-after-reconcile) places
-      // spend the enrichment budget.
-      const reconciled = resolveTripCoverImage(trip.destination, stored);
-      let target: string | null;
+      // Genuine user upload / custom URL → always keep, never re-derive.
+      if (stored && !isAutoCover(stored)) continue;
 
-      // A place-specific / custom / Wikipedia cover is kept. A generic
-      // temple-gopuram cover is treated like "no confident cover" so we spend
-      // the enrichment budget on a real, place-specific photo (e.g. the actual
-      // temple for Tirupati); if none exists, the gopuram is kept as-is.
-      if (reconciled && !isGenericTempleCover(reconciled)) {
-        target = reconciled;
+      // Re-derive the honest cover from scratch so a stale/guessed auto-cover
+      // gets corrected: place-specific curated (no network) → strict,
+      // place-specific Wikipedia photo (budgeted) → null (honest gradient).
+      let target: string | null;
+      const detail = resolveDestinationImageDetail(trip.destination);
+      if (detail.url && !detail.generic) {
+        target = detail.url; // specific curated — no network
       } else if (enrichBudget > 0) {
         enrichBudget -= 1;
-        target = (await selectTripCoverImage(trip.destination)) ?? reconciled;
+        target = await selectTripCoverImage(trip.destination);
       } else {
-        // Out of enrichment budget this run — leave for a later pass. It still
-        // renders correctly via the render-time reconciliation (Task 2).
+        // Out of enrichment budget this run — corrected on a later pass.
         continue;
       }
 
-      if (target !== stored) {
+      if (target !== (stored ?? null)) {
         const { error: upErr } = await supabase
           .from('trips')
           .update({ cover_image_url: target })
