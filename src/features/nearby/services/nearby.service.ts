@@ -1,5 +1,5 @@
 import { geocodeLocation } from '@/lib/geocode';
-import { CATEGORY_PRIORITY, isTravelRelevant } from '../types';
+import { CATEGORY_PRIORITY } from '../types';
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
 const GEOAPIFY = 'https://api.geoapify.com/v2/places';
@@ -26,7 +26,8 @@ export class NearbyError extends Error {
   }
 }
 
-// Tried in order; stops at the first radius that returns at least one place.
+// Tried smallest-first; widened only to reach genuinely nearby strong
+// attractions (see searchPlacesNear / STRONG_ATTRACTION_TARGET).
 const RETRY_RADII = [5_000, 10_000, 20_000] as const;
 
 // Valid Geoapify category strings — verified against https://apidocs.geoapify.com/docs/places/#categories
@@ -202,17 +203,38 @@ function parseOpenNow(openingHours: string | undefined): boolean | undefined {
   return undefined; // Cannot reliably parse complex hour strings
 }
 
-// A NearbyResult is "healthy" enough to stop expanding the radius once it holds
-// a reasonable set of USABLE places OR enough genuine travel/discovery places.
-// This replaces the old "any raw feature at all → stop" rule, which left thin
-// destinations (Araku, Dwaraka Tirumala) stranded on a tiny 5 km result set
-// even though a wider radius held far more.
-const MIN_USABLE_PLACES = 12;
-const MIN_TRAVEL_PLACES = 6;
+// Radius selection is driven by NEARBY STRONG ATTRACTIONS, not by raw/usable
+// count. A "strong attraction" is a genuine discovery place — CATEGORY_PRIORITY
+// 0, i.e. an `attractions` or `parks` result. Restaurants, hotels, shopping and
+// every utility (hospitals/pharmacies/atms/fuel) are deliberately NOT counted:
+// they exist almost everywhere and can't distinguish a rich destination from a
+// sparse one. (The old "12 usable OR 6 travel-relevant" rule both under-expanded
+// — Goa stopped at 5 km with 1 attraction while 10 km had 17 — and over-expanded
+// — Dwaraka Tirumala widened to 20 km of far, mislabelled village POIs.)
+function isStrongAttraction(category: PlaceCategory): boolean {
+  return CATEGORY_PRIORITY[category] === 0;
+}
 
-function isHealthy(places: NearbyPlace[]): boolean {
-  const travel = places.filter((p) => isTravelRelevant(p.category)).length;
-  return places.length >= MIN_USABLE_PLACES || travel >= MIN_TRAVEL_PLACES;
+// A strong attraction only counts toward radius health if it is genuinely
+// NEARBY. 8 km is a short local radius: it keeps a destination's own attractions
+// (e.g. Goa's heritage sites ~5-6 km from the geocoded centroid) while excluding
+// the far, incoherent POIs a wide Geoapify query drags in from neighbouring
+// towns (Dwaraka Tirumala's 10-18 km village offices, Borra Caves 17 km from
+// Araku). A traveller's "nearby" attraction is a short hop, not a day trip.
+const STRONG_ATTRACTION_PROXIMITY_M = 8_000;
+
+// How many nearby strong attractions make a radius good enough to stop widening.
+// Reaching it at 5 km keeps dense/heritage destinations on the tight radius;
+// falling short lets an attraction-sparse centroid widen to the radius that
+// actually surfaces real attractions — but only when those additions are inside
+// the proximity cap above (so a wider radius can never help merely by returning
+// more distant POIs).
+const STRONG_ATTRACTION_TARGET = 4;
+
+function nearbyStrongAttractionCount(places: NearbyPlace[]): number {
+  return places.filter(
+    (p) => isStrongAttraction(p.category) && p.distance <= STRONG_ATTRACTION_PROXIMITY_M,
+  ).length;
 }
 
 // Normalise a name for deduplication ONLY (the displayed name is untouched):
@@ -295,45 +317,74 @@ function rankPlaces(places: NearbyPlace[]): NearbyPlace[] {
   );
 }
 
-// Shared by both entry points below (geocoded search and "near me"). Expands the
-// radius based on USABLE / travel-relevant coverage (not raw feature count),
-// stopping as soon as a radius is healthy so healthy destinations still cost a
-// single Geoapify request; thin ones widen to 10/20 km and keep the best set.
+// Shared by both entry points below (geocoded search and "near me").
+//
+// Attraction-first radius selection: widen ONLY to surface genuinely nearby
+// strong attractions, never to inflate the raw count.
+//   • Stop at the smallest radius that already has >= STRONG_ATTRACTION_TARGET
+//     nearby strong attractions (dense/heritage destinations → one 5 km request).
+//   • Otherwise widen — but because a query returns EVERY POI inside its radius,
+//     the nearby-strong count cannot grow once the query radius already covers
+//     STRONG_ATTRACTION_PROXIMITY_M. So once a radius at/beyond that cap still
+//     falls short, a wider radius can only add distant POIs: we stop and keep the
+//     tightest radius that had any usable places (an honest small set, never
+//     padded with far-away POIs — that under-count naturally shows the existing
+//     "resolved but limited nearby data" state rather than a fake full feed).
 async function searchPlacesNear(
   originLat: number,
   originLon: number,
   displayName: string,
 ): Promise<NearbyResult> {
-  let best: { places: NearbyPlace[]; radiusM: number } = {
-    places: [],
-    radiusM: RETRY_RADII[RETRY_RADII.length - 1],
-  };
+  let selected: { places: NearbyPlace[]; radiusM: number } | null = null;
+  let firstNonEmpty: { places: NearbyPlace[]; radiusM: number } | null = null;
 
   for (const radiusM of RETRY_RADII) {
     const data = await fetchGeoapifyPlaces(originLat, originLon, radiusM);
     const mapped = mapFeatures(data.features, originLat, originLon);
 
-    // Keep the widest/most-complete set seen so far as the fallback.
-    if (mapped.length > best.places.length) best = { places: mapped, radiusM };
+    // Remember the tightest radius that produced any usable place — the honest
+    // fallback when no radius reaches the attraction target.
+    if (!firstNonEmpty && mapped.length > 0) firstNonEmpty = { places: mapped, radiusM };
 
-    if (isHealthy(mapped)) {
-      best = { places: mapped, radiusM };
+    const nearbyStrong = nearbyStrongAttractionCount(mapped);
+    if (nearbyStrong >= STRONG_ATTRACTION_TARGET) {
+      selected = { places: mapped, radiusM };
+      break;
+    }
+
+    // A wider radius cannot add MORE nearby strong attractions than this query
+    // already returned (any it holds are beyond the proximity cap). Once we have
+    // a usable set at/after the cap, stop rather than drag in far/incoherent POIs.
+    if (radiusM >= STRONG_ATTRACTION_PROXIMITY_M && firstNonEmpty) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[nearby] ${radiusM / 1000} km: ${nearbyStrong} nearby strong attractions ` +
+            `(< ${STRONG_ATTRACTION_TARGET}); wider radius would only add distant POIs — keeping the tight set.`,
+        );
+      }
       break;
     }
 
     if (import.meta.env.DEV) {
       console.warn(
-        `[nearby] ${radiusM / 1000} km → ${mapped.length} usable (not yet healthy), widening…`,
+        `[nearby] ${radiusM / 1000} km: ${nearbyStrong} nearby strong attractions ` +
+          `(< ${STRONG_ATTRACTION_TARGET}) — widening…`,
       );
     }
   }
+
+  const chosen = selected ??
+    firstNonEmpty ?? {
+      places: [] as NearbyPlace[],
+      radiusM: RETRY_RADII[RETRY_RADII.length - 1],
+    };
 
   return {
     location: displayName,
     lat: originLat,
     lon: originLon,
-    places: rankPlaces(best.places),
-    radiusM: best.radiusM,
+    places: rankPlaces(chosen.places),
+    radiusM: chosen.radiusM,
   };
 }
 
