@@ -19,6 +19,7 @@ import { useNearbyPlaces, useNearbyPlacesAtCoords } from '../hooks/useNearby';
 import { NearbyError } from '../services/nearby.service';
 import { useFavorites } from '../hooks/useFavorites';
 import { parseSearchQuery } from '../utils/parseSearchQuery';
+import { isTravelRelevant } from '../types';
 import type { PlaceCategory, NearbyPlace } from '../types';
 
 // Premium components
@@ -165,6 +166,24 @@ export default function NearbyPage() {
   }, [data, category, search]);
 
   const filteredIds = useMemo(() => new Set(filtered.map((p) => p.id)), [filtered]);
+
+  // Which markers the map shows. The result LIST is discovery-first (ranked by
+  // CATEGORY_PRIORITY); the map should match that intent in its default view.
+  // Only in the default Explore view — category "All" and no text search — do we
+  // limit the map to travel-relevant places (via the existing isTravelRelevant
+  // helper), so utilities (hospitals/ATMs/fuel/pharmacies) don't bury attractions
+  // under a wall of pins. Utilities are never removed: they stay in the list, in
+  // the chips, and on the map when their chip is selected (that path uses
+  // filteredIds unchanged). If a destination has no travel-relevant places, fall
+  // back to filteredIds so the map is never blank. When a category is selected or
+  // a search is active, this is exactly filteredIds — current behavior preserved.
+  const mapVisibleIds = useMemo(() => {
+    if (!data || category !== 'all' || search.trim()) return filteredIds;
+    const discovery = new Set(
+      data.places.filter((p) => isTravelRelevant(p.category)).map((p) => p.id),
+    );
+    return discovery.size > 0 ? discovery : filteredIds;
+  }, [data, category, search, filteredIds]);
 
   // ── States ────────────────────────────────────────────────────────────────────
 
@@ -483,7 +502,7 @@ export default function NearbyPage() {
                   centerLon={data.lon}
                   radiusM={data.radiusM}
                   places={data.places}
-                  filteredIds={filteredIds}
+                  filteredIds={mapVisibleIds}
                   selectedPlace={selectedPlace}
                   onPlaceSelect={handlePlaceSelect}
                   className="h-64 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)]"
