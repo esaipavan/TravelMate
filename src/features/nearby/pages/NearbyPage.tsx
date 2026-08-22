@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { MapPinOff, LocateFixed, BedDouble, ArrowRight, ServerCrash, Compass } from 'lucide-react';
+import {
+  MapPinOff,
+  LocateFixed,
+  BedDouble,
+  ArrowRight,
+  ServerCrash,
+  Compass,
+  Map as MapIcon,
+} from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -348,6 +356,30 @@ export default function NearbyPage() {
             exit="exit"
             className="flex flex-col gap-5"
           >
+            {/* Whole-state scope notice. When the destination resolved to an
+                entire Indian state, its coordinates are the state centroid, so
+                these results are a broad, state-wide view rather than a tight
+                "nearby" one. Reframe the results honestly and point the user at
+                a narrower query — without changing the resolved coordinates or
+                substituting a city (see geocoding-scope audit). */}
+            {data.scope === 'state' && (
+              <div
+                role="status"
+                className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3"
+              >
+                <MapIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground">
+                    Exploring around {data.location.split(',')[0]}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This is a whole-state destination. Search for a city or town for closer nearby
+                    places.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Category bar */}
             <ExplorerCategoryBar
               active={category}

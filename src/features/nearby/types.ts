@@ -1,3 +1,5 @@
+import type { GeocodeScope } from '@/lib/geocode';
+
 export type PlaceCategory =
   | 'restaurants'
   | 'hotels'
@@ -128,6 +130,10 @@ export interface NearbyResult {
   places: NearbyPlace[];
   /** Radius (metres) that produced these results; equals the last radius tried when places is empty. */
   radiusM: number;
+  /** Scope of the resolved destination — 'state' for a whole-state search
+   *  (broad, centroid-based) vs 'place' for a point-like location. Presentation
+   *  hint only; the geocoder still returns the same coordinates either way. */
+  scope: GeocodeScope;
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────────

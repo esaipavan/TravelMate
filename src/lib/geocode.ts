@@ -20,6 +20,19 @@ import { hasForeignContext } from '@/utils/destinationTheme';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
+/**
+ * Coarse geographic scope of a resolved destination.
+ *   • 'state' — the query resolved to a whole Indian state (Nominatim
+ *     `addresstype === 'state'` / `place_rank === 8`). Its coordinates are the
+ *     state polygon's centroid, so "nearby" is a whole-state view, not a tight
+ *     local one. Callers can reframe the results accordingly.
+ *   • 'place' — everything else: a city, town, village, suburb, district, or
+ *     other point-like destination whose centre is a genuine local search origin.
+ * This is a presentation hint ONLY; it never changes which candidate is picked
+ * or the returned coordinates.
+ */
+export type GeocodeScope = 'state' | 'place';
+
 export interface GeocodeResult {
   lat: number;
   lon: number;
@@ -27,6 +40,10 @@ export interface GeocodeResult {
   /** OSM class/type (e.g. place/village, place/city) when available — lets
    *  callers tell a real settlement apart from a road or POI match. */
   kind?: string;
+  /** Whether the resolved destination is a whole state vs a point-like place.
+   *  Derived from the selected candidate's Nominatim classification; does not
+   *  affect coordinate selection. */
+  scope: GeocodeScope;
 }
 
 interface NominatimPlace {
@@ -37,6 +54,9 @@ interface NominatimPlace {
   type?: string;
   importance?: number;
   addresstype?: string;
+  /** Nominatim address rank. A whole state is rank 8; districts 10; cities 16+.
+   *  Used only to classify the result's scope, never to rank/select it. */
+  place_rank?: number;
 }
 
 // OSM `type` values that represent a real place/settlement, best first. A
@@ -206,10 +226,20 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
 
   const kind = best.class && best.type ? `${best.class}/${best.type}` : undefined;
 
+  // Scope is a presentation hint derived from the ALREADY-selected candidate —
+  // it is computed here purely to label the result, and deliberately does NOT
+  // feed back into pickBest, isGenuineDestination, or the coordinates. A whole
+  // Indian state (Goa, Kerala…) is Nominatim `addresstype === 'state'`, i.e.
+  // `place_rank === 8`; every point-like place (city/town/village/suburb) and
+  // even a district (rank 10) or a city-as-admin (Hyderabad, rank 16) is 'place'.
+  const scope: GeocodeScope =
+    best.addresstype === 'state' || best.place_rank === 8 ? 'state' : 'place';
+
   return {
     lat: parseFloat(best.lat),
     lon: parseFloat(best.lon),
     displayName: best.display_name,
     kind,
+    scope,
   };
 }
