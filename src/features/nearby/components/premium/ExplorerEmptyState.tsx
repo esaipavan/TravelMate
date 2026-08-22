@@ -4,7 +4,18 @@ import { rv, FADE_VARIANTS, CARD_VARIANTS } from '@/lib/motion';
 import { TravelIntentDiscovery } from './TravelIntentDiscovery';
 import type { PlaceCategory } from '../../types';
 
-const EXAMPLES = ['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA'];
+// India-first example destinations (this is an India-only product, so foreign
+// examples like "Paris"/"Tokyo" would only ever hit the "location not found"
+// state). Each is a well-known Indian destination that reliably geocodes and
+// has strong nearby-POI coverage — verified against the live geocode → Geoapify
+// pipeline these chips feed. Deliberately diverse: heritage, beach, hills, and
+// a river city.
+const EXAMPLES = [
+  'Jaipur, Rajasthan',
+  'Goa',
+  'Manali, Himachal Pradesh',
+  'Varanasi, Uttar Pradesh',
+];
 
 // Friendly entry points into the existing, real Geoapify categories — no
 // new/invented category exists here. "Food" and "Cafes" intentionally both
