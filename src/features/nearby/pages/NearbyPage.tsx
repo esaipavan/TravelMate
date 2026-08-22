@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { MapPinOff, LocateFixed, BedDouble, ArrowRight } from 'lucide-react';
+import { MapPinOff, LocateFixed, BedDouble, ArrowRight, ServerCrash, Compass } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { rv, PAGE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { getCurrentCoordinates, GeolocationError } from '@/lib/geolocation';
 import { useNearbyPlaces, useNearbyPlacesAtCoords } from '../hooks/useNearby';
+import { NearbyError } from '../services/nearby.service';
 import { useFavorites } from '../hooks/useFavorites';
 import { parseSearchQuery } from '../utils/parseSearchQuery';
 import type { PlaceCategory, NearbyPlace } from '../types';
@@ -38,7 +39,7 @@ export default function NearbyPage() {
 
   const stringQuery = useNearbyPlaces(destination);
   const coordsQuery = useNearbyPlacesAtCoords(coords);
-  const { data, isLoading, isError, isFetching } = coords ? coordsQuery : stringQuery;
+  const { data, isLoading, isError, isFetching, error } = coords ? coordsQuery : stringQuery;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -163,7 +164,15 @@ export default function NearbyPage() {
   const showEmpty = !hasQuery && !isLocating;
   const showLoading = (hasQuery && isLoading) || isLocating;
   const showError = hasQuery && isError && !isLoading;
+  // Distinguish "the destination itself couldn't be recognised" (geocoding
+  // rejected it) from "the location was fine but the places provider failed".
+  // Only the former is a genuine location problem; the latter is a service
+  // hiccup and must NOT read as "location not found".
+  const isNotFound = error instanceof NearbyError && error.kind === 'not_found';
   const showResults = !!data && !isError;
+  // Geocoding succeeded and returned a real location, but the provider had no
+  // usable nearby places for it — a distinct, honest state (not a filter issue).
+  const showResolvedButEmpty = showResults && data.places.length === 0;
 
   return (
     <motion.div
@@ -225,6 +234,9 @@ export default function NearbyPage() {
         )}
 
         {/* ── Error ───────────────────────────────────────────────────────── */}
+        {/* Two genuinely different failures, no longer collapsed into one
+            message: the destination couldn't be recognised (isNotFound), or the
+            place resolved but the provider failed (service issue). */}
         {showError && (
           <motion.div
             key="error"
@@ -234,13 +246,36 @@ export default function NearbyPage() {
             exit="exit"
             className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-20 text-center"
           >
-            <MapPinOff className="h-10 w-10 text-muted-foreground opacity-40" aria-hidden="true" />
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">We couldn't find that location</p>
-              <p className="text-sm text-muted-foreground">
-                Try a nearby city, locality, landmark, or use Near Me.
-              </p>
-            </div>
+            {isNotFound ? (
+              <>
+                <MapPinOff
+                  className="h-10 w-10 text-muted-foreground opacity-40"
+                  aria-hidden="true"
+                />
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">Location not found</p>
+                  <p className="text-sm text-muted-foreground">
+                    Try a city, town, landmark, or destination in India — or use Near Me.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <ServerCrash
+                  className="h-10 w-10 text-muted-foreground opacity-40"
+                  aria-hidden="true"
+                />
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">
+                    Nearby places couldn't be loaded right now
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    This is a temporary issue with the places service, not a problem with your
+                    destination. Please try again in a moment.
+                  </p>
+                </div>
+              </>
+            )}
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={handleRefresh}>
                 Try again
@@ -258,8 +293,53 @@ export default function NearbyPage() {
           </motion.div>
         )}
 
+        {/* ── Resolved, but the provider had no nearby places ─────────────── */}
+        {/* Distinct from both "location not found" and "filters exclude all":
+            the location is real and shown, there just aren't usable nearby
+            places in our data. Honest wording + real next actions (no invented
+            POIs, no unrelated fallback imagery). */}
+        {showResolvedButEmpty && (
+          <motion.div
+            key="resolved-empty"
+            variants={rv(PAGE_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center"
+          >
+            <Compass className="h-10 w-10 text-muted-foreground opacity-40" aria-hidden="true" />
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">
+                We found {data.location.split(',')[0]}, but no nearby places yet
+              </p>
+              <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                <span className="text-foreground/80">{data.location}</span> — there aren't enough
+                nearby places in our current data for this area. Try a larger nearby city, or search
+                from your own location.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button asChild size="sm" variant="outline" className="gap-1.5">
+                <Link to={`/hotels?destination=${encodeURIComponent(data.location)}`}>
+                  <BedDouble className="h-3.5 w-3.5" aria-hidden="true" />
+                  Search hotels in {data.location.split(',')[0]}
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleNearMe()}
+                className="gap-1.5"
+              >
+                <LocateFixed className="h-3.5 w-3.5" aria-hidden="true" />
+                Near me
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Results ─────────────────────────────────────────────────────── */}
-        {showResults && (
+        {showResults && !showResolvedButEmpty && (
           <motion.div
             key="results"
             variants={rv(PAGE_VARIANTS, reduced)}

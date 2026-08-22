@@ -4,6 +4,27 @@ import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 const GEOAPIFY = 'https://api.geoapify.com/v2/places';
 const MAX_RESULTS = 200;
 
+// Distinguishes the two very different reasons a nearby lookup can fail so the
+// UI can tell them apart instead of collapsing both into "location not found":
+//   • 'not_found'    — geocoding rejected the destination (invalid / unsupported
+//                      / not an Indian place). The place itself is the problem.
+//   • 'unavailable'  — geocoding SUCCEEDED but the places provider (Geoapify)
+//                      failed (missing key, HTTP error, network). The location is
+//                      fine; the service is temporarily unavailable.
+// A successful geocode that simply returns zero nearby places is NOT an error —
+// it resolves to a NearbyResult with an empty `places` array (a distinct UI
+// state), so it is deliberately not represented here.
+export type NearbyErrorKind = 'not_found' | 'unavailable';
+
+export class NearbyError extends Error {
+  readonly kind: NearbyErrorKind;
+  constructor(kind: NearbyErrorKind, message: string) {
+    super(message);
+    this.name = 'NearbyError';
+    this.kind = kind;
+  }
+}
+
 // Tried in order; stops at the first radius that returns at least one place.
 const RETRY_RADII = [5_000, 10_000, 20_000] as const;
 
@@ -128,7 +149,10 @@ async function fetchGeoapifyPlaces(
 ): Promise<GeoapifyResponse> {
   const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
   if (!apiKey) {
-    throw new Error('Nearby Places service is unavailable. Please try again later.');
+    throw new NearbyError(
+      'unavailable',
+      'Nearby Places service is unavailable. Please try again later.',
+    );
   }
 
   const params = new URLSearchParams({
@@ -147,7 +171,7 @@ async function fetchGeoapifyPlaces(
 
   const res = await fetch(`${GEOAPIFY}?${params.toString()}`);
   if (!res.ok) {
-    throw new Error(`Places API error ${res.status}. Please try again.`);
+    throw new NearbyError('unavailable', `Places API error ${res.status}. Please try again.`);
   }
 
   const data = (await res.json()) as GeoapifyResponse;
@@ -264,7 +288,17 @@ async function searchPlacesNear(
 }
 
 export async function fetchNearbyPlaces(destination: string): Promise<NearbyResult> {
-  const geo = await geocodeLocation(destination);
+  let geo;
+  try {
+    geo = await geocodeLocation(destination);
+  } catch (err) {
+    // Geocoding rejected the destination → a 'not_found' problem with the place
+    // itself (kept distinct from a downstream provider failure below). Preserve
+    // geocode's own India-scoped message.
+    throw new NearbyError('not_found', err instanceof Error ? err.message : 'Location not found');
+  }
+  // Beyond this point the location resolved; any failure is a provider problem,
+  // surfaced by fetchGeoapifyPlaces as NearbyError('unavailable').
   return searchPlacesNear(geo.lat, geo.lon, geo.displayName);
 }
 
