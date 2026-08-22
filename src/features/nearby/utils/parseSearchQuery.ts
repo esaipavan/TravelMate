@@ -13,16 +13,22 @@ export interface ParsedSearchQuery {
 // substring/word match, not real NLP. Multiple phrasings map to the same
 // PlaceCategory used by the existing Geoapify category taxonomy.
 const CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: PlaceCategory }> = [
-  { pattern: /\b(restaurants?|food|dining|eat(?:ing)?|cafes?|coffee)\b/i, category: 'restaurants' },
+  {
+    pattern: /\b(restaurants?|food|dining|eat(?:ing)?|eater(?:y|ies)|cafes?|coffee|dhabas?)\b/i,
+    category: 'restaurants',
+  },
   { pattern: /\b(hotels?|stays?|accommodations?|lodging)\b/i, category: 'hotels' },
   { pattern: /\b(hospitals?|clinics?)\b/i, category: 'hospitals' },
   { pattern: /\b(pharmac(?:y|ies)|chemists?|medicines?)\b/i, category: 'pharmacies' },
   { pattern: /\b(atms?|banks?)\b/i, category: 'atms' },
   { pattern: /\b(fuel|petrol|gas station)\b/i, category: 'fuel' },
   { pattern: /\b(shopping|malls?|markets?|stores?)\b/i, category: 'shopping' },
-  { pattern: /\b(parks?)\b/i, category: 'parks' },
+  { pattern: /\b(parks?|gardens?)\b/i, category: 'parks' },
   {
-    pattern: /\b(attractions?|things to do|places to visit|sightseeing|tourist spots?)\b/i,
+    // Discovery synonyms — temples/forts/museums/monuments/etc. are all
+    // `attractions` in the existing PlaceCategory taxonomy (no new category).
+    pattern:
+      /\b(attractions?|things to do|places to visit|sightseeing|tourist spots?|temples?|monuments?|forts?|palaces?|museums?|church(?:es)?|shrines?|heritage|viewpoints?|waterfalls?|lakes?)\b/i,
     category: 'attractions',
   },
 ];
@@ -59,12 +65,14 @@ export function parseSearchQuery(rawQuery: string): ParsedSearchQuery {
   const categoryLocationMatch = trimmed.match(CATEGORY_LOCATION_RE);
   if (categoryLocationMatch) {
     const [, categoryPhrase, locationPhrase] = categoryLocationMatch;
-    const categoryIntent = matchCategory(categoryPhrase);
-    // Only treat this as "category + location" if the leading phrase is a
-    // recognised category — otherwise "Hotel California in Kondapur" would
-    // wrongly get split. If unrecognised, fall through to the plain case.
-    if (categoryIntent && locationPhrase.trim()) {
-      return { location: locationPhrase.trim(), categoryIntent, useCurrentLocation: false };
+    const location = locationPhrase.trim();
+    // "X <in|at|near|around> Y" → geocode only the location Y. If X is a
+    // recognised category, carry that intent; if not, geocode Y with no intent
+    // (categoryIntent null) rather than geocoding the whole "X in Y" string —
+    // which otherwise fails ("temples in Vijayawada") or resolves to an
+    // unrelated namesake POI ("forts in Jaipur"). Generic; no destination rules.
+    if (location) {
+      return { location, categoryIntent: matchCategory(categoryPhrase), useCurrentLocation: false };
     }
   }
 
