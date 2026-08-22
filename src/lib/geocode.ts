@@ -82,6 +82,41 @@ const DESTINATION_CLASSES = new Set([
   'water', // lakes / reservoirs
 ]);
 
+// Business/lodging OSM `type`s that live INSIDE an allowed class (chiefly
+// `tourism`) but are NOT a destination: a hotel/hostel named "Paris" is a
+// business that merely shares the query name, not the city. Excluding these by
+// type is what makes rejection deterministic instead of depending on which
+// namesake Nominatim happens to rank first — e.g. a Kerala hotel literally
+// named "paris" (class `tourism`) must never become the destination for a
+// "Paris" search. Genuine tourist/heritage destinations (attraction, viewpoint,
+// museum, fort, monument, park, beach…) are untouched.
+const NON_DESTINATION_TYPES = new Set([
+  'hotel',
+  'guest_house',
+  'hostel',
+  'motel',
+  'apartment',
+  'chalet',
+  'love_hotel',
+  'bed_and_breakfast',
+  'caravan_site',
+  'information',
+  'artwork',
+]);
+
+// A candidate is a genuine trip destination only when its class is an accepted
+// destination class AND its type is not a business/lodging fixture. Applied as a
+// filter across ALL candidates (not just the top-ranked one), so an incidental
+// POI can never win merely by ranking first, and a query with no genuine place
+// behind it is rejected deterministically.
+function isGenuineDestination(place: NominatimPlace): boolean {
+  return (
+    !!place.class &&
+    DESTINATION_CLASSES.has(place.class) &&
+    !NON_DESTINATION_TYPES.has(place.type ?? '')
+  );
+}
+
 // Shown to the user when a search is not a valid Indian destination. Deliberately
 // generic and India-scoped — never the raw Nominatim/HTTP error text.
 const INDIA_ONLY_MESSAGE = 'TravelMate currently supports destinations in India.';
@@ -143,16 +178,31 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
 
   if (!results.length) throw new Error(NOT_FOUND_MESSAGE);
 
-  const best = pickBest(trimmed, results);
+  const wanted = trimmed.toLowerCase();
 
-  // Reject an incidental POI (a shop, a road, a building) that merely shares the
-  // query name when no genuine place matched — otherwise a foreign or garbled
-  // query resolves to, e.g., a tailor named "Paris" or a road named "London".
-  // Genuine settlements, admin areas, natural features, and tourist/heritage
-  // sites — which cover every real Indian destination — pass this gate.
-  if (!best.class || !DESTINATION_CLASSES.has(best.class)) {
+  // Deterministic legitimacy gate. If the query EXACTLY names one or more OSM
+  // records but NONE of those exact-named records is a genuine destination, the
+  // query names a business / road / foreign namesake — a shop or hotel literally
+  // called "Paris", a road called "London" — so reject it. Crucially this is
+  // set-based (does any exact-named record qualify?), not "what ranked first",
+  // so the outcome never depends on Nominatim's incidental ordering. It also
+  // stops the query drifting to an unrelated Indian place that merely CONTAINS
+  // the word (e.g. "Paris" → "Park Paris Town"), while still allowing a genuine
+  // fuzzy/misspelled Indian query to resolve (e.g. "Tirupathi" → "Dwaraka
+  // Tirumala", whose name is not an exact match, so this gate does not trigger).
+  const exactNamed = results.filter(
+    (p) => (p.display_name.split(',')[0] ?? '').trim().toLowerCase() === wanted,
+  );
+  if (exactNamed.length > 0 && !exactNamed.some(isGenuineDestination)) {
     throw new Error(NOT_FOUND_MESSAGE);
   }
+
+  // Rank only genuine destinations, so an incidental POI (shop, road, hotel)
+  // can never be selected even if Nominatim ranks it first.
+  const genuine = results.filter(isGenuineDestination);
+  if (!genuine.length) throw new Error(NOT_FOUND_MESSAGE);
+
+  const best = pickBest(trimmed, genuine);
 
   const kind = best.class && best.type ? `${best.class}/${best.type}` : undefined;
 
