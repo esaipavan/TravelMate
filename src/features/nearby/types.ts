@@ -75,6 +75,33 @@ export const CATEGORY_META: Record<
   },
 };
 
+// Discovery priority for a category — LOWER sorts FIRST. This is what makes the
+// default "All" view travel-oriented instead of a distance-sorted utility
+// directory: attractions/parks lead, then food/stays/shopping, and pure
+// utilities (hospitals, pharmacies, ATMs/banks, fuel) sink to the bottom. They
+// stay fully accessible via their own filter chips — they just don't dominate
+// the first cards. Used by the nearby service (ranking + radius-expansion
+// "usable travel" test) and by the category filter bar (chip order).
+export const CATEGORY_PRIORITY: Record<PlaceCategory, number> = {
+  // Tier 0 — the reason to explore a destination.
+  attractions: 0,
+  parks: 0,
+  // Tier 1 — useful to a traveller who is already there.
+  restaurants: 1,
+  hotels: 1,
+  shopping: 1,
+  // Tier 2 — utilities: real and worth keeping, but not "discovery".
+  hospitals: 2,
+  pharmacies: 2,
+  atms: 2,
+  fuel: 2,
+};
+
+/** True when a category is a travel/discovery place (not a pure utility). */
+export function isTravelRelevant(category: PlaceCategory): boolean {
+  return CATEGORY_PRIORITY[category] <= 1;
+}
+
 export interface NearbyPlace {
   id: string;
   name: string;

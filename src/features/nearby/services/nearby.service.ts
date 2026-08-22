@@ -1,4 +1,5 @@
 import { geocodeLocation } from '@/lib/geocode';
+import { CATEGORY_PRIORITY, isTravelRelevant } from '../types';
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
 const GEOAPIFY = 'https://api.geoapify.com/v2/places';
@@ -64,27 +65,33 @@ const ALL_CATEGORIES = [
   'leisure.park',
 ].join(',');
 
-// Prefix-ordered: more-specific prefixes before their parents.
+// Priority-ordered mapping from Geoapify category prefixes to our UI category.
+// A single Geoapify feature usually carries SEVERAL category strings (e.g. a
+// pharmacy comes back as `["commercial", "commercial.chemist",
+// "healthcare.pharmacy"]`). `resolveCategory` walks THIS list top-to-bottom and
+// returns the first entry any of the feature's categories matches — so the most
+// specific / most travel-relevant meaning wins regardless of the order Geoapify
+// happened to list them. The broad `commercial` fallback is deliberately LAST,
+// which is what stops pharmacies/medical shops from being mislabelled as
+// generic "shopping" (the audited "Apollo pharmacy → shopping" bug).
 const CATEGORY_MAP: Array<{ prefix: string; category: PlaceCategory }> = [
+  { prefix: 'leisure.park', category: 'parks' },
+  { prefix: 'tourism', category: 'attractions' },
+  { prefix: 'entertainment', category: 'attractions' },
+  { prefix: 'accommodation', category: 'hotels' },
+  { prefix: 'catering', category: 'restaurants' },
+  { prefix: 'healthcare.pharmacy', category: 'pharmacies' },
   { prefix: 'healthcare.hospital', category: 'hospitals' },
   { prefix: 'healthcare.clinic_or_praxis', category: 'hospitals' },
-  { prefix: 'healthcare.pharmacy', category: 'pharmacies' },
   { prefix: 'service.financial.atm', category: 'atms' },
   { prefix: 'service.financial.bank', category: 'atms' },
   { prefix: 'service.vehicle.fuel', category: 'fuel' },
-  { prefix: 'leisure.park', category: 'parks' },
   { prefix: 'commercial', category: 'shopping' },
-  { prefix: 'catering', category: 'restaurants' },
-  { prefix: 'accommodation', category: 'hotels' },
-  { prefix: 'tourism', category: 'attractions' },
-  { prefix: 'entertainment', category: 'attractions' },
 ];
 
 function resolveCategory(categories: string[]): PlaceCategory | null {
-  for (const cat of categories) {
-    for (const { prefix, category } of CATEGORY_MAP) {
-      if (cat.startsWith(prefix)) return category;
-    }
+  for (const { prefix, category } of CATEGORY_MAP) {
+    if (categories.some((c) => c.startsWith(prefix))) return category;
   }
   return null;
 }
@@ -195,58 +202,54 @@ function parseOpenNow(openingHours: string | undefined): boolean | undefined {
   return undefined; // Cannot reliably parse complex hour strings
 }
 
-// Shared by both entry points below (geocoded search and "near me"): tries
-// each radius in order, stopping at the first that returns results, then
-// maps raw Geoapify features into NearbyPlace. Unchanged from the original
-// fetchNearbyPlaces logic except for the distance/source fields.
-async function searchPlacesNear(
+// A NearbyResult is "healthy" enough to stop expanding the radius once it holds
+// a reasonable set of USABLE places OR enough genuine travel/discovery places.
+// This replaces the old "any raw feature at all → stop" rule, which left thin
+// destinations (Araku, Dwaraka Tirumala) stranded on a tiny 5 km result set
+// even though a wider radius held far more.
+const MIN_USABLE_PLACES = 12;
+const MIN_TRAVEL_PLACES = 6;
+
+function isHealthy(places: NearbyPlace[]): boolean {
+  const travel = places.filter((p) => isTravelRelevant(p.category)).length;
+  return places.length >= MIN_USABLE_PLACES || travel >= MIN_TRAVEL_PLACES;
+}
+
+// Normalise a name for deduplication ONLY (the displayed name is untouched):
+// lower-case, drop any parenthetical qualifier ("Vishnu Nivasam (TTD)" →
+// "vishnu nivasam"), reduce punctuation to spaces, and collapse whitespace.
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+// Map + filter + dedupe one radius's raw features into displayable places.
+// Filters: no name, single-char / non-word-character names (rejects garbage
+// like "M"), no resolvable category, no coordinates. Dedup collapses the SAME
+// normalised name within the same ~100 m cell (3-decimal coords) — enough to
+// merge name-variant duplicates of one place, while genuinely different
+// branches (which sit in different cells) are preserved.
+function mapFeatures(
+  features: GeoapifyFeature[],
   originLat: number,
   originLon: number,
-  displayName: string,
-): Promise<NearbyResult> {
-  let rawFeatures: GeoapifyFeature[] = [];
-  let usedRadius = RETRY_RADII[RETRY_RADII.length - 1];
-
-  for (const radiusM of RETRY_RADII) {
-    const data = await fetchGeoapifyPlaces(originLat, originLon, radiusM);
-
-    if (data.features.length > 0) {
-      rawFeatures = data.features;
-      usedRadius = radiusM;
-      break;
-    }
-
-    if (import.meta.env.DEV) {
-      const nextRadius = RETRY_RADII[RETRY_RADII.indexOf(radiusM) + 1];
-      if (nextRadius) {
-        console.warn(
-          `[nearby] No results at ${radiusM / 1000} km — retrying with ${nextRadius / 1000} km…`,
-        );
-      } else {
-        console.warn(`[nearby] No results at ${radiusM / 1000} km — all radii exhausted.`);
-      }
-    }
-  }
-
+): NearbyPlace[] {
   const seen = new Set<string>();
   const places: NearbyPlace[] = [];
 
-  for (const feature of rawFeatures) {
+  for (const feature of features) {
     const p = feature.properties;
     const name = p.name?.trim();
-    if (!name) continue;
+    // Name-quality gate: must exist, be more than one character, and contain a
+    // real letter/number (any script — keeps Indian-language names). Conservative
+    // by design: a legitimate 2-character Indian name still passes.
+    if (!name || name.length < 2 || !/[\p{L}\p{N}]/u.test(name)) continue;
 
     const category = resolveCategory(p.categories ?? []);
-
-    if (import.meta.env.DEV) {
-      console.warn(
-        `[nearby] feature "${name}" | categories:`,
-        p.categories,
-        '→ resolved:',
-        category,
-      );
-    }
-
     if (!category) continue;
 
     // Prefer property lat/lon; fall back to GeoJSON geometry (coordinates are [lon, lat]).
@@ -254,7 +257,7 @@ async function searchPlacesNear(
     const lon = p.lon ?? feature.geometry.coordinates[0];
     if (!lat || !lon) continue;
 
-    const key = `${name}|${lat.toFixed(4)}|${lon.toFixed(4)}`;
+    const key = `${normalizeName(name)}|${lat.toFixed(3)}|${lon.toFixed(3)}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -276,14 +279,61 @@ async function searchPlacesNear(
     });
   }
 
-  places.sort((a, b) => a.distance - b.distance);
+  return places;
+}
+
+// Relevance-first ordering. Category priority (discovery > utilities) is the
+// PRIMARY key so the first cards are things a traveller wants; distance is a
+// meaningful secondary tiebreaker (kept, never hidden); name is a final stable
+// tiebreaker so ordering is deterministic run-to-run.
+function rankPlaces(places: NearbyPlace[]): NearbyPlace[] {
+  return [...places].sort(
+    (a, b) =>
+      CATEGORY_PRIORITY[a.category] - CATEGORY_PRIORITY[b.category] ||
+      a.distance - b.distance ||
+      a.name.localeCompare(b.name),
+  );
+}
+
+// Shared by both entry points below (geocoded search and "near me"). Expands the
+// radius based on USABLE / travel-relevant coverage (not raw feature count),
+// stopping as soon as a radius is healthy so healthy destinations still cost a
+// single Geoapify request; thin ones widen to 10/20 km and keep the best set.
+async function searchPlacesNear(
+  originLat: number,
+  originLon: number,
+  displayName: string,
+): Promise<NearbyResult> {
+  let best: { places: NearbyPlace[]; radiusM: number } = {
+    places: [],
+    radiusM: RETRY_RADII[RETRY_RADII.length - 1],
+  };
+
+  for (const radiusM of RETRY_RADII) {
+    const data = await fetchGeoapifyPlaces(originLat, originLon, radiusM);
+    const mapped = mapFeatures(data.features, originLat, originLon);
+
+    // Keep the widest/most-complete set seen so far as the fallback.
+    if (mapped.length > best.places.length) best = { places: mapped, radiusM };
+
+    if (isHealthy(mapped)) {
+      best = { places: mapped, radiusM };
+      break;
+    }
+
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[nearby] ${radiusM / 1000} km → ${mapped.length} usable (not yet healthy), widening…`,
+      );
+    }
+  }
 
   return {
     location: displayName,
     lat: originLat,
     lon: originLon,
-    places,
-    radiusM: usedRadius,
+    places: rankPlaces(best.places),
+    radiusM: best.radiusM,
   };
 }
 

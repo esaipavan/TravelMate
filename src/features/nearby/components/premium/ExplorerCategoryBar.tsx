@@ -13,14 +13,26 @@ interface Props {
 
 const ALL_META = { emoji: '🗺️', label: 'All', color: '#6366f1' };
 
+// Travel/discovery categories first, utilities last — so the filter row leads
+// with what a traveller is exploring for and keeps hospitals/pharmacies/ATMs/
+// fuel available but visually subordinate. (Empty categories are hidden below.)
+const CATEGORY_ORDER: PlaceCategory[] = [
+  'attractions',
+  'restaurants',
+  'hotels',
+  'shopping',
+  'parks',
+  'hospitals',
+  'pharmacies',
+  'atms',
+  'fuel',
+];
+
 export function ExplorerCategoryBar({ active, onChange, counts, total }: Props) {
   const reduced = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const categories = Object.entries(CATEGORY_META) as [
-    PlaceCategory,
-    (typeof CATEGORY_META)[PlaceCategory],
-  ][];
+  const categories = CATEGORY_ORDER.map((key) => [key, CATEGORY_META[key]] as const);
 
   return (
     <motion.div
