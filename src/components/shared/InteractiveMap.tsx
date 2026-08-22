@@ -71,23 +71,43 @@ function makeCenterIcon(isDark: boolean): L.DivIcon {
   });
 }
 
-// ── Map controller — flies to new center when destination changes ──────────────
+// Square bounds that circumscribe the search circle (side = 2 × radiusM),
+// centred on the search origin. Framing the viewport to these bounds keeps the
+// radius circle and its markers in view instead of a fixed zoom that ignores the
+// radius. Purely a function of center + radiusM, so it works for any destination
+// (no per-place tables or coordinate checks); a missing/invalid radius falls back
+// to a generic 5 km so the map still renders.
+function searchBounds(lat: number, lon: number, radiusM: number): L.LatLngBounds {
+  const r = Number.isFinite(radiusM) && radiusM > 0 ? radiusM : 5000;
+  return L.latLng(lat, lon).toBounds(2 * r);
+}
+
+// Modest padding so the radius circle is not clipped against the map edges.
+const FIT_PADDING: [number, number] = [24, 24];
+
+// ── Map controller — flies to frame the search radius when it changes ──────────
 
 interface ControllerProps {
   center: [number, number];
-  zoom: number;
+  radiusM: number;
 }
 
-function MapController({ center, zoom }: ControllerProps) {
+function MapController({ center, radiusM }: ControllerProps) {
   const map = useMap();
   const prevRef = useRef<string>('');
-  const key = center.join(',');
+  const key = `${center.join(',')}|${radiusM}`;
 
   useEffect(() => {
     if (key === prevRef.current) return;
     prevRef.current = key;
-    map.flyTo(center, zoom, { duration: 1.4, easeLinearity: 0.4 });
-  }, [key, center, map, zoom]);
+    // flyToBounds keeps the existing fly animation feel while framing to the
+    // radius instead of a fixed zoom.
+    map.flyToBounds(searchBounds(center[0], center[1], radiusM), {
+      duration: 1.4,
+      easeLinearity: 0.4,
+      padding: FIT_PADDING,
+    });
+  }, [key, center, radiusM, map]);
 
   return null;
 }
@@ -123,8 +143,8 @@ export function InteractiveMap({
   return (
     <div className={cn('relative overflow-hidden rounded-2xl border border-border/40', className)}>
       <MapContainer
-        center={center}
-        zoom={14}
+        bounds={searchBounds(centerLat, centerLon, radiusM)}
+        boundsOptions={{ padding: FIT_PADDING }}
         style={{ width: '100%', height: '100%' }}
         zoomControl={true}
         attributionControl={true}
@@ -137,8 +157,8 @@ export function InteractiveMap({
           maxZoom={19}
         />
 
-        {/* Fly to new destinations */}
-        <MapController center={center} zoom={14} />
+        {/* Fly to frame the new destination's search radius */}
+        <MapController center={center} radiusM={radiusM} />
 
         {/* Search radius */}
         <Circle
