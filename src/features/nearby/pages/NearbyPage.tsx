@@ -181,6 +181,11 @@ export default function NearbyPage() {
   // Geocoding succeeded and returned a real location, but the provider had no
   // usable nearby places for it — a distinct, honest state (not a filter issue).
   const showResolvedButEmpty = showResults && data.places.length === 0;
+  // Whole-state search: the center is the state-polygon centroid, so a per-place
+  // walk/drive ETA (which reads as "from you") is anchored to a point no traveller
+  // stands at. Distances stay (the state banner already frames them); the ETA
+  // chips are suppressed downstream. Point-like places and Near Me are unaffected.
+  const isBroad = !!data && data.scope === 'state';
 
   return (
     <motion.div
@@ -461,6 +466,7 @@ export default function NearbyPage() {
                             e.stopPropagation();
                             toggleFavorite(place.id);
                           }}
+                          isBroad={isBroad}
                           staggered
                         />
                       </motion.div>
@@ -492,6 +498,7 @@ export default function NearbyPage() {
                         isFavorite={isFavorite(selectedPlace.id)}
                         onFavorite={() => toggleFavorite(selectedPlace.id)}
                         onClose={() => setSelectedPlace(null)}
+                        isBroad={isBroad}
                       />
                     </div>
                   )}

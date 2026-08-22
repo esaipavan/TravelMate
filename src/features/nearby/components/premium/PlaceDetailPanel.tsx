@@ -11,9 +11,20 @@ interface Props {
   onFavorite: () => void;
   onClose: () => void;
   className?: string;
+  /** Whole-state search: hide the walk/drive ETA (distance from an arbitrary
+   *  state centroid implies no meaningful "from you" travel time). Distance
+   *  stays. Defaults to false so point-like places and Near Me are unaffected. */
+  isBroad?: boolean;
 }
 
-export function PlaceDetailPanel({ place, isFavorite, onFavorite, onClose, className }: Props) {
+export function PlaceDetailPanel({
+  place,
+  isFavorite,
+  onFavorite,
+  onClose,
+  className,
+  isBroad = false,
+}: Props) {
   const reduced = useReducedMotion();
   const meta = CATEGORY_META[place.category];
   const time = travelTime(place.distance);
@@ -84,12 +95,16 @@ export function PlaceDetailPanel({ place, isFavorite, onFavorite, onClose, class
             <Navigation className="h-3 w-3" aria-hidden="true" />
             {formatDistance(place.distance)}
           </span>
-          <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
-            🚶 {time.walk}
-          </span>
-          <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
-            🚗 {time.drive}
-          </span>
+          {!isBroad && (
+            <>
+              <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+                🚶 {time.walk}
+              </span>
+              <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+                🚗 {time.drive}
+              </span>
+            </>
+          )}
           {place.openNow === true && (
             <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
               <Clock className="h-3 w-3" aria-hidden="true" />

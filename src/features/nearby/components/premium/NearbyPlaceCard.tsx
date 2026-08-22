@@ -11,6 +11,10 @@ interface Props {
   onSelect: () => void;
   onFavorite: (e: React.MouseEvent) => void;
   staggered?: boolean;
+  /** Whole-state search: hide the walk/drive ETA (distance from an arbitrary
+   *  state centroid implies no meaningful "from you" travel time). Distance
+   *  stays. Defaults to false so point-like places and Near Me are unaffected. */
+  isBroad?: boolean;
 }
 
 export function NearbyPlaceCard({
@@ -20,6 +24,7 @@ export function NearbyPlaceCard({
   onSelect,
   onFavorite,
   staggered = false,
+  isBroad = false,
 }: Props) {
   const reduced = useReducedMotion();
   const meta = CATEGORY_META[place.category];
@@ -90,12 +95,16 @@ export function NearbyPlaceCard({
             <Navigation className="h-2.5 w-2.5" aria-hidden="true" />
             {formatDistance(place.distance)}
           </span>
-          <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
-            🚶 {time.walk}
-          </span>
-          <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
-            🚗 {time.drive}
-          </span>
+          {!isBroad && (
+            <>
+              <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+                🚶 {time.walk}
+              </span>
+              <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+                🚗 {time.drive}
+              </span>
+            </>
+          )}
           {place.openNow === true && (
             <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <Clock className="h-2.5 w-2.5" aria-hidden="true" />
