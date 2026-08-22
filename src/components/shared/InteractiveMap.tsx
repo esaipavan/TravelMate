@@ -183,7 +183,12 @@ export function InteractiveMap({
 
         {/* Place markers */}
         {places.map((place) => {
-          const isVisible = filteredIds.size === 0 || filteredIds.has(place.id);
+          // Honor the visible-id set literally: a marker shows only when its id
+          // is present. Callers pass the complete id set for an unfiltered view,
+          // so "show all" still works; an empty set now correctly means "show
+          // none" (e.g. a text search that matches zero places) instead of
+          // reverting to every marker.
+          const isVisible = filteredIds.has(place.id);
           const isSelected = selectedPlace?.id === place.id;
           if (!isVisible) return null;
 
