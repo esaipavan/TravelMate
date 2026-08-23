@@ -195,13 +195,19 @@ async function fetchGeoapifyPlaces(
   return data;
 }
 
-// Parse "Mo-Fr 07:00-21:00" style strings to determine if open now.
+// Detects ONLY unambiguous, whole-string always-open schedules, so the "Open now"
+// badge can never falsely mark a place open. This is deliberately not a full
+// opening-hours parser and does not evaluate the current day/time: it exact-matches
+// the two always-open forms and returns undefined (no badge) for everything else.
+// A compound schedule that merely CONTAINS a 24h clause (e.g.
+// "Mo-Su 10:00-22:00; PH 00:00-24:00") is not always-open and must not read as open.
+// Never returns false — an unknown state is shown as "no badge", not "closed".
 function parseOpenNow(openingHours: string | undefined): boolean | undefined {
   if (!openingHours) return undefined;
-  if (openingHours.toLowerCase().includes('24/7')) return true;
-  // Heuristic: presence of "Mo-Su" or "24" suggests always-open
-  if (openingHours.includes('Mo-Su') && openingHours.includes('00:00-24:00')) return true;
-  return undefined; // Cannot reliably parse complex hour strings
+  const hours = openingHours.trim().replace(/\s+/g, ' ');
+  if (/^24\/7$/i.test(hours)) return true;
+  if (hours === 'Mo-Su 00:00-24:00') return true;
+  return undefined;
 }
 
 // Radius selection is driven by NEARBY STRONG ATTRACTIONS, not by raw/usable
