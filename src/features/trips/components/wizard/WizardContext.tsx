@@ -221,8 +221,19 @@ interface WizardCtx {
 
 const WizardContext = createContext<WizardCtx | null>(null);
 
-export function WizardProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reduce, INITIAL);
+export function WizardProvider({
+  children,
+  initialDestination,
+}: {
+  children: ReactNode;
+  /** Prefills step 1 (e.g. from Explore's "Plan a trip to X"). Only the
+   *  free-text destination is seeded; metadata stays null. */
+  initialDestination?: string;
+}) {
+  const [state, dispatch] = useReducer(reduce, INITIAL, (init) => {
+    const seed = initialDestination?.trim();
+    return seed ? { ...init, destination: seed } : init;
+  });
 
   const goNext = useCallback(() => {
     const next = Math.min(state.currentStep + 1, TOTAL_STEPS - 1);

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
@@ -86,8 +86,11 @@ function WizardPage() {
 /* ── Page export ─────────────────────────────────────────────────── */
 
 export default function TripNewPage() {
+  const [searchParams] = useSearchParams();
+  const initialDestination = searchParams.get('destination') ?? undefined;
+
   return (
-    <WizardProvider>
+    <WizardProvider initialDestination={initialDestination}>
       <WizardPage />
     </WizardProvider>
   );

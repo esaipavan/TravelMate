@@ -5,7 +5,6 @@ import {
   MapPinOff,
   LocateFixed,
   BedDouble,
-  ArrowRight,
   ServerCrash,
   Compass,
   Map as MapIcon,
@@ -31,6 +30,7 @@ import { NearbyPlaceCard } from '../components/premium/NearbyPlaceCard';
 import { InteractiveMap } from '@/components/shared/InteractiveMap';
 import { PlaceDetailPanel } from '../components/premium/PlaceDetailPanel';
 import { AIExplorerPanel } from '../components/premium/AIExplorerPanel';
+import { DestinationOverview } from '../components/premium/DestinationOverview';
 
 export default function NearbyPage() {
   const [input, setInput] = useState('');
@@ -380,6 +380,11 @@ export default function NearbyPage() {
             exit="exit"
             className="flex flex-col gap-5"
           >
+            {/* Destination-first header: lead with the place the user searched
+                for (photo, honest facts, AI overview, Plan-a-trip CTA) before
+                the nearby POI directory below. */}
+            <DestinationOverview result={data} />
+
             {/* Whole-state scope notice. When the destination resolved to an
                 entire Indian state, its coordinates are the state centroid, so
                 these results are a broad, state-wide view rather than a tight
@@ -415,19 +420,11 @@ export default function NearbyPage() {
               total={data.places.length}
             />
 
-            {/* Discovery → hotels: search stays in this discovered place */}
-            <Link
-              to={`/hotels?destination=${encodeURIComponent(data.location)}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 transition-colors hover:bg-accent"
-            >
-              <span className="flex items-center gap-2.5 text-sm">
-                <BedDouble className="h-4 w-4 text-primary" aria-hidden />
-                <span className="font-medium text-foreground">
-                  Search hotels in {data.location.split(',')[0]}
-                </span>
-              </span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden />
-            </Link>
+            {/* Nearby POI directory, reframed as exploring AROUND the place —
+                the destination itself is the header above. */}
+            <h3 className="text-sm font-semibold text-foreground">
+              Explore around {data.location.split(',')[0]}
+            </h3>
 
             {/* Main workspace: list + map */}
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
