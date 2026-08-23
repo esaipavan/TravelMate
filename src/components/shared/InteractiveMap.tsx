@@ -1,7 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { cn } from '@/lib/utils';
 import { CATEGORY_META } from '@/features/nearby/types';
 import type { NearbyPlace, PlaceCategory } from '@/features/nearby/types';
@@ -181,29 +184,35 @@ export function InteractiveMap({
           eventHandlers={{ click: () => onPlaceSelect(null) }}
         />
 
-        {/* Place markers */}
-        {places.map((place) => {
-          // Honor the visible-id set literally: a marker shows only when its id
-          // is present. Callers pass the complete id set for an unfiltered view,
-          // so "show all" still works; an empty set now correctly means "show
-          // none" (e.g. a text search that matches zero places) instead of
-          // reverting to every marker.
-          const isVisible = filteredIds.has(place.id);
-          const isSelected = selectedPlace?.id === place.id;
-          if (!isVisible) return null;
+        {/* Place markers — clustered so dense destinations don't render as a
+            solid, un-tappable blob of overlapping pins. Only visible markers
+            (filteredIds.has) enter the group, so the discovery-first default and
+            the zero-result "show none" behaviour are preserved unchanged; the
+            radius circle and centre pin stay OUTSIDE the cluster group. */}
+        <MarkerClusterGroup showCoverageOnHover={false} chunkedLoading>
+          {places.map((place) => {
+            // Honor the visible-id set literally: a marker shows only when its id
+            // is present. Callers pass the complete id set for an unfiltered view,
+            // so "show all" still works; an empty set now correctly means "show
+            // none" (e.g. a text search that matches zero places) instead of
+            // reverting to every marker.
+            const isVisible = filteredIds.has(place.id);
+            const isSelected = selectedPlace?.id === place.id;
+            if (!isVisible) return null;
 
-          return (
-            <Marker
-              key={place.id}
-              position={[place.lat, place.lon]}
-              icon={makeMarkerIcon(place.category, isSelected, isDark)}
-              eventHandlers={{
-                click: () => onPlaceSelect(isSelected ? null : place),
-              }}
-              opacity={isVisible ? 1 : 0.25}
-            />
-          );
-        })}
+            return (
+              <Marker
+                key={place.id}
+                position={[place.lat, place.lon]}
+                icon={makeMarkerIcon(place.category, isSelected, isDark)}
+                eventHandlers={{
+                  click: () => onPlaceSelect(isSelected ? null : place),
+                }}
+                opacity={isVisible ? 1 : 0.25}
+              />
+            );
+          })}
+        </MarkerClusterGroup>
       </MapContainer>
 
       {/* Gradient overlay — top, for visual depth */}
