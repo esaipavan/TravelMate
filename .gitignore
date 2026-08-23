@@ -39,3 +39,9 @@ Thumbs.db
 # Supabase local
 supabase/.branches
 supabase/.temp
+
+# Playwright E2E — NEVER commit the saved auth session (contains a token) or output
+.auth/
+test-results/
+playwright-report/
+playwright/.cache/

@@ -1,0 +1,6 @@
+# The E2E suite lives outside the app's TypeScript project (tsconfig includes
+# only ./src). The ESLint config uses type-aware rules bound to that project, so
+# linting these files would fail with "not found by the project service". They
+# are excluded from `eslint .`; the application source is linted exactly as before.
+e2e
+playwright.config.ts
