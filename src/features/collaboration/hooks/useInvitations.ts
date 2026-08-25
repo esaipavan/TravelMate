@@ -28,7 +28,8 @@ export function useCreateInvitation(tripId: string) {
     }) => createInvitation(tripId, email, role, invitedBy),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['trip-invitations', tripId] });
-      toast.success('Invitation sent');
+      // No email is sent — this creates a shareable invite link the owner copies.
+      toast.success('Invite link created');
     },
     onError: (err: Error) => {
       const msg = err.message.includes('unique')

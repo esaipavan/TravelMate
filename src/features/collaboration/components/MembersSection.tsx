@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Users, UserPlus, MoreVertical, Trash2, Crown, Shield, Eye, Clock, X } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Users,
+  UserPlus,
+  MoreVertical,
+  Trash2,
+  Crown,
+  Shield,
+  Eye,
+  Clock,
+  X,
+  Copy,
+  Check,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -184,6 +197,21 @@ export function MembersSection({ tripId, myRole }: Props) {
   const userId = useAuthStore((s) => s.user?.id ?? '');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<{ id: string; email: string } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Copy the invitation-accept link (/share/{token}). No email is sent — the
+  // owner shares this link directly. Token comes from the already-loaded row.
+  async function copyInviteLink(id: string, token: string) {
+    const url = `${window.location.origin}/share/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      toast.success('Invite link copied');
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    } catch {
+      toast.error('Could not copy — try again.');
+    }
+  }
 
   const { data: members = [], isLoading: membersLoading } = useTripMembers(tripId);
   const { data: invitations = [], isLoading: invitationsLoading } = useInvitations(tripId);
@@ -272,16 +300,31 @@ export function MembersSection({ tripId, myRole }: Props) {
                 Pending
               </Badge>
               {(myRole === 'owner' || inv.invited_by === userId) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                  aria-label={`Cancel invitation for ${inv.invited_email}`}
-                  disabled={cancelling}
-                  onClick={() => setCancelTarget({ id: inv.id, email: inv.invited_email })}
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label={`Copy invite link for ${inv.invited_email}`}
+                    onClick={() => void copyInviteLink(inv.id, inv.token)}
+                  >
+                    {copiedId === inv.id ? (
+                      <Check className="h-3.5 w-3.5" aria-hidden />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label={`Cancel invitation for ${inv.invited_email}`}
+                    disabled={cancelling}
+                    onClick={() => setCancelTarget({ id: inv.id, email: inv.invited_email })}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </Button>
+                </>
               )}
             </div>
           ))}

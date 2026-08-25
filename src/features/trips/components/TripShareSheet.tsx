@@ -40,7 +40,9 @@ const VISIBILITY_OPTIONS: Array<{
 ];
 
 export function TripShareSheet({ trip, open, onOpenChange }: Props) {
-  const shareUrl = `${window.location.origin}/share/${trip.id}`;
+  // Public read-only trip view lives at /p/:id (PublicTripPage, gated by
+  // is_public). The /share/:token route is the separate invitation-accept flow.
+  const shareUrl = `${window.location.origin}/p/${trip.id}`;
 
   const { mutate: updateTrip, isPending } = useUpdateTrip();
   const [visibility, setVisibility] = useState<Visibility>(trip.is_public ? 'public' : 'private');
