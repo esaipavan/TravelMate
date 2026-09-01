@@ -10,6 +10,7 @@ import { usePlaceTripPlacements } from '@/features/itinerary/hooks/useItinerary'
 import { useTrips } from '@/features/trips/hooks/useTrips';
 import { formatLocationHierarchy } from '@/lib/geocode';
 import { useDestinationBrief } from '../../hooks/useDestinationBrief';
+import { deriveHighlights } from '../../services/nearby.service';
 import { CATEGORY_META, formatDistance, type NearbyPlace, type PlaceCategory } from '../../types';
 
 // Data-source technical names → the honest, user-facing phrase for the
@@ -74,6 +75,14 @@ function GallerySection({
         {hero && (
           <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm">
             <SourceTag kind="verified" label="Verified photo" className="text-white" />
+          </span>
+        )}
+        {images.length > 1 && (
+          <span
+            className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2 py-0.5 text-xs font-medium tabular-nums text-white backdrop-blur-sm"
+            aria-hidden="true"
+          >
+            {Math.min(active, images.length - 1) + 1} / {images.length}
           </span>
         )}
       </div>
@@ -146,6 +155,15 @@ export function PlaceDetailSheet({
     ? (DATA_SOURCE_LABELS[place.dataSource] ?? place.dataSource)
     : null;
 
+  // VERIFIED first (Geoapify's own category tags for THIS place) — only when
+  // that yields nothing do we fall back to the AI destination brief's
+  // "knownFor" list, and only because that brief was already being fetched
+  // as the About-section fallback (see useDestinationBrief above); this never
+  // triggers a separate/extra AI call just for highlights.
+  const verifiedHighlights = deriveHighlights(place.rawCategories);
+  const aiHighlights = verifiedHighlights.length === 0 ? (brief?.knownFor ?? []) : [];
+  const highlights = verifiedHighlights.length > 0 ? verifiedHighlights : aiHighlights;
+
   const nearby = relatedPlaces
     .filter((p) => p.id !== place.id)
     .sort((a, b) => a.distance - b.distance)
@@ -214,11 +232,27 @@ export function PlaceDetailSheet({
                 isFavorite && 'border-rose-500/30 bg-rose-500/5 text-rose-500 hover:bg-rose-500/10',
               )}
               onClick={onFavorite}
+              title="Remember this place — kept on this device, not tied to any trip"
             >
               <Heart className={cn('h-4 w-4', isFavorite && 'fill-rose-500')} aria-hidden="true" />
               {isFavorite ? 'Saved' : 'Save'}
             </Button>
           </div>
+
+          {/* ── Highlights ───────────────────────────────────────────── */}
+          {highlights.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {highlights.map((h) => (
+                <span
+                  key={h}
+                  className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground"
+                >
+                  {h}
+                </span>
+              ))}
+              <SourceTag kind={verifiedHighlights.length > 0 ? 'verified' : 'ai'} />
+            </div>
+          )}
 
           {/* ── About ────────────────────────────────────────────────── */}
           <section className="space-y-2">
@@ -375,6 +409,15 @@ export function PlaceDetailSheet({
                 <li className="flex items-center gap-1.5">
                   <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
                   Photos: Verified from Wikipedia
+                </li>
+              )}
+              {highlights.length > 0 && (
+                <li className="flex items-center gap-1.5">
+                  <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Highlights:{' '}
+                  {verifiedHighlights.length > 0
+                    ? `Verified from ${dataSourceLabel ?? 'map data'}`
+                    : 'AI advisory — not independently verified'}
                 </li>
               )}
               {description ? (

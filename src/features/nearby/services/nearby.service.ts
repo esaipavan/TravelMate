@@ -299,6 +299,69 @@ export function parseWikipediaHint(wiki: { wikipedia?: string } | undefined): st
   return lang === 'en' && title ? title : undefined;
 }
 
+// Maps Geoapify's granular category TAGS (not the coarse PlaceCategory this
+// service already resolves) to a short, provider-VERIFIED highlight label for
+// Place Detail — e.g. "Fort" for a Golconda-style tourism.sights.fort. Only
+// tags actually observed in live Geoapify responses (verified by direct API
+// testing, not the docs alone) or documented in Geoapify's own categories
+// list are mapped; anything else is left out rather than guessed, since a
+// wrong highlight is worse than no highlight. Order matters: the first
+// matching entry wins, most-specific first, so "tourism.sights.fort" reads as
+// "Fort" rather than the more generic "Heritage" a bare "tourism.sights"
+// match would give it.
+const HIGHLIGHT_MAP: Array<{ prefix: string; label: string }> = [
+  { prefix: 'tourism.sights.fort', label: 'Fort' },
+  { prefix: 'tourism.sights.castle', label: 'Heritage' },
+  { prefix: 'tourism.sights.memorial', label: 'Heritage' },
+  { prefix: 'tourism.sights.ruins', label: 'Heritage' },
+  { prefix: 'tourism.sights', label: 'Heritage' },
+  { prefix: 'tourism.attraction.viewpoint', label: 'Viewpoint' },
+  { prefix: 'tourism.attraction.artwork', label: 'Public Art' },
+  { prefix: 'entertainment.museum', label: 'Museum' },
+  { prefix: 'entertainment.zoo', label: 'Zoo' },
+  { prefix: 'entertainment.theme_park', label: 'Theme Park' },
+  { prefix: 'leisure.park', label: 'Park' },
+  { prefix: 'natural', label: 'Nature' },
+];
+
+/**
+ * Derives up to a few VERIFIED highlight labels from a place's raw Geoapify
+ * category tags — additive presentation only, never widens PlaceCategory or
+ * changes which places match a search. Returns an empty array (never a
+ * guess) when nothing in HIGHLIGHT_MAP matches, which is common: Geoapify's
+ * OSM data frequently tags even well-known places (e.g. a temple) with
+ * nothing more specific than "tourism.attraction" (verified by direct API
+ * testing), and no highlight is more honest than an invented one.
+ *
+ * A single category tag (e.g. "tourism.sights.fort") can match more than one
+ * HIGHLIGHT_MAP entry by prefix ("tourism.sights.fort" AND the more generic
+ * "tourism.sights"); only the longest (most specific) matching prefix is
+ * kept for that tag, so a fort reads as "Fort", not "Fort" + "Heritage".
+ */
+export function deriveHighlights(categories: string[] | undefined): string[] {
+  if (!categories || categories.length === 0) return [];
+
+  const matched = HIGHLIGHT_MAP.filter((entry) =>
+    categories.some((c) => c.startsWith(entry.prefix)),
+  );
+
+  const labels: string[] = [];
+  for (const entry of matched) {
+    // Skip a generic entry (e.g. "tourism.sights" → Heritage) when a more
+    // specific sibling also matched (e.g. "tourism.sights.fort" → Fort) —
+    // the specific one wins so a fort reads as "Fort", not "Fort" + "Heritage".
+    const hasMoreSpecificMatch = matched.some(
+      (other) =>
+        other !== entry &&
+        other.prefix.length > entry.prefix.length &&
+        other.prefix.startsWith(entry.prefix),
+    );
+    if (hasMoreSpecificMatch) continue;
+    if (!labels.includes(entry.label)) labels.push(entry.label);
+  }
+  return labels.slice(0, 3);
+}
+
 // Normalise a name for deduplication ONLY (the displayed name is untouched):
 // lower-case, drop any parenthetical qualifier ("Vishnu Nivasam (TTD)" →
 // "vishnu nivasam"), reduce punctuation to spaces, and collapse whitespace.
@@ -363,6 +426,7 @@ function mapFeatures(
       locationDetail: buildPlaceLocationHierarchy(p),
       dataSource: p.datasource?.sourcename,
       wikipediaTitle: parseWikipediaHint(p.wiki_and_media),
+      rawCategories: p.categories,
     });
   }
 

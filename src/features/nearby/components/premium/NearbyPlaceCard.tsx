@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { rv, LIST_ITEM_VARIANTS, CARD_VARIANTS, rg, HOVER, PRESS } from '@/lib/motion';
 import { getDirectionsUrl } from '@/lib/mapLinks';
 import { formatLocationHierarchy } from '@/lib/geocode';
+import { deriveHighlights } from '../../services/nearby.service';
 import { CATEGORY_META, formatDistance, travelTime, type NearbyPlace } from '../../types';
 
 interface Props {
@@ -40,6 +41,12 @@ export function NearbyPlaceCard({
   const meta = CATEGORY_META[place.category];
   const time = travelTime(place.distance);
   const locality = formatLocationHierarchy(place.locationDetail, { includeLocality: true });
+  // Verified provider-tag detail (e.g. "Fort", "Viewpoint") layered onto the
+  // coarse category label — same deriveHighlights used in Place Detail, so
+  // the card and the sheet never disagree; falls back to just the category
+  // when the provider's tags aren't specific enough to say more.
+  const highlight = deriveHighlights(place.rawCategories)[0];
+  const categoryLabel = highlight ? `${meta.label} · ${highlight}` : meta.label;
 
   return (
     <motion.div
@@ -104,8 +111,14 @@ export function NearbyPlaceCard({
           <p className="mt-0.5 truncate pl-4 text-[10px] text-muted-foreground/70">{locality}</p>
         )}
 
-        {/* Distance + travel time */}
+        {/* Category + distance + travel time */}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
+            style={{ background: meta.color }}
+          >
+            {categoryLabel}
+          </span>
           <span className="flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-foreground">
             <Navigation className="h-2.5 w-2.5" aria-hidden="true" />
             {formatDistance(place.distance)}

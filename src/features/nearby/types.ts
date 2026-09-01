@@ -138,6 +138,13 @@ export interface NearbyPlace {
    *  and go straight to verification, which is both more accurate and fewer
    *  requests than searching by place name. */
   wikipediaTitle?: string;
+  /** Geoapify's full category tag list for this place (e.g.
+   *  ["tourism", "tourism.sights", "tourism.sights.fort"]) — kept alongside
+   *  the single resolved `category` above so a presentation-only layer (see
+   *  deriveHighlights in nearby.service.ts) can surface a more specific,
+   *  provider-verified detail ("Fort", "Viewpoint") without widening the
+   *  PlaceCategory enum every UI surface already switches on. */
+  rawCategories?: string[];
 }
 
 export interface NearbyResult {
