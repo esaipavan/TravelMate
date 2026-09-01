@@ -204,17 +204,44 @@ const NON_DESTINATION_TYPES = new Set([
   'artwork',
 ]);
 
-// A candidate is a genuine trip destination only when its class is an accepted
-// destination class AND its type is not a business/lodging fixture. Applied as a
-// filter across ALL candidates (not just the top-ranked one), so an incidental
-// POI can never win merely by ranking first, and a query with no genuine place
-// behind it is rejected deterministically.
-function isGenuineDestination(place: NominatimPlace): boolean {
-  return (
+// Bug fix (Phase 7, live-verified against Nominatim): a place of worship is a
+// genuine, commonly-searched Indian destination — Birla Mandir, Meenakshi
+// Temple, Jama Masjid, Ramappa Temple, Sri Ranganathaswamy Temple, the
+// Basilica of Bom Jesus — but OSM tags these `amenity=place_of_worship` or
+// `building=temple`/`church`/`mosque`/`cathedral`/`shrine`, neither of which
+// is in DESTINATION_CLASSES ('amenity' and 'building' are both far too broad
+// to allow wholesale — most amenities/buildings genuinely aren't
+// destinations). Before this fix, searching any of the places above returned
+// "Location not found" outright. This is a narrow, explicit (class, type)
+// allowlist, not a broadening of DESTINATION_CLASSES itself, so it can't
+// reopen the "Paris → tailor shop" problem those classes were built to keep
+// out — a shop/restaurant/bank tagged `amenity=*` is still rejected.
+const DESTINATION_CLASS_TYPE_PAIRS = new Set([
+  'amenity/place_of_worship',
+  'building/temple',
+  'building/church',
+  'building/mosque',
+  'building/cathedral',
+  'building/shrine',
+]);
+
+// A candidate is a genuine trip destination when its class is an accepted
+// destination class (and its type is not a business/lodging fixture), OR its
+// exact (class, type) pair is an explicitly allowed heritage/religious
+// building above. Applied as a filter across ALL candidates (not just the
+// top-ranked one), so an incidental POI can never win merely by ranking
+// first, and a query with no genuine place behind it is rejected
+// deterministically.
+// Exported purely for unit testing — no network involved.
+export function isGenuineDestination(place: NominatimPlace): boolean {
+  if (
     !!place.class &&
     DESTINATION_CLASSES.has(place.class) &&
     !NON_DESTINATION_TYPES.has(place.type ?? '')
-  );
+  ) {
+    return true;
+  }
+  return DESTINATION_CLASS_TYPE_PAIRS.has(`${place.class ?? ''}/${place.type ?? ''}`);
 }
 
 // Shown to the user when a search is not a valid Indian destination. Deliberately
@@ -223,9 +250,23 @@ const INDIA_ONLY_MESSAGE = 'TravelMate currently supports destinations in India.
 const NOT_FOUND_MESSAGE =
   "We couldn't find that place in India. Check the spelling, or try a nearby town or city.";
 
-// Picks the best candidate: prefer an exact name match, then a real
-// settlement over a road/POI, then Nominatim's own importance score.
-function pickBest(query: string, places: NominatimPlace[]): NominatimPlace {
+// Picks the best candidate: prefer an exact name match, then Nominatim's own
+// importance score, then settlement-type as a final tiebreak.
+//
+// Bug fix (Phase 7, live-verified against Nominatim): importance must be
+// checked BEFORE settlementRank, not after. With rank checked first, a
+// well-known urban suburb like Hyderabad's "Kondapur" (place/suburb,
+// importance 0.1467) lost to an obscure rural village of the identical name
+// in a different district (place/village, importance 0.1467 — nearly
+// identical baseline importance) purely because "village" ranks above
+// "suburb" in SETTLEMENT_TYPES — even though the suburb was Nominatim's own
+// #1 result and had the HIGHER importance of the two. Importance is
+// Nominatim's actual real-world-prominence signal and is what should decide
+// between several places that share an exact name; settlementRank is kept
+// only as a last-resort tiebreak for the rare case importance ties exactly.
+// Exported purely for unit testing (regression coverage for the bug fix
+// documented above) — no network involved.
+export function pickBest(query: string, places: NominatimPlace[]): NominatimPlace {
   const wanted = query.trim().toLowerCase();
 
   const scored = places
@@ -238,7 +279,7 @@ function pickBest(query: string, places: NominatimPlace[]): NominatimPlace {
         importance: p.importance ?? 0,
       };
     })
-    .sort((a, b) => a.exact - b.exact || a.rank - b.rank || b.importance - a.importance);
+    .sort((a, b) => a.exact - b.exact || b.importance - a.importance || a.rank - b.rank);
 
   return scored[0].place;
 }
