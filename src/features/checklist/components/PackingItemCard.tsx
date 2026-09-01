@@ -65,7 +65,7 @@ export const PackingItemCard = memo(function PackingItemCard({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-1 transition-opacity lg:opacity-0 lg:focus-within:opacity-100 lg:group-hover:opacity-100">
         <Button
           size="icon"
           variant="ghost"

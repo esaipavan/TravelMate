@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
+import { geocodeLocation } from '@/lib/geocode';
 import { useAuthStore } from '@/store/auth.store';
 import { useBatchUpsertBudgetsMutation } from '@/features/budget/hooks/useBudget';
 import { useCreateTrip } from '../hooks/useTrips';
@@ -35,6 +36,20 @@ function WizardPage() {
     /* Select cover: curated → real Wikipedia image → null (never a guess) */
     const coverUrl = await selectTripCoverImage(destination);
 
+    /* Best-effort coordinates for the resolved destination. Geocoding is never
+     * a hard dependency for trip creation — a failure (unrecognised place,
+     * network issue) simply leaves latitude/longitude unset; the trip still
+     * creates normally with its free-text destination. */
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    try {
+      const geo = await geocodeLocation(destination);
+      latitude = geo.lat;
+      longitude = geo.lon;
+    } catch {
+      /* Unresolved destination — proceed without coordinates. */
+    }
+
     /* Build title from destination + trip type */
     const title = generateTripTitle(destination, tripType);
 
@@ -49,6 +64,8 @@ function WizardPage() {
         destination,
         country_code: destinationMeta?.countryCode ?? null,
         cover_image_url: coverUrl,
+        latitude,
+        longitude,
         start_date: startFormatted,
         end_date: endFormatted,
         total_budget: total,

@@ -33,6 +33,22 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
  */
 export type GeocodeScope = 'state' | 'place';
 
+/**
+ * Structured place identity, derived from Nominatim's `addressdetails=1`
+ * response (already requested for ranking — this just stops discarding it).
+ * `locality` is the most specific settlement name available (village / town /
+ * city / municipality / suburb, in that preference order) — deliberately NOT
+ * the same as `displayName`'s first comma-part, which can be a landmark or
+ * road name rather than the settlement itself.
+ */
+export interface LocationHierarchy {
+  locality?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  countryCode?: string;
+}
+
 export interface GeocodeResult {
   lat: number;
   lon: number;
@@ -44,6 +60,23 @@ export interface GeocodeResult {
    *  Derived from the selected candidate's Nominatim classification; does not
    *  affect coordinate selection. */
   scope: GeocodeScope;
+  /** Structured locality/district/state/country, when Nominatim's address
+   *  breakdown resolved one. Present for the vast majority of results (any
+   *  point-like place); absent only if Nominatim omits `address` entirely. */
+  location?: LocationHierarchy;
+}
+
+interface NominatimAddress {
+  village?: string;
+  town?: string;
+  city?: string;
+  municipality?: string;
+  suburb?: string;
+  county?: string;
+  state_district?: string;
+  state?: string;
+  country?: string;
+  country_code?: string;
 }
 
 interface NominatimPlace {
@@ -57,6 +90,53 @@ interface NominatimPlace {
   /** Nominatim address rank. A whole state is rank 8; districts 10; cities 16+.
    *  Used only to classify the result's scope, never to rank/select it. */
   place_rank?: number;
+  /** Present because every request sets `addressdetails=1`. */
+  address?: NominatimAddress;
+}
+
+/** Builds the structured hierarchy from Nominatim's address breakdown. Picks
+ *  the most specific settlement name available for `locality` so a village or
+ *  suburb keeps its own name instead of collapsing into its parent district —
+ *  this is the piece that lets "Mangalagiri" display as itself rather than
+ *  silently reading as "Vijayawada" or the district name. */
+function buildLocationHierarchy(
+  address: NominatimAddress | undefined,
+): LocationHierarchy | undefined {
+  if (!address) return undefined;
+  const locality =
+    address.village || address.town || address.city || address.municipality || address.suburb;
+  const district = address.state_district || address.county;
+  const hierarchy: LocationHierarchy = {
+    locality: locality || undefined,
+    district: district || undefined,
+    state: address.state || undefined,
+    country: address.country || undefined,
+    countryCode: address.country_code ? address.country_code.toUpperCase() : undefined,
+  };
+  // Every field is optional/undefined when Nominatim's address had nothing —
+  // callers must not render "undefined" or empty separators from this.
+  return hierarchy;
+}
+
+/** Joins the parts of a LocationHierarchy that are actually present into a
+ *  single display string (e.g. "Guntur District · Andhra Pradesh"), never
+ *  emitting "undefined" or a duplicate of the locality name itself. */
+export function formatLocationHierarchy(
+  location: LocationHierarchy | undefined,
+  opts: { includeLocality?: boolean; includeCountry?: boolean } = {},
+): string {
+  if (!location) return '';
+  const { includeLocality = false, includeCountry = false } = opts;
+  const parts: string[] = [];
+  if (includeLocality && location.locality) parts.push(location.locality);
+  if (location.district && location.district !== location.locality) {
+    parts.push(
+      /district$/i.test(location.district) ? location.district : `${location.district} District`,
+    );
+  }
+  if (location.state && location.state !== location.district) parts.push(location.state);
+  if (includeCountry && location.country) parts.push(location.country);
+  return parts.join(' · ');
 }
 
 // OSM `type` values that represent a real place/settlement, best first. A
@@ -190,6 +270,11 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
 
   const res = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
     headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
+    // Bound the request so a stalled Nominatim connection (which neither
+    // resolves nor rejects on its own) can't hold consumers — Hotels, Nearby,
+    // Weather — in an indefinite loading state. On timeout this rejects with a
+    // TimeoutError, routing into the existing error/fallback path below.
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) throw new Error('Geocoding request failed');
@@ -241,5 +326,6 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
     displayName: best.display_name,
     kind,
     scope,
+    location: buildLocationHierarchy(best.address),
   };
 }

@@ -5,6 +5,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
+import { useBudget } from '@/features/budget/hooks/useBudget';
 import { useDashboardStats, useCurrentTrip } from '../hooks/useDashboard';
 
 const R = 52;
@@ -77,6 +78,10 @@ export function BudgetDonut() {
   const reduced = useReducedMotion();
   const { data: stats } = useDashboardStats();
   const { data: trip } = useCurrentTrip();
+  // Current-trip-scoped budget/spend for the Daily avg + Forecast rows. Reuses
+  // the existing per-trip calculation (getBudgetData) so those metrics reflect
+  // only the active trip, not the global all-trips totals in `stats`.
+  const { data: budget } = useBudget(trip?.id ?? '');
 
   if (!stats || stats.totalBudget === 0) {
     return (
@@ -105,15 +110,22 @@ export function BudgetDonut() {
 
   let dailyAvg: number | null = null;
   let forecast: number | null = null;
-  if (trip) {
+  let forecastOverBudget = false;
+  // Daily avg / forecast are current-trip metrics: use the active trip's own
+  // spend (not the global `totalExpenses`) and compare the forecast against the
+  // active trip's own budget (not the global `totalBudget`).
+  if (trip && budget) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const start = parseISO(trip.start_date + 'T00:00:00');
     const end = parseISO(trip.end_date + 'T00:00:00');
     const elapsed = Math.max(1, differenceInDays(today, start) + 1);
     const total = Math.max(1, differenceInDays(end, start) + 1);
-    dailyAvg = totalExpenses / elapsed;
+    const tripSpent = budget.summary.totalSpent;
+    const tripBudget = trip.total_budget;
+    dailyAvg = tripSpent / elapsed;
     forecast = dailyAvg * total;
+    forecastOverBudget = tripBudget !== null && tripBudget > 0 && forecast > tripBudget;
   }
 
   return (
@@ -151,7 +163,7 @@ export function BudgetDonut() {
             <StatRow
               label="Forecast"
               value={fmt(forecast)}
-              className={cn('text-muted-foreground', forecast > totalBudget && 'text-amber-500')}
+              className={cn('text-muted-foreground', forecastOverBudget && 'text-amber-500')}
             />
           )}
         </div>

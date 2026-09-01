@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin, Phone, Globe, Heart, ExternalLink, Clock, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, LIST_ITEM_VARIANTS, CARD_VARIANTS, rg, HOVER, PRESS } from '@/lib/motion';
+import { getMapSearchUrl } from '@/lib/mapLinks';
 import { CATEGORY_META, formatDistance, travelTime, type NearbyPlace } from '../../types';
 
 interface Props {
@@ -97,11 +98,17 @@ export function NearbyPlaceCard({
           </span>
           {!isBroad && (
             <>
-              <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
-                🚶 {time.walk}
+              <span
+                className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground"
+                title="Estimated from straight-line distance, not live routing"
+              >
+                🚶 {time.walk} · estimated
               </span>
-              <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
-                🚗 {time.drive}
+              <span
+                className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground"
+                title="Estimated from straight-line distance, not live routing"
+              >
+                🚗 {time.drive} · estimated
               </span>
             </>
           )}
@@ -140,7 +147,7 @@ export function NearbyPlaceCard({
             </a>
           )}
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`}
+            href={getMapSearchUrl(place.lat, place.lon)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

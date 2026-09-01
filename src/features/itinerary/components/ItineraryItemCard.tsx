@@ -1,6 +1,16 @@
-import { Pencil, Trash2, Clock, MapPin, DollarSign } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Clock,
+  MapPin,
+  DollarSign,
+  Navigation,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/formatters';
+import { getDirectionsUrl } from '@/lib/mapLinks';
 import type { ItineraryItemRow, ItineraryCategory, ItemStatus } from '../types';
 
 interface Props {
@@ -9,6 +19,9 @@ interface Props {
   onEdit: (item: ItineraryItemRow) => void;
   onDelete: (item: ItineraryItemRow) => void;
   dragHandle?: React.ReactNode;
+  /** Omitted entirely at the first/last position — there's nowhere left to move. */
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 const CATEGORY_META: Record<ItineraryCategory, { emoji: string; label: string; color: string }> = {
@@ -42,19 +55,50 @@ const STATUS_META: Record<ItemStatus, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'text-destructive line-through' },
 };
 
-export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle }: Props) {
+export function ItineraryItemCard({
+  item,
+  currency,
+  onEdit,
+  onDelete,
+  dragHandle,
+  onMoveUp,
+  onMoveDown,
+}: Props) {
   const cat = CATEGORY_META[item.category];
   const status = STATUS_META[item.status];
 
   const startTime = item.start_time ? item.start_time.slice(0, 5) : null;
   const endTime = item.end_time ? item.end_time.slice(0, 5) : null;
   const timeLabel = startTime ? (endTime ? `${startTime} – ${endTime}` : startTime) : null;
+  const hasCoords = item.latitude != null && item.longitude != null;
 
   return (
     <div className="group flex items-start gap-3 rounded-lg border bg-card p-3 transition-shadow hover:shadow-sm">
-      {dragHandle && (
-        <div className="mt-0.5 shrink-0 cursor-grab text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing">
-          {dragHandle}
+      {(dragHandle || onMoveUp || onMoveDown) && (
+        <div className="mt-0.5 flex shrink-0 flex-col items-center gap-0.5">
+          {onMoveUp && (
+            <button
+              onClick={onMoveUp}
+              aria-label={`Move ${item.title} earlier`}
+              className="rounded p-2 text-muted-foreground/50 hover:text-foreground"
+            >
+              <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+          {dragHandle && (
+            <div className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing">
+              {dragHandle}
+            </div>
+          )}
+          {onMoveDown && (
+            <button
+              onClick={onMoveDown}
+              aria-label={`Move ${item.title} later`}
+              className="rounded p-2 text-muted-foreground/50 hover:text-foreground"
+            >
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 
@@ -102,10 +146,33 @@ export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle
       </div>
 
       <div className="flex shrink-0 items-center gap-1 lg:opacity-0 lg:transition-opacity lg:focus-within:opacity-100 lg:group-hover:opacity-100">
+        {hasCoords ? (
+          <Button size="icon" variant="ghost" className="h-9 w-9" asChild>
+            <a
+              href={getDirectionsUrl(item.latitude as number, item.longitude as number)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Get directions to ${item.title}`}
+            >
+              <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+          </Button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 cursor-not-allowed opacity-40"
+            disabled
+            title="Route unavailable — location coordinates not saved"
+            aria-label="Route unavailable — location coordinates not saved"
+          >
+            <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+        )}
         <Button
           size="icon"
           variant="ghost"
-          className="h-7 w-7"
+          className="h-9 w-9"
           onClick={() => onEdit(item)}
           aria-label="Edit item"
         >
@@ -114,7 +181,7 @@ export function ItineraryItemCard({ item, currency, onEdit, onDelete, dragHandle
         <Button
           size="icon"
           variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          className="h-9 w-9 text-muted-foreground hover:text-destructive"
           onClick={() => onDelete(item)}
           aria-label="Delete item"
         >

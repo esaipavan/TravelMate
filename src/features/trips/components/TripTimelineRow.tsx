@@ -5,7 +5,7 @@ import { MapPin, CalendarDays, Heart, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDateRange, formatCurrency, tripDuration } from '@/utils/formatters';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, todayLocal } from '@/utils/tripStatus';
 import { useTripCover } from '@/hooks/useTripCover';
 import { differenceInDays, parseISO } from 'date-fns';
 import { useToggleFavourite } from '../hooks/useTrips';
@@ -89,7 +89,7 @@ export const TripTimelineRow = memo(function TripTimelineRow({ trip, index }: Pr
   const cover = useTripCover(trip.destination, trip.cover_image_url);
   const duration = tripDuration(trip.start_date, trip.end_date);
 
-  const today = parseISO(new Date().toISOString().split('T')[0] + 'T00:00:00');
+  const today = todayLocal();
   const start = parseISO(trip.start_date + 'T00:00:00');
   const daysAway = differenceInDays(start, today);
 

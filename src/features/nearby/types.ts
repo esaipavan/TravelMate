@@ -1,4 +1,4 @@
-import type { GeocodeScope } from '@/lib/geocode';
+import type { GeocodeScope, LocationHierarchy } from '@/lib/geocode';
 
 export type PlaceCategory =
   | 'restaurants'
@@ -134,6 +134,11 @@ export interface NearbyResult {
    *  (broad, centroid-based) vs 'place' for a point-like location. Presentation
    *  hint only; the geocoder still returns the same coordinates either way. */
   scope: GeocodeScope;
+  /** Structured locality/district/state/country for the resolved place, when a
+   *  forward geocode produced one (absent for the "Near Me" coordinate path,
+   *  which never calls the geocoder). Named distinctly from `location` above
+   *  (the display-name string) to avoid colliding with it. */
+  locationDetail?: LocationHierarchy;
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
@@ -143,9 +148,15 @@ export function formatDistance(m: number): string {
   return `${(m / 1000).toFixed(1)} km`;
 }
 
+// A straight-line-distance / fixed-speed formula, NOT a routing result — no
+// road, traffic, or elevation data goes into this. The "~" prefix and spelled
+// -out "min" (not the more route-implying "8m") are part of presenting this
+// honestly; callers that show it to the user should also label it as an
+// estimate (see NearbyPlaceCard/PlaceDetailPanel) rather than let a bare
+// number read as a verified travel time.
 export function travelTime(distanceM: number): { walk: string; drive: string } {
   const walkMins = Math.max(1, Math.round(distanceM / 83.3)); // 5 km/h
   const driveMins = Math.max(1, Math.round(distanceM / 500)); // 30 km/h
-  const fmt = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
-  return { walk: `${fmt(walkMins)} walk`, drive: `${fmt(driveMins)} drive` };
+  const fmt = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
+  return { walk: `~${fmt(walkMins)} walk`, drive: `~${fmt(driveMins)} drive` };
 }

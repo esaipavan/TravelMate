@@ -14,6 +14,7 @@ import {
   Camera,
   ArrowRight,
   Sparkles,
+  Compass,
 } from 'lucide-react';
 
 /* ── Card config ──────────────────────────────────────────────── */
@@ -54,6 +55,13 @@ function buildCards(tripId: string): CardDef[] {
       href: `/trips/${tripId}/itinerary`,
       icon: Map,
       rgb: '245,158,11',
+    },
+    {
+      label: 'Explore Nearby',
+      description: 'Find places, add to itinerary',
+      href: `/nearby?tripId=${tripId}`,
+      icon: Compass,
+      rgb: '20,184,166',
     },
     {
       label: 'Checklist',

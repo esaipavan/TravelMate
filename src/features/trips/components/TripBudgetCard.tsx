@@ -3,8 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Wallet, ArrowRight, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/formatters';
-import { differenceInDays, parseISO } from 'date-fns';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, getTripProgress } from '@/utils/tripStatus';
 import type { TripRow } from '../types';
 
 /* ── TripBudgetCard ───────────────────────────────────────────── */
@@ -15,12 +14,8 @@ interface Props {
 export function TripBudgetCard({ trip }: Props) {
   const reduced = useReducedMotion();
   const status = getTripStatus(trip);
-  const today = parseISO(new Date().toISOString().split('T')[0] + 'T00:00:00');
-  const start = parseISO(trip.start_date + 'T00:00:00');
-  const end = parseISO(trip.end_date + 'T00:00:00');
-  const total = differenceInDays(end, start) + 1;
-  const passed = Math.max(0, differenceInDays(today, start));
-  const pct = status === 'active' ? Math.min(100, Math.round((passed / total) * 100)) : 0;
+  const { percent } = getTripProgress(trip);
+  const pct = status === 'active' ? percent : 0;
 
   /* No budget set */
   if (trip.total_budget == null) {

@@ -92,7 +92,7 @@ export const ExpenseCard = memo(function ExpenseCard({
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
+              className="h-9 w-9"
               onClick={() => {
                 void handleViewReceipt();
               }}
@@ -105,7 +105,7 @@ export const ExpenseCard = memo(function ExpenseCard({
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9"
             onClick={() => onEdit(expense)}
             aria-label={`Edit expense: ${expense.title}`}
             title="Edit expense"
@@ -115,7 +115,7 @@ export const ExpenseCard = memo(function ExpenseCard({
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
             onClick={() => onDelete(expense)}
             aria-label={`Delete expense: ${expense.title}`}
             title="Delete expense"

@@ -151,8 +151,10 @@ export function DocumentVaultCard({
           </span>
         )}
 
-        {/* Hover action bar */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1.5 bg-black/60 py-2 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+        {/* Action bar — always visible below lg (no hover on touch); fades in
+            on hover/focus at lg+ to declutter the thumbnail, same pattern as
+            ItineraryItemCard's action row. */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1.5 bg-black/60 py-2 backdrop-blur-sm transition-opacity duration-200 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

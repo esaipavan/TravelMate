@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { todayLocalDate } from '@/utils/tripStatus';
 import type { DashboardStats, UpcomingTrip, RecentExpense, BudgetVsActualItem } from '../types';
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
@@ -51,7 +52,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 }
 
 export async function getUpcomingTrips(userId: string): Promise<UpcomingTrip[]> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalDate();
   const { data, error } = await supabase
     .from('trips')
     .select(
@@ -127,7 +128,7 @@ export async function getRecentExpenses(userId: string): Promise<RecentExpense[]
 }
 
 export async function getCurrentTrip(userId: string): Promise<UpcomingTrip | null> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalDate();
   const { data, error } = await supabase
     .from('trips')
     .select(

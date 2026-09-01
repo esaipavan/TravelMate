@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { differenceInDays, parseISO } from 'date-fns';
 import { MapPin, Calendar, ArrowRight, Plane, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatDateRange } from '@/utils/formatters';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, getTripProgress } from '@/utils/tripStatus';
 import { useTripCover } from '@/hooks/useTripCover';
 import type { UpcomingTrip } from '../types';
 
@@ -205,14 +204,8 @@ export function CurrentTripCard({ trip, isLoading }: Props) {
   }
 
   /* ── Trip data ── */
-  const today = parseISO(new Date().toISOString().split('T')[0] + 'T00:00:00');
-  const start = parseISO(trip.start_date + 'T00:00:00');
-  const end = parseISO(trip.end_date + 'T00:00:00');
-  const totalDays = differenceInDays(end, start) + 1;
-  const daysPassed = Math.max(0, differenceInDays(today, start));
-  const daysLeft = Math.max(0, differenceInDays(end, today));
-  const progress =
-    status === 'active' ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 0;
+  const { totalDays, dayNumber, daysLeft, percent } = getTripProgress(trip);
+  const progress = status === 'active' ? percent : 0;
   const gradient = gradientForTrip(trip.id);
   const isActive = status === 'active';
   const isUpcoming = status === 'upcoming';
@@ -316,7 +309,7 @@ export function CurrentTripCard({ trip, isLoading }: Props) {
           <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
             <div className="space-y-0.5">
               <p className="text-xs font-semibold text-foreground">
-                Day {daysPassed + 1} of {totalDays}
+                Day {dayNumber} of {totalDays}
               </p>
               <p className="text-[11px] text-muted-foreground">
                 {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining

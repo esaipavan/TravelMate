@@ -1,5 +1,5 @@
 import { geocodeLocation } from '@/lib/geocode';
-import type { GeocodeScope } from '@/lib/geocode';
+import type { GeocodeScope, LocationHierarchy } from '@/lib/geocode';
 import { CATEGORY_PRIORITY } from '../types';
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
@@ -342,6 +342,7 @@ async function searchPlacesNear(
   originLon: number,
   displayName: string,
   scope: GeocodeScope,
+  locationDetail?: LocationHierarchy,
 ): Promise<NearbyResult> {
   let selected: { places: NearbyPlace[]; radiusM: number } | null = null;
   let firstNonEmpty: { places: NearbyPlace[]; radiusM: number } | null = null;
@@ -394,6 +395,7 @@ async function searchPlacesNear(
     places: rankPlaces(chosen.places),
     radiusM: chosen.radiusM,
     scope,
+    locationDetail,
   };
 }
 
@@ -409,13 +411,20 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
   }
   // Beyond this point the location resolved; any failure is a provider problem,
   // surfaced by fetchGeoapifyPlaces as NearbyError('unavailable').
-  return searchPlacesNear(geo.lat, geo.lon, geo.displayName, geo.scope);
+  return searchPlacesNear(geo.lat, geo.lon, geo.displayName, geo.scope, geo.location);
 }
 
 // "Near me" entry point — skips geocoding entirely and searches directly
-// from the device's coordinates, per the Phase 1 requirement that Near Me
+// from already-known coordinates, per the Phase 1 requirement that Near Me
 // "does not require geocoding". Coordinates are a precise point, so this is
-// always a point-like ('place') scope, never a whole-state view.
-export async function fetchNearbyPlacesAtCoords(lat: number, lon: number): Promise<NearbyResult> {
-  return searchPlacesNear(lat, lon, 'Your current location', 'place');
+// always a point-like ('place') scope, never a whole-state view. Also reused
+// for trip-context coordinates (a trip's saved destination lat/lon) — pass
+// `locationLabel` there so the result header names the actual place instead
+// of defaulting to GPS-flavored copy.
+export async function fetchNearbyPlacesAtCoords(
+  lat: number,
+  lon: number,
+  locationLabel = 'Your current location',
+): Promise<NearbyResult> {
+  return searchPlacesNear(lat, lon, locationLabel, 'place');
 }

@@ -14,6 +14,7 @@ import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
 
 const WIKI_SEARCH = 'https://en.wikipedia.org/w/api.php';
 const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
+const WIKI_MEDIA_LIST = 'https://en.wikipedia.org/api/rest_v1/page/media-list';
 
 interface WikiSummary {
   type?: string;
@@ -22,6 +23,12 @@ interface WikiSummary {
   thumbnail?: { source: string };
   description?: string;
   extract?: string;
+}
+
+interface WikiMediaListItem {
+  title?: string;
+  type?: string;
+  srcset?: { src: string; scale?: string }[];
 }
 
 async function searchWikiTitle(query: string): Promise<string | null> {
@@ -48,13 +55,18 @@ async function fetchWikiSummary(title: string): Promise<WikiSummary | null> {
 }
 
 /**
- * Validate a single Wikipedia query and return its image URL, or `null`.
+ * Resolves a query to a verified geographic Wikipedia article, or `null`.
  * Confidence bar: search resolves a page; the page is a `standard` article (not
  * a disambiguation/missing page); it carries geographic `coordinates` inside
  * India (excludes people/films/concepts and foreign namesakes); the article
- * names India; and it has a real photo (not a locator map / flag / SVG).
+ * names India; and it has a real lead photo (not a locator map / flag / SVG).
+ * Returns the article title alongside the lead image so callers that need more
+ * than one photo (fetchPlaceGallery) can pull from the SAME verified article
+ * instead of re-resolving it.
  */
-async function tryWikiImage(query: string): Promise<string | null> {
+async function resolveVerifiedArticle(
+  query: string,
+): Promise<{ title: string; leadImage: string } | null> {
   const title = await searchWikiTitle(query);
   if (!title) return null;
 
@@ -66,8 +78,13 @@ async function tryWikiImage(query: string): Promise<string | null> {
   if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
   if (!mentionsIndia(summary)) return null;
 
-  const image = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
-  return image && isUsablePhoto(image) ? image : null;
+  const leadImage = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
+  return leadImage && isUsablePhoto(leadImage) ? { title, leadImage } : null;
+}
+
+async function tryWikiImage(query: string): Promise<string | null> {
+  const resolved = await resolveVerifiedArticle(query);
+  return resolved?.leadImage ?? null;
 }
 
 /**
@@ -104,6 +121,121 @@ function isUsablePhoto(url: string): boolean {
   const u = url.toLowerCase();
   if (u.endsWith('.svg')) return false;
   return !/(flag|coat[_%]|locator|location_map|_map[._]|seal[_%]|emblem|\blogo\b|\bicon\b)/.test(u);
+}
+
+const FILENAME_WORD_RE = /[a-z]{3,}/g;
+const GENERIC_TITLE_WORDS = new Set([
+  'the',
+  'and',
+  'view',
+  'file',
+  'photo',
+  'image',
+  'india',
+  'temple',
+  'temples',
+  'fort',
+  'palace',
+  'lake',
+  'hill',
+  'hills',
+  'front',
+  'side',
+  'aerial',
+  'night',
+  'day',
+  'old',
+  'new',
+  'jpg',
+  'jpeg',
+  'png',
+]);
+
+// A Wikipedia article's own media list is usually all about that article's
+// subject, but not always — e.g. an infobox/"see also" image for a broader
+// topic ("Temples of India") can be embedded in a specific temple's page. This
+// rejects any media-list image whose filename shares NO significant word with
+// the resolved place name, so a generic cross-topic image can't slip into a
+// specific place's gallery just because Wikipedia's own page embedded it.
+// Common words (temple/fort/india/etc.) are excluded from the comparison so a
+// same-category-different-place image still gets caught.
+function isTitleRelevant(filename: string, placeName: string): boolean {
+  const placeWords = new Set(
+    (placeName.toLowerCase().match(FILENAME_WORD_RE) ?? []).filter(
+      (w) => !GENERIC_TITLE_WORDS.has(w),
+    ),
+  );
+  if (placeWords.size === 0) return true; // nothing distinctive to compare against
+  const fileWords = (filename.toLowerCase().match(FILENAME_WORD_RE) ?? []).filter(
+    (w) => !GENERIC_TITLE_WORDS.has(w),
+  );
+  return fileWords.some((w) => placeWords.has(w));
+}
+
+// Wikipedia's media-list API returns protocol-relative URLs ("//upload...").
+function toAbsoluteUrl(src: string): string {
+  return src.startsWith('//') ? `https:${src}` : src;
+}
+
+const MAX_GALLERY_IMAGES = 6;
+
+/**
+ * Returns up to a handful of VERIFIED, place-specific images for a
+ * destination, or an empty array when none can be confidently sourced. Every
+ * image comes from the SAME Wikipedia article that already passed
+ * `resolveVerifiedArticle`'s India + geographic-article gates (the same trust
+ * boundary `fetchPlaceImage` relies on for its single cover) — this does not
+ * introduce a new image source or a new trust level, only pulls more than one
+ * photo from the one already-verified article. The lead image is always
+ * first. Filenames are deduped and filtered through both the existing
+ * flag/map/seal blocklist and `isTitleRelevant` (rejects a same-page image
+ * that names an unrelated broader topic, e.g. "Temples_of_India.jpg" showing
+ * up inside a specific temple's own article).
+ */
+export async function fetchPlaceGallery(destination: string): Promise<string[]> {
+  const query = destination.trim();
+  if (!query) return [];
+
+  const placeName = query.split(',')[0]?.trim() || query;
+  const candidates: string[] = [query];
+  if (placeName.toLowerCase() !== query.toLowerCase()) candidates.push(placeName);
+
+  let resolved: { title: string; leadImage: string } | null = null;
+  for (const c of candidates) {
+    resolved = await resolveVerifiedArticle(c);
+    if (resolved) break;
+  }
+  if (!resolved) return [];
+
+  const seen = new Set<string>([resolved.leadImage]);
+  const gallery = [resolved.leadImage];
+
+  try {
+    const res = await fetch(`${WIKI_MEDIA_LIST}/${encodeURIComponent(resolved.title)}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { items?: WikiMediaListItem[] };
+      for (const item of data.items ?? []) {
+        if (gallery.length >= MAX_GALLERY_IMAGES) break;
+        if (item.type !== 'image' || !item.title) continue;
+        const src = item.srcset?.[0]?.src;
+        if (!src) continue;
+        const url = toAbsoluteUrl(src);
+        if (seen.has(url)) continue;
+        if (!isUsablePhoto(url)) continue;
+        if (!isTitleRelevant(item.title, placeName)) continue;
+        seen.add(url);
+        gallery.push(url);
+      }
+    }
+  } catch {
+    // Media-list fetch failed (timeout/network) — the lead image alone is
+    // still a valid, verified result; just skip the extra photos.
+  }
+
+  return gallery;
 }
 
 // Generous bounding box for India (mainland + Andaman/Nicobar + Lakshadweep).

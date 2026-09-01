@@ -247,71 +247,20 @@ function matchesKey(haystack: string, key: string): boolean {
   return false;
 }
 
-// ── Temple-relevant fallback ──────────────────────────────────────────────────
-// A South-Indian gopuram is a strong, honest "place of worship" image, used only
-// when a destination is CLEARLY temple-related but isn't curated by city name.
+// ── Legacy generic-temple cover (detector only — no longer generated) ─────────
+// TEMPLE_IMAGE was previously assigned as a guessed stand-in photo for any
+// temple-related destination not curated by city name — e.g. the same
+// South-Indian gopuram photo presented for Shirdi, Kedarnath, Badrinath,
+// Somnath, Dwarka, Ayodhya, Bodh Gaya alike, none of which it actually depicts.
+// That violates the "never present a guessed image as a real destination
+// image" rule, so resolveCore() no longer assigns it (see below — an
+// unrecognised temple place now falls through to the honest empty/gradient
+// path, same as any other unrecognised place, then tries a real Wikipedia
+// photo via selectTripCoverImage). The constant and isGenericTempleCover()
+// stay so trips that already persisted this URL (from before this fix) are
+// still detected and offered a real photo instead — see trips.service.ts
+// duplicateTrip and placeImage.service.ts's cover reconciliation.
 const TEMPLE_IMAGE = 'photo-1708346561250-ea0f8b54bc1c';
-const TEMPLE_COLORS: ColorSet = {
-  accent: '#F59E0B',
-  accentRgb: '245,158,11',
-  secondary: '#F97316',
-};
-
-// Well-known temple destinations not already curated above (city-name matched).
-const TEMPLE_PLACES = [
-  'palani',
-  'madurai',
-  'meenakshi',
-  'rameswaram',
-  'rameshwaram',
-  'mahabalipuram',
-  'mamallapuram',
-  'tiruvannamalai',
-  'srikalahasti',
-  'kanchipuram',
-  'sabarimala',
-  'somnath',
-  'dwarka',
-  'kedarnath',
-  'badrinath',
-  'konark',
-  'khajuraho',
-  'hampi',
-  'srirangam',
-  'chidambaram',
-  'guruvayur',
-  'sringeri',
-  'udupi',
-  'kamakhya',
-  'ayodhya',
-  'bodhgaya',
-  'bodh gaya',
-  'sarnath',
-  'thanjavur',
-  'tanjore',
-];
-// Unambiguous place-of-worship markers (whole-word matched, so "Templeton" or
-// the already-curated "Mathura" are never caught).
-const TEMPLE_MARKERS = [
-  'temple',
-  'mandir',
-  'kovil',
-  'koil',
-  'devasthanam',
-  'jyotirlinga',
-  'gopuram',
-  'shrine',
-  'basadi',
-];
-// Well-known places literally named "Temple" that are NOT places of worship —
-// keeps temple imagery off unrelated destinations.
-const TEMPLE_DENY = ['temple bar', 'temple university', 'temple, tx', 'temple, texas'];
-
-function isTempleDestination(lower: string): boolean {
-  if (TEMPLE_DENY.some((d) => lower.includes(d))) return false;
-  if (TEMPLE_PLACES.some((p) => matchesKey(lower, p))) return true;
-  return TEMPLE_MARKERS.some((m) => matchesKey(lower, m));
-}
 
 // ── Duplicate-name disambiguation ─────────────────────────────────────────────
 // A handful of famous cities share their name with smaller towns elsewhere
@@ -563,11 +512,10 @@ function resolveCore(destination: string): ResolvedImages {
     return { photoIds: entry.images, colors: entry.colors };
   }
 
-  // Clearly temple-related but not curated by city name → honest temple imagery.
-  if (isTempleDestination(lower)) {
-    return { photoIds: [TEMPLE_IMAGE], colors: TEMPLE_COLORS };
-  }
-
+  // Unrecognised place (including a temple-related one not curated by city
+  // name): no guessed image. The honest empty/gradient path — callers try a
+  // real place-specific Wikipedia photo next, falling back to the gradient
+  // only if that also finds nothing.
   return { photoIds: [], colors: DEFAULT_COLORS };
 }
 

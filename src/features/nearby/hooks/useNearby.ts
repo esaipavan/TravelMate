@@ -16,10 +16,17 @@ export function useNearbyPlaces(destination: string) {
   });
 }
 
-export function useNearbyPlacesAtCoords(coords: { lat: number; lon: number } | null) {
+// locationLabel overrides the default "Your current location" — needed when
+// these coordinates didn't actually come from the device's GPS (e.g. a
+// trip's saved destination coordinates), so the result header doesn't
+// falsely claim to be the user's live location.
+export function useNearbyPlacesAtCoords(
+  coords: { lat: number; lon: number } | null,
+  locationLabel?: string,
+) {
   return useQuery({
-    queryKey: ['nearby-coords', coords?.lat, coords?.lon],
-    queryFn: () => fetchNearbyPlacesAtCoords(coords!.lat, coords!.lon),
+    queryKey: ['nearby-coords', coords?.lat, coords?.lon, locationLabel],
+    queryFn: () => fetchNearbyPlacesAtCoords(coords!.lat, coords!.lon, locationLabel),
     staleTime: 30 * 60 * 1000,
     retry: false,
     enabled: !!coords,

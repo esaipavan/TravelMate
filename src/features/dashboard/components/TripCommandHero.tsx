@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, HERO_VARIANTS } from '@/lib/motion';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, getTripProgress, todayLocal } from '@/utils/tripStatus';
 import { formatDateRange } from '@/utils/formatters';
 import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
@@ -152,8 +152,7 @@ export function TripCommandHero() {
   }
 
   // Countdown + progress
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = todayLocal();
   let progress = 0;
   let countdownN = 0;
   let countdownL = '';
@@ -162,15 +161,13 @@ export function TripCommandHero() {
   if (displayTrip) {
     const st = getTripStatus(displayTrip);
     const startDate = parseISO(displayTrip.start_date + 'T00:00:00');
-    const endDate = parseISO(displayTrip.end_date + 'T00:00:00');
 
     if (st === 'active') {
       tripStatus = 'live';
-      countdownN = Math.max(0, differenceInDays(endDate, today));
+      const { daysLeft, percent } = getTripProgress(displayTrip);
+      countdownN = daysLeft;
       countdownL = countdownN === 1 ? 'day left' : 'days left';
-      const total = Math.max(1, differenceInDays(endDate, startDate) + 1);
-      const elapsed = Math.max(0, differenceInDays(today, startDate));
-      progress = elapsed / total;
+      progress = percent / 100;
     } else if (st === 'upcoming') {
       tripStatus = 'upcoming';
       countdownN = Math.max(0, differenceInDays(startDate, today));

@@ -377,7 +377,7 @@ export function ExpenseDialog({
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-6 w-6"
+                    className="h-9 w-9"
                     aria-label="Remove receipt"
                     onClick={() => setRemoveReceipt(true)}
                   >
@@ -403,7 +403,7 @@ export function ExpenseDialog({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6"
+                        className="h-9 w-9"
                         aria-label="Remove selected file"
                         onClick={() => {
                           setReceiptFile(null);

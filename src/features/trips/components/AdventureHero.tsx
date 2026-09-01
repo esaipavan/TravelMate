@@ -155,9 +155,12 @@ export function AdventureHero({
       cancelled: 0,
     };
     for (const t of trips) {
-      const s = getTripStatus(t);
-      if (s in base) base[s]++;
-      if (t.status in base) base[t.status]++;
+      // Count each trip once under its canonical (date-based) status so these
+      // chip counts match the "Live Now" tile and the TripsPage filter results.
+      // 'planning' is a DB-only status getTripStatus never emits, so track it
+      // separately from the raw status column.
+      base[getTripStatus(t)]++;
+      if (t.status === 'planning') base['planning']++;
       if (t.is_favourite) base['favourites']++;
     }
     return base;
@@ -288,7 +291,7 @@ export function AdventureHero({
             </AnimatePresence>
           </div>
 
-          {/* Sort */}
+          {/* Sort — desktop: labeled trigger */}
           <Select value={sortKey} onValueChange={(v) => onSortChange(v as SortKey)}>
             <SelectTrigger
               className="hidden w-[152px] rounded-xl border-border/50 bg-muted/30 sm:flex"
@@ -305,8 +308,28 @@ export function AdventureHero({
             </SelectContent>
           </Select>
 
+          {/* Sort — mobile: same control, compact icon-only trigger. The
+              desktop trigger above is `hidden` below sm, which previously
+              left mobile with no way to sort trips at all. Bound to the
+              same sortKey/onSortChange as the desktop trigger, so the two
+              never disagree. */}
+          <Select value={sortKey} onValueChange={(v) => onSortChange(v as SortKey)}>
+            <SelectTrigger
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-border/50 bg-muted/30 p-0 sm:hidden [&>svg:last-child]:hidden"
+              aria-label="Sort trips"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="date-asc">Upcoming first</SelectItem>
+              <SelectItem value="date-desc">Latest first</SelectItem>
+              <SelectItem value="created-desc">Newest added</SelectItem>
+              <SelectItem value="name-asc">Name A–Z</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* View toggle */}
-          <div className="flex rounded-full bg-muted/60 p-0.5" role="group" aria-label="View mode">
+          <div className="flex rounded-full bg-muted/60 p-1" role="group" aria-label="View mode">
             {(
               [
                 ['grid', LayoutGrid],
@@ -320,13 +343,13 @@ export function AdventureHero({
                 aria-pressed={viewMode === v}
                 aria-label={`${v} view`}
                 className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-full transition-colors',
+                  'flex h-11 w-11 items-center justify-center rounded-full transition-colors',
                   viewMode === v
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-4 w-4" />
               </button>
             ))}
           </div>

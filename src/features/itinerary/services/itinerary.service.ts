@@ -175,3 +175,43 @@ export async function reorderItems(updates: { id: string; order_index: number }[
   const firstError = results.find((r) => r.error)?.error;
   if (firstError) throw new Error(firstError.message);
 }
+
+export interface ItineraryPlacement {
+  itemId: string;
+  tripId: string;
+  dayId: string;
+  dayNumber: number;
+}
+
+// ~11m tolerance at India's latitudes — tight enough that two distinct
+// nearby POIs won't collide, loose enough to absorb floating-point drift if
+// the same place is re-geocoded slightly differently on a later visit.
+const COORD_TOLERANCE = 0.0001;
+
+// Cross-trip lookup for "is this place already somewhere in one of my
+// trips?" — backs the Add-to-Trip duplicate warning and the place-detail
+// "Already added to..." context. There is no place-identity column on
+// itinerary_items (no provider id), so this matches on coordinates only;
+// items with no saved coordinates (e.g. manually typed on the Itinerary
+// page) can never match, which is the honest behavior — we only claim a
+// duplicate when we can actually prove it. RLS scopes the query to the
+// authenticated user's own trips automatically, same as every other query
+// in this file.
+export async function findPlaceInTrips(lat: number, lon: number): Promise<ItineraryPlacement[]> {
+  const { data, error } = await supabase
+    .from('itinerary_items')
+    .select('id, itinerary_days!inner(id, day_number, trip_id)')
+    .gte('latitude', lat - COORD_TOLERANCE)
+    .lte('latitude', lat + COORD_TOLERANCE)
+    .gte('longitude', lon - COORD_TOLERANCE)
+    .lte('longitude', lon + COORD_TOLERANCE);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    itemId: row.id,
+    tripId: row.itinerary_days.trip_id,
+    dayId: row.itinerary_days.id,
+    dayNumber: row.itinerary_days.day_number,
+  }));
+}

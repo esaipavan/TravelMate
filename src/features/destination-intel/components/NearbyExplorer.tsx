@@ -4,6 +4,7 @@ import { MapPin } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
+import { getMapSearchUrl } from '@/lib/mapLinks';
 import { useNearbyPlaces } from '@/features/nearby/hooks/useNearby';
 import {
   CATEGORY_META,
@@ -23,7 +24,10 @@ function PlaceCard({ place }: PlaceCardProps) {
   const meta = CATEGORY_META[place.category];
   const dist = formatDistance(place.distance);
   const { walk } = travelTime(place.distance);
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`;
+  // Prefer the place's own coordinates (precise) over a text search — this
+  // place already has lat/lon, same as everywhere else that links out to
+  // Google Maps via the shared helper.
+  const mapsUrl = getMapSearchUrl(place.lat, place.lon);
 
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-card p-3.5 transition-colors hover:bg-muted/30">

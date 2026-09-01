@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   MapPinOff,
@@ -8,12 +8,14 @@ import {
   ServerCrash,
   Compass,
   Map as MapIcon,
+  Luggage,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { rv, PAGE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { getCurrentCoordinates, GeolocationError } from '@/lib/geolocation';
+import { useTrip } from '@/features/trips/hooks/useTrips';
 import { useNearbyPlaces, useNearbyPlacesAtCoords } from '../hooks/useNearby';
 import { NearbyError } from '../services/nearby.service';
 import { useFavorites } from '../hooks/useFavorites';
@@ -31,23 +33,53 @@ import { InteractiveMap } from '@/components/shared/InteractiveMap';
 import { PlaceDetailPanel } from '../components/premium/PlaceDetailPanel';
 import { AIExplorerPanel } from '../components/premium/AIExplorerPanel';
 import { DestinationOverview } from '../components/premium/DestinationOverview';
+import { AddToTripDialog } from '../components/premium/AddToTripDialog';
 
 export default function NearbyPage() {
   const [input, setInput] = useState('');
   const [destination, setDestination] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  // Overrides the "Your current location" default label when `coords` came
+  // from somewhere other than live GPS (currently: a trip's saved
+  // destination coordinates) — undefined falls back to the GPS phrasing.
+  const [coordsLabel, setCoordsLabel] = useState<string | undefined>(undefined);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [category, setCategory] = useState<PlaceCategory | 'all'>('all');
   const [search, setSearch] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
+  const [addToTripOpen, setAddToTripOpen] = useState(false);
 
   const qc = useQueryClient();
   const reduced = useReducedMotion();
   const { isFavorite, toggleFavorite } = useFavorites();
 
+  // Arriving from a trip (via the "Explore Nearby" trip-tool card) — default
+  // the search to that trip's destination instead of leaving Explore blank
+  // or defaulting to GPS/a stale prior search. The trip's own coordinates
+  // (persisted at trip creation, when geocoding succeeded) win over its
+  // destination text when available, since a coordinate search is more
+  // precise than re-geocoding the same string.
+  const [searchParams] = useSearchParams();
+  const tripId = searchParams.get('tripId');
+  const { data: contextTrip } = useTrip(tripId ?? '');
+  const appliedTripDefault = useRef(false);
+
+  useEffect(() => {
+    if (!tripId || !contextTrip || appliedTripDefault.current) return;
+    appliedTripDefault.current = true;
+    if (contextTrip.latitude != null && contextTrip.longitude != null) {
+      setInput(contextTrip.destination);
+      setCoordsLabel(contextTrip.destination);
+      setCoords({ lat: contextTrip.latitude, lon: contextTrip.longitude });
+    } else if (contextTrip.destination) {
+      setInput(contextTrip.destination);
+      setDestination(contextTrip.destination);
+    }
+  }, [tripId, contextTrip]);
+
   const stringQuery = useNearbyPlaces(destination);
-  const coordsQuery = useNearbyPlacesAtCoords(coords);
+  const coordsQuery = useNearbyPlacesAtCoords(coords, coordsLabel);
   const { data, isLoading, isError, isFetching, error } = coords ? coordsQuery : stringQuery;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -61,6 +93,7 @@ export default function NearbyPage() {
     try {
       const c = await getCurrentCoordinates();
       setInput('');
+      setCoordsLabel(undefined);
       setCoords(c);
     } catch (err) {
       setCoords(null);
@@ -233,6 +266,19 @@ export default function NearbyPage() {
         <p className="text-xs text-muted-foreground" role="status">
           {locationError}
         </p>
+      )}
+
+      {tripId && contextTrip && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Luggage className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            Exploring near <span className="text-foreground">{contextTrip.title}</span> — search
+            above to look elsewhere.
+          </span>
+          <Link to={`/trips/${tripId}`} className="ml-auto shrink-0 text-primary hover:underline">
+            Back to trip
+          </Link>
+        </div>
       )}
 
       <AnimatePresence mode="wait">
@@ -515,12 +561,20 @@ export default function NearbyPage() {
                         onFavorite={() => toggleFavorite(selectedPlace.id)}
                         onClose={() => setSelectedPlace(null)}
                         isBroad={isBroad}
+                        onAddToTrip={() => setAddToTripOpen(true)}
                       />
                     </div>
                   )}
                 </AnimatePresence>
               </div>
             </div>
+
+            <AddToTripDialog
+              place={selectedPlace}
+              open={addToTripOpen}
+              onOpenChange={setAddToTripOpen}
+              defaultTripId={tripId ?? undefined}
+            />
           </motion.div>
         )}
       </AnimatePresence>

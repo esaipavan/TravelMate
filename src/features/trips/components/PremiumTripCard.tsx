@@ -4,10 +4,9 @@ import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } fro
 import { Heart, MapPin, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { formatDateRange, formatCurrency, tripDuration } from '@/utils/formatters';
-import { getTripStatus } from '@/utils/tripStatus';
+import { formatDateRange, formatCurrency } from '@/utils/formatters';
+import { getTripStatus, getTripProgress } from '@/utils/tripStatus';
 import { useTripCover } from '@/hooks/useTripCover';
-import { differenceInDays, parseISO } from 'date-fns';
 import { useToggleFavourite } from '../hooks/useTrips';
 import type { TripRow } from '../types';
 
@@ -192,15 +191,8 @@ export function PremiumTripCard({ trip, index }: Props) {
   const status = getTripStatus(trip);
   const theme = getDestTheme(trip.destination);
   const cover = useTripCover(trip.destination, trip.cover_image_url);
-  const duration = tripDuration(trip.start_date, trip.end_date);
-
-  const today = parseISO(new Date().toISOString().split('T')[0] + 'T00:00:00');
-  const start = parseISO(trip.start_date + 'T00:00:00');
-  const end = parseISO(trip.end_date + 'T00:00:00');
-  const totalDays = differenceInDays(end, start) + 1;
-  const daysPassed = Math.max(0, differenceInDays(today, start));
-  const progress =
-    status === 'active' ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 0;
+  const { totalDays: duration, percent } = getTripProgress(trip);
+  const progress = status === 'active' ? percent : 0;
 
   /* Cover gradient (when no image) */
   const coverGradient = `linear-gradient(135deg,

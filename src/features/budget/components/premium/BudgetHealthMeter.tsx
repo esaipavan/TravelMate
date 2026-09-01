@@ -1,10 +1,11 @@
 ﻿import { motion, useReducedMotion } from 'framer-motion';
-import { differenceInDays, isAfter, isBefore } from 'date-fns';
+import { isAfter, isBefore } from 'date-fns';
 import { parseLocalDate } from '@/utils/formatters';
 import { Activity, TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
+import { getTripProgress, todayLocal } from '@/utils/tripStatus';
 import type { BudgetSummary } from '../../types';
 
 interface Props {
@@ -75,18 +76,25 @@ export function BudgetHealthMeter({ summary, tripStartDate, tripEndDate }: Props
 
   if (!tripStartDate || !tripEndDate || budget <= 0 || summary.totalSpent === 0) return null;
 
-  const today = new Date();
+  // Local-midnight "today" — comparing a time-of-day `new Date()` against
+  // start/end (both local midnight) made a trip ending TODAY read as already
+  // "ended" the moment any time had passed since midnight on its last day.
+  const today = todayLocal();
   const start = parseLocalDate(tripStartDate);
   const end = parseLocalDate(tripEndDate);
-  const totalDays = Math.max(differenceInDays(end, start) + 1, 1);
 
   if (isBefore(today, start)) return null;
 
   const tripEnded = isAfter(today, end);
-  const daysElapsed = tripEnded
-    ? totalDays
-    : Math.min(Math.max(differenceInDays(today, start) + 1, 1), totalDays);
-  const tripProgress = daysElapsed / totalDays;
+  // Single source of truth for the trip-progress math (also used by the
+  // Dashboard hero, Trip Detail, and the trips grid/list — see tripStatus.ts)
+  // instead of a fourth independent day-counting formula.
+  const {
+    totalDays,
+    dayNumber: daysElapsed,
+    percent,
+  } = getTripProgress({ start_date: tripStartDate, end_date: tripEndDate }, today);
+  const tripProgress = percent / 100;
   const expectedSpend = budget * tripProgress;
   const paceRatio = expectedSpend > 0 ? summary.totalSpent / expectedSpend : 0;
   const projected =
@@ -97,7 +105,7 @@ export function BudgetHealthMeter({ summary, tripStartDate, tripEndDate }: Props
   const cfg = HEALTH_CONFIG[health];
   const HealthIcon = cfg.Icon;
 
-  const tripPct = Math.round(tripProgress * 100);
+  const tripPct = percent;
   const spendPct = budget > 0 ? Math.min(Math.round((summary.totalSpent / budget) * 100), 100) : 0;
 
   const insight = overBudget

@@ -5,7 +5,7 @@ import { Heart, MapPin, Calendar, ArrowRight, Wallet } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, rg, LIST_ITEM_VARIANTS, PRESS, SPRING } from '@/lib/motion';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, getTripProgress, todayLocal } from '@/utils/tripStatus';
 import { resolveDestinationTheme } from '@/utils/destinationTheme';
 import { useTripCover } from '@/hooks/useTripCover';
 import { formatCurrency, formatDateRange, tripDuration } from '@/utils/formatters';
@@ -166,18 +166,13 @@ export const TripGalleryCard = memo(function TripGalleryCard({ trip, index: _ind
   const status = useMemo(() => getTripStatus(trip), [trip]);
   const imageUrl = useTripCover(trip.destination, trip.cover_image_url);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  const today = useMemo(() => todayLocal(), []);
   const startDate = useMemo(() => parseISO(trip.start_date + 'T00:00:00'), [trip.start_date]);
   const endDate = useMemo(() => parseISO(trip.end_date + 'T00:00:00'), [trip.end_date]);
   const daysAway = Math.max(0, differenceInDays(startDate, today));
   const daysLeft = Math.max(0, differenceInDays(endDate, today));
   const totalDays = Math.max(1, differenceInDays(endDate, startDate) + 1);
-  const elapsed = Math.max(0, differenceInDays(today, startDate));
-  const progress = status === 'active' ? Math.min(1, elapsed / totalDays) : 0;
+  const progress = status === 'active' ? getTripProgress(trip).percent / 100 : 0;
 
   const cfg = STATUS_CFG[status];
 

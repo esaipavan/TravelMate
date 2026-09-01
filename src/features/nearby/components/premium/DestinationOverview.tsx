@@ -1,9 +1,13 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BedDouble, CalendarPlus, MapPin, Sparkles, Star } from 'lucide-react';
+import { BedDouble, CalendarPlus, MapPin, Images, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePlaceImage } from '@/hooks/usePlaceImage';
+import { SourceTag } from '@/components/shared/SourceTag';
+import { usePlaceGallery } from '@/hooks/usePlaceGallery';
+import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
+import { formatLocationHierarchy } from '@/lib/geocode';
 import { useDestinationBrief } from '../../hooks/useDestinationBrief';
 import type { NearbyResult } from '../../types';
 
@@ -26,14 +30,37 @@ export function DestinationOverview({ result }: Props) {
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
-  const name = parts[0] ?? result.location;
-  const region = parts
-    .slice(1)
-    .filter((p) => p.toLowerCase() !== 'india')
-    .slice(-2)
-    .join(', ');
+  const rawName = parts[0] || result.location;
+  const locality = result.locationDetail?.locality;
+  // The geocoder's locality field (Nominatim's address.city/town/village) is
+  // only a trustworthy PRIMARY name when the search itself resolved to that
+  // settlement — it matches the raw display-name's first part (e.g.
+  // "Mangalagiri" search → locality "Mangalagiri"). For a landmark/POI search
+  // ("Charminar", "Ramappa Temple"), Nominatim's address.city is the
+  // CONTAINING city ("Hyderabad"), not the searched place — using it as the
+  // primary name would silently rename the landmark to its city, exactly the
+  // failure mode this whole feature exists to prevent. In that case the raw
+  // name wins and the locality is folded into the region line instead.
+  const isSettlementMatch = !!locality && rawName.toLowerCase() === locality.toLowerCase();
+  const name = isSettlementMatch ? locality : rawName;
+  const structuredRegion = formatLocationHierarchy(result.locationDetail, {
+    includeLocality: !isSettlementMatch,
+  });
+  const region =
+    structuredRegion ||
+    parts
+      .slice(1)
+      .filter((p) => p.toLowerCase() !== 'india')
+      .slice(-2)
+      .join(', ');
 
-  const { imageUrl } = usePlaceImage(name);
+  const { images } = usePlaceGallery(name);
+  const [activeImage, setActiveImage] = useState(0);
+  // Reset to the lead (first, most-confident) image whenever the resolved
+  // place changes — otherwise a stale index from the previous search could
+  // briefly point at the wrong photo before the gallery finishes loading.
+  useEffect(() => setActiveImage(0), [name]);
+  const heroImage = images[Math.min(activeImage, images.length - 1)];
   const { brief, isLoading: briefLoading } = useDestinationBrief(name);
 
   const attractionCount = result.places.filter(
@@ -54,9 +81,10 @@ export function DestinationOverview({ result }: Props) {
     >
       {/* Hero */}
       <div className="relative h-48 w-full sm:h-60">
-        {imageUrl ? (
+        {heroImage ? (
           <img
-            src={imageUrl}
+            key={heroImage}
+            src={heroImage}
             alt={name}
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
@@ -68,6 +96,11 @@ export function DestinationOverview({ result }: Props) {
           className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"
           aria-hidden
         />
+        {heroImage && (
+          <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm">
+            <SourceTag kind="verified" label="Verified photo" className="text-white" />
+          </span>
+        )}
         <div className="absolute inset-x-0 bottom-0 p-5">
           <h2 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">{name}</h2>
           {region && (
@@ -78,6 +111,42 @@ export function DestinationOverview({ result }: Props) {
           )}
         </div>
       </div>
+
+      {/* Thumbnail strip — only when the SAME verified article yielded more
+          than one photo. Horizontal scroll (not a grid) so it works at any
+          width down to a narrow phone screen; each thumbnail is a real photo
+          from the same source as the hero, never a different destination's
+          image. */}
+      {images.length > 1 && (
+        <div
+          className="flex gap-1.5 overflow-x-auto border-b border-border/60 bg-muted/20 p-2.5"
+          role="group"
+          aria-label={`${images.length} photos of ${name}`}
+        >
+          {images.slice(0, 5).map((url, i) => (
+            <button
+              key={url}
+              type="button"
+              onClick={() => setActiveImage(i)}
+              className={cn(
+                'h-12 w-12 shrink-0 overflow-hidden rounded-lg ring-2 transition-opacity',
+                i === activeImage
+                  ? 'ring-primary'
+                  : 'opacity-70 ring-transparent hover:opacity-100',
+              )}
+              aria-label={`Show photo ${i + 1} of ${images.length}`}
+              aria-current={i === activeImage}
+            >
+              <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+            </button>
+          ))}
+          {images.length > 5 && (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
+              <Images className="h-3 w-3" aria-hidden />+{images.length - 5}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex flex-col gap-4 p-5">
@@ -103,10 +172,10 @@ export function DestinationOverview({ result }: Props) {
         {/* AI overview — labelled, progressive, non-blocking */}
         {(briefLoading || brief) && (
           <div className="rounded-xl border border-border/60 bg-muted/40 p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-              About {name} · AI overview
-            </p>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground/80">About {name}</p>
+              <SourceTag kind="ai" />
+            </div>
             {briefLoading && !brief ? (
               <div className="space-y-2" aria-hidden>
                 <div className="h-3 w-full animate-pulse rounded bg-muted" />

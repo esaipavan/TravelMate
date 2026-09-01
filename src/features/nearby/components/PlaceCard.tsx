@@ -1,5 +1,6 @@
 import { MapPin, ExternalLink, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getMapSearchUrl } from '@/lib/mapLinks';
 import { PLACE_CATEGORIES } from '../types';
 import type { NearbyPlace } from '../types';
 
@@ -15,15 +16,11 @@ function formatDistance(metres: number): string {
 export function PlaceCard({ place }: Props) {
   const meta = PLACE_CATEGORIES.find((c) => c.value === place.category);
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`;
+  const mapsUrl = getMapSearchUrl(place.lat, place.lon);
 
   return (
     <div className="flex items-start gap-3 rounded-lg border bg-card p-4 transition-shadow hover:shadow-sm">
-      <span
-        className="mt-0.5 shrink-0 text-2xl leading-none"
-        role="img"
-        aria-label={meta?.label}
-      >
+      <span className="mt-0.5 shrink-0 text-2xl leading-none" role="img" aria-label={meta?.label}>
         {meta?.emoji ?? '📍'}
       </span>
 
@@ -44,12 +41,7 @@ export function PlaceCard({ place }: Props) {
         </div>
       </div>
 
-      <Button
-        size="sm"
-        variant="outline"
-        className="shrink-0"
-        asChild
-      >
+      <Button size="sm" variant="outline" className="shrink-0" asChild>
         <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
           <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
           Maps

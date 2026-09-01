@@ -105,12 +105,13 @@ export function BudgetAllocationCard({ tripId, item, onEdit }: Props) {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {/* Actions — always visible below lg (no hover on touch); fades in
+            on hover/focus at lg+, same pattern as ItineraryItemCard. */}
+        <div className="flex shrink-0 items-center gap-1 transition-opacity duration-150 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100">
           <button
             onClick={() => onEdit(item)}
             aria-label={`Edit ${item.label} budget`}
-            className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
@@ -119,7 +120,7 @@ export function BudgetAllocationCard({ tripId, item, onEdit }: Props) {
               onClick={() => setConfirmOpen(true)}
               disabled={isPending}
               aria-label={`Clear ${item.label} budget`}
-              className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

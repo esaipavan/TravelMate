@@ -58,10 +58,15 @@ export default function TripsPage() {
 
     if (filterStatus === 'favourites') {
       result = result.filter((t) => t.is_favourite);
-    } else if (filterStatus === 'upcoming') {
-      result = result.filter((t) => getTripStatus(t) === 'upcoming');
+    } else if (filterStatus === 'planning') {
+      // 'planning' is a DB-only status that getTripStatus never emits (it
+      // classifies by date into upcoming/active/completed), so keep it on the
+      // raw status column.
+      result = result.filter((t) => t.status === 'planning');
     } else if (filterStatus !== 'all') {
-      result = result.filter((t) => t.status === filterStatus);
+      // active / upcoming / completed / cancelled — use the canonical date-based
+      // status so this filter matches the "Live Now" tile and the chip counts.
+      result = result.filter((t) => getTripStatus(t) === filterStatus);
     }
 
     if (search.trim()) {
@@ -185,8 +190,12 @@ export default function TripsPage() {
       {!isLoading && hasAnyTrips && !isFiltered && <TravelMemoriesPreview trips={allTrips} />}
 
       {/* ── FAB ────────────────────────────────────────────────── */}
+      {/* Mobile bottom offset stacks above FloatingAI's FAB (bottom-[8.5rem]
+          + the same safe-area term), which itself stacks above FeedbackWidget
+          — three floating controls, same right-4 column, no two occupying
+          overlapping vertical space on any device. */}
       <motion.div
-        className="fixed bottom-28 right-4 z-40 lg:bottom-6 lg:right-6"
+        className="fixed bottom-[calc(12rem+max(env(safe-area-inset-bottom,0px),1rem))] right-4 z-40 lg:bottom-6 lg:right-6"
         initial={reduced ? {} : { scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.35, type: 'spring', damping: 16, stiffness: 220 }}

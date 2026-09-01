@@ -1,8 +1,23 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { X, MapPin, Phone, Globe, Heart, ExternalLink, Navigation, Clock } from 'lucide-react';
+import {
+  X,
+  MapPin,
+  Phone,
+  Globe,
+  Heart,
+  ExternalLink,
+  Navigation,
+  Clock,
+  CalendarPlus,
+  Check,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SourceTag, UnknownField } from '@/components/shared/SourceTag';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
+import { getMapSearchUrl, getDirectionsUrl } from '@/lib/mapLinks';
+import { usePlaceTripPlacements } from '@/features/itinerary/hooks/useItinerary';
+import { useTrips } from '@/features/trips/hooks/useTrips';
 import { CATEGORY_META, formatDistance, travelTime, type NearbyPlace } from '../../types';
 
 interface Props {
@@ -15,6 +30,9 @@ interface Props {
    *  state centroid implies no meaningful "from you" travel time). Distance
    *  stays. Defaults to false so point-like places and Near Me are unaffected. */
   isBroad?: boolean;
+  /** Opens the "choose a trip" dialog for this place. Omitted entirely (no
+   *  button rendered) when the caller doesn't wire it up. */
+  onAddToTrip?: () => void;
 }
 
 export function PlaceDetailPanel({
@@ -24,12 +42,21 @@ export function PlaceDetailPanel({
   onClose,
   className,
   isBroad = false,
+  onAddToTrip,
 }: Props) {
   const reduced = useReducedMotion();
   const meta = CATEGORY_META[place.category];
   const time = travelTime(place.distance);
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`;
-  const routeUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`;
+  const mapsUrl = getMapSearchUrl(place.lat, place.lon);
+  const routeUrl = getDirectionsUrl(place.lat, place.lon);
+  const { data: placements } = usePlaceTripPlacements(place);
+  const { data: trips } = useTrips();
+  const placementSummary =
+    placements && placements.length > 0
+      ? placements.length === 1
+        ? `${trips?.find((t) => t.id === placements[0].tripId)?.title ?? 'a trip'} · Day ${placements[0].dayNumber}`
+        : `${placements.length} trips`
+      : null;
 
   return (
     <motion.div
@@ -75,7 +102,7 @@ export function PlaceDetailPanel({
           <button
             onClick={onClose}
             aria-label="Close detail panel"
-            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -97,11 +124,17 @@ export function PlaceDetailPanel({
           </span>
           {!isBroad && (
             <>
-              <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
-                🚶 {time.walk}
+              <span
+                className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground"
+                title="Estimated from straight-line distance, not live routing"
+              >
+                🚶 {time.walk} · estimated
               </span>
-              <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
-                🚗 {time.drive}
+              <span
+                className="rounded-full bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground"
+                title="Estimated from straight-line distance, not live routing"
+              >
+                🚗 {time.drive} · estimated
               </span>
             </>
           )}
@@ -113,38 +146,59 @@ export function PlaceDetailPanel({
           )}
         </div>
 
-        {/* Opening hours */}
-        {place.openingHours && (
-          <p className="mb-3 text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">Hours: </span>
-            {place.openingHours}
-          </p>
-        )}
+        {/* Opening hours — shown honestly either way: the provider's own value,
+            or an explicit "not verified" rather than silently omitting it. */}
+        <div className="mb-3">
+          {place.openingHours ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-medium text-foreground">Hours: </span>
+                {place.openingHours}
+              </p>
+              <SourceTag kind="verified" />
+            </div>
+          ) : (
+            <UnknownField label="Hours" />
+          )}
+        </div>
 
-        {/* Contact */}
-        {(place.phone || place.website) && (
-          <div className="mb-3 space-y-1">
-            {place.phone && (
-              <a
-                href={`tel:${place.phone}`}
-                className="flex items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                <Phone className="h-3 w-3" aria-hidden="true" />
-                {place.phone}
-              </a>
-            )}
-            {place.website && (
-              <a
-                href={place.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 truncate text-[11px] text-indigo-500 hover:text-indigo-400"
-              >
-                <Globe className="h-3 w-3 shrink-0" aria-hidden="true" />
-                {place.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-              </a>
-            )}
-          </div>
+        {/* Contact — same honesty rule as hours above. */}
+        <div className="mb-3">
+          {place.phone || place.website ? (
+            <div className="space-y-1">
+              {place.phone && (
+                <a
+                  href={`tel:${place.phone}`}
+                  className="flex items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  <Phone className="h-3 w-3" aria-hidden="true" />
+                  {place.phone}
+                </a>
+              )}
+              {place.website && (
+                <a
+                  href={place.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 truncate text-[11px] text-indigo-500 hover:text-indigo-400"
+                >
+                  <Globe className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  {place.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                </a>
+              )}
+            </div>
+          ) : (
+            <UnknownField label="Contact" />
+          )}
+        </div>
+
+        {/* Place → trip context — only shown when we can actually prove it via
+            saved coordinates (see findPlaceInTrips); never guessed. */}
+        {placementSummary && (
+          <p className="mb-3 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
+            Added to {placementSummary}
+          </p>
         )}
 
         {/* Actions */}
@@ -157,6 +211,7 @@ export function PlaceDetailPanel({
               isFavorite && 'border-rose-500/30 bg-rose-500/5 text-rose-500 hover:bg-rose-500/10',
             )}
             onClick={onFavorite}
+            title="Remember this place — kept on this device, not tied to any trip"
           >
             <Heart
               className={cn('h-3.5 w-3.5', isFavorite && 'fill-rose-500')}
@@ -183,6 +238,19 @@ export function PlaceDetailPanel({
             </a>
           </Button>
         </div>
+
+        {onAddToTrip && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 w-full gap-1.5 text-xs"
+            onClick={onAddToTrip}
+            title="Put this place into a specific trip's itinerary"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            Add to Trip
+          </Button>
+        )}
       </div>
     </motion.div>
   );

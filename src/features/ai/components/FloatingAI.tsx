@@ -164,7 +164,7 @@ function MessageActions({
   return (
     <div
       aria-live="off"
-      className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+      className="flex items-center gap-1 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
     >
       <ActionBtn label={copied ? 'Copied!' : 'Copy'} onClick={handleCopy}>
         {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -1157,8 +1157,12 @@ export function FloatingAI() {
           'fixed z-[60] flex h-12 w-12 items-center justify-center rounded-full text-white shadow-glow',
           'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30',
           'transition-shadow hover:shadow-lifted',
-          // Mobile: above FeedbackWidget + mobile nav
-          'bottom-[8.5rem] right-4',
+          // Mobile: above FeedbackWidget + mobile nav. Same safe-area term as
+          // FeedbackWidget (below) so the ~3.5rem gap between them holds on
+          // any device — previously this was a bare 8.5rem with no safe-area
+          // term, so on a device with a tall inset FeedbackWidget's own
+          // (safe-area-aware) position could rise enough to collide with it.
+          'bottom-[calc(8.5rem+max(env(safe-area-inset-bottom,0px),1rem))] right-4',
           // Desktop: to the left of FeedbackWidget
           'lg:bottom-6 lg:right-[7.5rem]',
         )}

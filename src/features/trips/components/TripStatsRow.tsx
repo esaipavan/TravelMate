@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, Clock, Wallet, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, tripDuration } from '@/utils/formatters';
-import { getTripStatus } from '@/utils/tripStatus';
+import { getTripStatus, getTripProgress, todayLocal } from '@/utils/tripStatus';
 import { differenceInDays, parseISO } from 'date-fns';
 import type { TripRow } from '../types';
 
@@ -51,7 +51,7 @@ export function TripStatsRow({ trip }: Props) {
   const status = getTripStatus(trip);
   const duration = tripDuration(trip.start_date, trip.end_date);
 
-  const today = parseISO(new Date().toISOString().split('T')[0] + 'T00:00:00');
+  const today = todayLocal();
   const start = parseISO(trip.start_date + 'T00:00:00');
   const end = parseISO(trip.end_date + 'T00:00:00');
 
@@ -68,12 +68,10 @@ export function TripStatsRow({ trip }: Props) {
     timeSub = 'until departure';
     timeAccent = 'text-primary';
   } else if (status === 'active') {
-    const passed = Math.max(0, differenceInDays(today, start)) + 1;
-    const left = Math.max(0, differenceInDays(end, today));
-    const pct = Math.min(100, Math.round(((passed - 1) / duration) * 100));
+    const { dayNumber, daysLeft, percent } = getTripProgress(trip);
     timeLabel = 'Progress';
-    timeValue = `${pct}%`;
-    timeSub = `Day ${passed} · ${left}d left`;
+    timeValue = `${percent}%`;
+    timeSub = `Day ${dayNumber} · ${daysLeft}d left`;
     timeAccent = 'text-emerald-500';
   } else if (status === 'completed') {
     const days = differenceInDays(today, end);
