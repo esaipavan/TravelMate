@@ -284,6 +284,325 @@ export function pickBest(query: string, places: NominatimPlace[]): NominatimPlac
   return scored[0].place;
 }
 
+// ── Name matching (Phase 8) ─────────────────────────────────────────────────
+//
+// Phase 7 fixed two class/ranking bugs but exposed a deeper problem: a single
+// boolean "exact match" cannot tell "Sri Meenakshi Amman Temple" (Madurai's
+// actual, overwhelmingly famous temple) apart from an unrelated Bengaluru
+// place that happens to be named exactly "Meenakshi Temple" — the honorific
+// ("Sri") and an extra word ("Amman") make the real temple's name literally
+// not equal to the query, so it never even competed. Likewise, two genuine
+// same-named temples (Ramappa Temple, Palampet vs Hanumakonda) can both be
+// exact matches with no reliable signal to prefer one — silently picking
+// either is worse than admitting the query is ambiguous (CORE PRINCIPLE:
+// WRONG PLACE > NO PLACE).
+//
+// This section adds a small, generalizable matching layer used ONLY to
+// select among already-`isGenuineDestination`-filtered candidates. It never
+// changes which OSM classes/types are accepted (that boundary — business/
+// foreign-namesake protection — is entirely Phase 7's, untouched here), and
+// it deliberately does NOT modify pickBest() (still used, unmodified, for
+// settlement-vs-settlement collisions like Kondapur, where Phase 7's
+// importance-then-rank logic is already proven correct).
+
+// Common Indian honorific prefixes seen on temple names — stripped only when
+// they appear as a genuine LEADING token followed by more content (never
+// mid-string, never leaving an empty remainder), so "Sri Meenakshi Amman
+// Temple" normalizes toward "meenakshi amman temple" without stripping
+// meaning from anywhere else in the string.
+const HONORIFIC_PREFIXES = ['sri', 'shri', 'sree', 'shree'];
+
+/** Lowercase, trim, collapse whitespace, normalize punctuation to spaces, and
+ *  drop a single leading honorific token. This is comparison-only — never
+ *  used for display. */
+function normalizeName(s: string): string {
+  const cleaned = s
+    .toLowerCase()
+    .trim()
+    .replace(/[.,'"()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const [first, ...rest] = cleaned.split(' ');
+  if (rest.length > 0 && HONORIFIC_PREFIXES.includes(first)) {
+    return rest.join(' ');
+  }
+  return cleaned;
+}
+
+// Category-describing nouns that appear in countless unrelated place names —
+// matching on these ALONE is not identity evidence ("Meenakshi Temple"
+// sharing the word "temple" with a thousand other temples proves nothing).
+// Excluded only from TOKEN_MATCH/PARTIAL scoring, never from EXACT
+// (normalized full-string) comparison, so a place whose real name IS just
+// "Temple" still matches itself exactly.
+const GENERIC_NAME_WORDS = new Set([
+  'temple',
+  'mandir',
+  'fort',
+  'museum',
+  'park',
+  'church',
+  'mosque',
+  'basilica',
+  'cathedral',
+  'shrine',
+  'palace',
+  'garden',
+  'gardens',
+  'lake',
+  'hill',
+  'hills',
+]);
+
+function tokenize(normalized: string): string[] {
+  return normalized.split(' ').filter((w) => w.length >= 2);
+}
+
+/** Significant (non-generic) tokens — the words that actually carry identity. */
+function significantTokens(normalized: string): Set<string> {
+  return new Set(tokenize(normalized).filter((w) => !GENERIC_NAME_WORDS.has(w)));
+}
+
+export type NameMatchTier = 'EXACT' | 'TOKEN_MATCH' | 'PARTIAL' | 'NONE';
+
+/**
+ * Classifies how strongly a (already address-context-stripped, see below)
+ * query matches a candidate's own primary name.
+ *   EXACT       — normalized full strings are equal.
+ *   TOKEN_MATCH — every SIGNIFICANT query token appears in the candidate's
+ *                 significant tokens (the candidate may have extra tokens —
+ *                 this is what lets "Meenakshi Temple" reach the real
+ *                 "Sri Meenakshi Amman Temple" despite "Amman" and "Sri").
+ *   PARTIAL     — at least one significant token in common, but not all.
+ *   NONE        — no significant tokens in common at all.
+ * Exported purely for unit testing.
+ */
+export function classifyNameMatch(query: string, candidateName: string): NameMatchTier {
+  const normQuery = normalizeName(query);
+  const normCandidate = normalizeName(candidateName);
+  if (normQuery === normCandidate) return 'EXACT';
+
+  const queryWords = significantTokens(normQuery);
+  const candidateWords = significantTokens(normCandidate);
+  // A query with no significant tokens (empty, or purely generic words like
+  // a bare "Temple") carries no identity evidence at all — it does NOT
+  // vacuously match everything, and it does NOT get a middling "PARTIAL"
+  // score either; every candidate is equally (un)supported by the name.
+  if (queryWords.size === 0) return 'NONE';
+
+  const allPresent = [...queryWords].every((w) => candidateWords.has(w));
+  if (allPresent) return 'TOKEN_MATCH';
+
+  const anyPresent = [...queryWords].some((w) => candidateWords.has(w));
+  return anyPresent ? 'PARTIAL' : 'NONE';
+}
+
+const TIER_RANK: Record<NameMatchTier, number> = {
+  EXACT: 3,
+  TOKEN_MATCH: 2,
+  PARTIAL: 1,
+  NONE: 0,
+};
+
+/** Address-hierarchy tokens for a candidate — used only to detect when the
+ *  QUERY already names the candidate's own city/district/state, never to
+ *  invent or guess location. */
+function addressContextTokens(address: NominatimAddress | undefined): Set<string> {
+  if (!address) return new Set();
+  const fields = [
+    address.village,
+    address.town,
+    address.city,
+    address.municipality,
+    address.suburb,
+    address.state_district,
+    address.state,
+  ].filter((v): v is string => !!v);
+  const tokens = new Set<string>();
+  for (const field of fields) {
+    for (const t of tokenize(normalizeName(field))) tokens.add(t);
+  }
+  return tokens;
+}
+
+interface CandidateEvaluation {
+  place: NominatimPlace;
+  tier: NameMatchTier;
+  /** True when the query contained a token that matches this candidate's OWN
+   *  city/district/state — i.e. the user already told us where. Never
+   *  fabricated; only ever set when a real query token matched real address
+   *  data for THIS specific candidate. */
+  hasContext: boolean;
+  importance: number;
+  isSettlement: boolean;
+}
+
+/**
+ * Evaluates one candidate against the query: tokens that match the
+ * candidate's OWN address hierarchy are set aside as geographic context
+ * before scoring the remaining tokens against its name — this is what lets
+ * "Meenakshi Temple Madurai" reach EXACT/TOKEN_MATCH against "Sri Meenakshi
+ * Amman Temple" (whose city is Madurai) without "Madurai" counting against
+ * the name match, while a DIFFERENT candidate whose city isn't Madurai gets
+ * no such benefit — the context token only ever helps candidates it's
+ * actually true of.
+ *
+ * Tokens that are already part of the candidate's OWN name are excluded from
+ * "context" — a village's `address.village` field is very commonly just its
+ * own name again (real Nominatim data: e.g. a "Kondapur" suburb's own
+ * suburb field is "Kondapur"), so without this exclusion a query that merely
+ * repeats a settlement's name would wrongly look like it supplied external
+ * geographic disambiguation, when it supplied none at all.
+ */
+function evaluateCandidate(query: string, place: NominatimPlace): CandidateEvaluation {
+  const primaryName = (place.display_name.split(',')[0] ?? '').trim();
+  const ownNameTokens = significantTokens(normalizeName(primaryName));
+  const queryTokens = tokenize(normalizeName(query));
+  const contextTokens = new Set(
+    [...addressContextTokens(place.address)].filter((t) => !ownNameTokens.has(t)),
+  );
+  const coreTokens = queryTokens.filter((t) => !contextTokens.has(t));
+  const hasContext = coreTokens.length < queryTokens.length;
+  const coreQuery = coreTokens.join(' ') || query; // never let context-stripping empty the query out
+
+  return {
+    place,
+    tier: classifyNameMatch(coreQuery, primaryName),
+    hasContext,
+    importance: place.importance ?? 0,
+    isSettlement: !!place.class && (place.class === 'place' || place.class === 'boundary'),
+  };
+}
+
+// A dominant outside-tier candidate must be overwhelmingly more important —
+// not just "a bit higher" — to override a stronger name-match tier. 50x is
+// far above any noise observed between same-tier candidates that both lack a
+// real prominence signal (Nominatim's un-linked baseline importance values
+// cluster within ~1.5x of each other), and far below the >6000x gap Madurai's
+// actual temple has over its unrelated Bengaluru namesakes — so it promotes
+// genuine landmark-level prominence without being triggered by ordinary
+// importance noise.
+const IMPORTANCE_PROMOTION_MULTIPLIER = 50;
+
+// Among same-tier, same-kind POI/landmark candidates (not settlements — see
+// isSettlement below), an importance gap smaller than this is treated as
+// noise, not a genuine "this one is more famous" signal — this is what makes
+// Ramappa Temple's two candidates (importance ratio ~1.44x) ambiguous rather
+// than silently picking whichever Nominatim happens to rank a hair higher.
+const POI_DECISIVE_IMPORTANCE_RATIO = 3;
+
+export const AMBIGUOUS_MESSAGE =
+  'Multiple different places in India share that name. Try adding a city, district, or state to be more specific.';
+
+// A candidate counts as a STRONG (identity-confirmed) match when it's a raw
+// EXACT match, OR when it only reaches TOKEN_MATCH because the query
+// explicitly supplied geographic context that this specific candidate's own
+// address confirms (`hasContext`) — the user telling us "…Madurai" is as
+// good as an exact name match once "Madurai" is confirmed to be this
+// candidate's own city. A coincidental TOKEN_MATCH with NO context (a query
+// word merely happening to appear inside a longer, otherwise-unrelated name
+// — see the Tirupathi bug documented below) does NOT count as strong.
+function isStrongMatch(e: CandidateEvaluation): boolean {
+  return e.tier === 'EXACT' || (e.hasContext && e.tier === 'TOKEN_MATCH');
+}
+
+/**
+ * Selects the intended candidate from an already-`isGenuineDestination`
+ * -filtered list, or throws when the evidence genuinely doesn't support a
+ * confident choice (CORE PRINCIPLE: WRONG PLACE > NO PLACE — see module
+ * comment above). `candidates` must be non-empty.
+ *
+ * When NO candidate reaches a strong match at all, this module has no
+ * opinion worth trusting over Nominatim's own relevance ranking, and defers
+ * entirely to pickBest() across every candidate — this is what keeps a
+ * genuine misspelling ("Tirupathi" → "Dwaraka Tirumala", Nominatim's own
+ * highest-relevance answer, which shares zero name tokens with the query)
+ * working exactly as Phase 7 left it, rather than letting some OTHER
+ * low-importance candidate that merely happens to contain the query text as
+ * a substring win by accident.
+ *
+ * Settlement-vs-settlement collisions among strong matches (Kondapur's
+ * suburb vs same-named rural villages) are delegated to pickBest()
+ * UNCHANGED — Phase 7 already proved that importance-then-rank is the right
+ * rule there, and there is a reasonable, generalizable prior for it (a
+ * well-known metro locality is a far more common search target than an
+ * obscure identically-named village), which does not hold for landmarks/POIs
+ * the same way. Non-settlement (temple/fort/park/museum/…) collisions get:
+ * geographic context the query already supplied wins outright; otherwise an
+ * overwhelming importance gap (not "highest importance" — a DECISIVE one)
+ * wins; otherwise, if multiple genuinely different places remain
+ * indistinguishable, this throws rather than guesses.
+ */
+export function resolveDestination(query: string, candidates: NominatimPlace[]): NominatimPlace {
+  if (candidates.length === 1) return candidates[0];
+
+  const evaluations = candidates.map((c) => evaluateCandidate(query, c));
+
+  let topSet = evaluations.filter(isStrongMatch);
+  if (topSet.length === 0) {
+    // Nothing reaches a confirmed identity match — trust Nominatim's own
+    // relevance/importance ranking over every candidate, unchanged Phase 7
+    // behaviour (see Tirupathi in the function comment above).
+    return pickBest(query, candidates);
+  }
+
+  // Cross-tier promotion: a candidate that ISN'T a strong match can still win
+  // outright when its importance overwhelms every strong-match candidate —
+  // this is what lets Madurai's real temple beat the exact-but-unrelated
+  // Bengaluru "Meenakshi Temple" namesakes despite matching only at
+  // TOKEN_MATCH with no query-supplied context. Still requires at least
+  // TOKEN_MATCH (never a totally unrelated NONE-tier candidate) — the
+  // Tirupathi-style "nothing is strong" case is handled entirely by the
+  // early return above, so this only ever promotes a plausible-but-imprecise
+  // name match, never an arbitrary one.
+  const topImportance = Math.max(...topSet.map((e) => e.importance));
+  const dominant = evaluations.filter(
+    (e) =>
+      !isStrongMatch(e) &&
+      TIER_RANK[e.tier] >= TIER_RANK.TOKEN_MATCH &&
+      e.importance >= topImportance * IMPORTANCE_PROMOTION_MULTIPLIER,
+  );
+  if (dominant.length === 1) return dominant[0].place;
+  if (dominant.length > 1) topSet = dominant; // several overwhelming outsiders — resolve among them below
+
+  if (topSet.length === 1) return topSet[0].place;
+
+  // The query already named a city/district/state that matches exactly one
+  // top candidate — explicit disambiguation the user provided; use it.
+  const contextMatches = topSet.filter((e) => e.hasContext);
+  if (contextMatches.length === 1) return contextMatches[0].place;
+
+  const allSettlements = topSet.every((e) => e.isSettlement);
+  if (allSettlements) {
+    // Unchanged Phase 7 logic — proven correct for locality collisions.
+    return pickBest(
+      query,
+      topSet.map((e) => e.place),
+    );
+  }
+
+  // POI/landmark collision (temple, fort, park, museum…): require a decisive
+  // importance gap, not just "highest of several near-identical values".
+  const byImportance = [...topSet].sort((a, b) => b.importance - a.importance);
+  const [top, second] = byImportance;
+  if (!second || top.importance >= second.importance * POI_DECISIVE_IMPORTANCE_RATIO) {
+    return top.place;
+  }
+
+  // Are these actually different places, or just duplicate/adjacent OSM
+  // entries for the same physical site? Only genuinely different locations
+  // are ambiguous — several records for the SAME district/state just get the
+  // best-importance one.
+  const distinctLocations = new Set(
+    byImportance.map(
+      (e) => `${e.place.address?.state_district ?? ''}|${e.place.address?.state ?? ''}`,
+    ),
+  );
+  if (distinctLocations.size === 1) return top.place;
+
+  throw new Error(AMBIGUOUS_MESSAGE);
+}
+
 export async function geocodeLocation(query: string): Promise<GeocodeResult> {
   const trimmed = query.trim();
   if (!trimmed) throw new Error('Enter a place to search');
@@ -348,7 +667,7 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
   const genuine = results.filter(isGenuineDestination);
   if (!genuine.length) throw new Error(NOT_FOUND_MESSAGE);
 
-  const best = pickBest(trimmed, genuine);
+  const best = resolveDestination(trimmed, genuine);
 
   const kind = best.class && best.type ? `${best.class}/${best.type}` : undefined;
 
