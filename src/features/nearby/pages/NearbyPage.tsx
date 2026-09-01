@@ -31,6 +31,7 @@ import { ExplorerEmptyState } from '../components/premium/ExplorerEmptyState';
 import { NearbyPlaceCard } from '../components/premium/NearbyPlaceCard';
 import { InteractiveMap } from '@/components/shared/InteractiveMap';
 import { PlaceDetailPanel } from '../components/premium/PlaceDetailPanel';
+import { PlaceDetailSheet } from '../components/premium/PlaceDetailSheet';
 import { AIExplorerPanel } from '../components/premium/AIExplorerPanel';
 import { DestinationOverview } from '../components/premium/DestinationOverview';
 import { AddToTripDialog } from '../components/premium/AddToTripDialog';
@@ -49,6 +50,7 @@ export default function NearbyPage() {
   const [search, setSearch] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
   const [addToTripOpen, setAddToTripOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
   const qc = useQueryClient();
   const reduced = useReducedMotion();
@@ -562,6 +564,7 @@ export default function NearbyPage() {
                         onClose={() => setSelectedPlace(null)}
                         isBroad={isBroad}
                         onAddToTrip={() => setAddToTripOpen(true)}
+                        onViewDetails={() => setDetailSheetOpen(true)}
                       />
                     </div>
                   )}
@@ -574,6 +577,18 @@ export default function NearbyPage() {
               open={addToTripOpen}
               onOpenChange={setAddToTripOpen}
               defaultTripId={tripId ?? undefined}
+            />
+
+            <PlaceDetailSheet
+              place={selectedPlace}
+              open={detailSheetOpen}
+              onOpenChange={setDetailSheetOpen}
+              isFavorite={!!selectedPlace && isFavorite(selectedPlace.id)}
+              onFavorite={() => selectedPlace && toggleFavorite(selectedPlace.id)}
+              onAddToTrip={() => setAddToTripOpen(true)}
+              isBroad={isBroad}
+              relatedPlaces={data.places}
+              onSelectRelated={handlePlaceSelect}
             />
           </motion.div>
         )}

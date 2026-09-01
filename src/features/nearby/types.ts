@@ -121,6 +121,23 @@ export interface NearbyPlace {
   website?: string;
   openNow?: boolean;
   openingHours?: string;
+  /** Structured locality/district/state/country for THIS place (distinct from
+   *  NearbyResult.locationDetail, which describes the searched destination) —
+   *  built from fields Geoapify's response already carries (city/suburb/
+   *  state_district/state/country), never a second geocode call. Reuses the
+   *  same LocationHierarchy shape as the destination-level hierarchy so one
+   *  formatter (formatLocationHierarchy) works for both. */
+  locationDetail?: LocationHierarchy;
+  /** The underlying map-data source Geoapify aggregates this place from (e.g.
+   *  "openstreetmap") — lets the UI say "Verified from OpenStreetMap" instead
+   *  of a vague "verified" claim. Absent when Geoapify's response omits it. */
+  dataSource?: string;
+  /** An exact Wikipedia article title Geoapify's own OSM tag data already
+   *  links to this specific place (English articles only) — when present,
+   *  image/description lookups can skip the fuzzy name-search step entirely
+   *  and go straight to verification, which is both more accurate and fewer
+   *  requests than searching by place name. */
+  wikipediaTitle?: string;
 }
 
 export interface NearbyResult {

@@ -91,7 +91,10 @@ const CATEGORY_MAP: Array<{ prefix: string; category: PlaceCategory }> = [
   { prefix: 'commercial', category: 'shopping' },
 ];
 
-function resolveCategory(categories: string[]): PlaceCategory | null {
+// Exported (alongside a couple of other pure helpers below) purely for unit
+// testing — no network involved, so these are cheap, valuable regression
+// coverage for the category-mapping/hierarchy/wikipedia-hint logic.
+export function resolveCategory(categories: string[]): PlaceCategory | null {
   for (const { prefix, category } of CATEGORY_MAP) {
     if (categories.some((c) => c.startsWith(prefix))) return category;
   }
@@ -140,6 +143,24 @@ interface GeoapifyFeature {
       website?: string;
     };
     opening_hours?: string;
+    // Structured address components — Geoapify's Places response already
+    // includes these (verified against the live API); previously discarded
+    // entirely in favour of the flat address_line1/2 concatenation below.
+    city?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    state_district?: string;
+    state?: string;
+    country?: string;
+    // Which underlying map dataset this place record comes from — Geoapify
+    // Places is itself an aggregator (OpenStreetMap today), so this is the
+    // fact worth surfacing to the user, not "geoapify" (an API vendor, not a
+    // data source).
+    datasource?: { sourcename?: string };
+    // Present only for well-tagged OSM features (mainly notable landmarks) —
+    // a direct, provider-supplied link to the exact Wikipedia article for
+    // THIS place, in "lang:Title" form (e.g. "en:Golconda").
+    wiki_and_media?: { wikipedia?: string; wikidata?: string };
   };
   geometry: {
     type: string;
@@ -244,6 +265,40 @@ function nearbyStrongAttractionCount(places: NearbyPlace[]): number {
   ).length;
 }
 
+// Builds a place's own structured hierarchy from Geoapify's already-present
+// address fields — the same LocationHierarchy shape (and formatter) used for
+// the searched destination itself, so both share one rendering path. `city`
+// is Geoapify's broadest local-settlement field; a suburb/neighbourhood is
+// preferred as the locality when present since it names the immediate area
+// (e.g. "Golconda") rather than the whole containing city ("Hyderabad") —
+// the same landmark-vs-settlement distinction the destination-level
+// hierarchy already had to solve.
+export function buildPlaceLocationHierarchy(
+  p: GeoapifyFeature['properties'],
+): LocationHierarchy | undefined {
+  const locality = p.suburb || p.neighbourhood || p.city;
+  if (!locality && !p.state_district && !p.state && !p.country) return undefined;
+  return {
+    locality: locality || undefined,
+    district: p.state_district || undefined,
+    state: p.state || undefined,
+    country: p.country || undefined,
+  };
+}
+
+// Geoapify's `wiki_and_media.wikipedia` is "lang:Title" (e.g. "en:Golconda").
+// Only an English-language hint is usable here — every Wikipedia call in this
+// app (search, summary, media-list) targets en.wikipedia.org, so a non-English
+// title would silently 404 or resolve nothing. Returns undefined rather than
+// guessing when the field is missing or in another language.
+export function parseWikipediaHint(wiki: { wikipedia?: string } | undefined): string | undefined {
+  const raw = wiki?.wikipedia;
+  if (!raw) return undefined;
+  const [lang, ...rest] = raw.split(':');
+  const title = rest.join(':').trim();
+  return lang === 'en' && title ? title : undefined;
+}
+
 // Normalise a name for deduplication ONLY (the displayed name is untouched):
 // lower-case, drop any parenthetical qualifier ("Vishnu Nivasam (TTD)" →
 // "vishnu nivasam"), reduce punctuation to spaces, and collapse whitespace.
@@ -305,6 +360,9 @@ function mapFeatures(
       website: p.contact?.website,
       openNow: parseOpenNow(p.opening_hours),
       openingHours: p.opening_hours,
+      locationDetail: buildPlaceLocationHierarchy(p),
+      dataSource: p.datasource?.sourcename,
+      wikipediaTitle: parseWikipediaHint(p.wiki_and_media),
     });
   }
 

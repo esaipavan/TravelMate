@@ -1,8 +1,17 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { MapPin, Phone, Globe, Heart, ExternalLink, Clock, Navigation } from 'lucide-react';
+import {
+  MapPin,
+  Phone,
+  Globe,
+  Heart,
+  Navigation as RouteIcon,
+  Clock,
+  Navigation,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, LIST_ITEM_VARIANTS, CARD_VARIANTS, rg, HOVER, PRESS } from '@/lib/motion';
-import { getMapSearchUrl } from '@/lib/mapLinks';
+import { getDirectionsUrl } from '@/lib/mapLinks';
+import { formatLocationHierarchy } from '@/lib/geocode';
 import { CATEGORY_META, formatDistance, travelTime, type NearbyPlace } from '../../types';
 
 interface Props {
@@ -30,6 +39,7 @@ export function NearbyPlaceCard({
   const reduced = useReducedMotion();
   const meta = CATEGORY_META[place.category];
   const time = travelTime(place.distance);
+  const locality = formatLocationHierarchy(place.locationDetail, { includeLocality: true });
 
   return (
     <motion.div
@@ -90,6 +100,10 @@ export function NearbyPlaceCard({
           </p>
         )}
 
+        {locality && (
+          <p className="mt-0.5 truncate pl-4 text-[10px] text-muted-foreground/70">{locality}</p>
+        )}
+
         {/* Distance + travel time */}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span className="flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-foreground">
@@ -147,15 +161,15 @@ export function NearbyPlaceCard({
             </a>
           )}
           <a
-            href={getMapSearchUrl(place.lat, place.lon)}
+            href={getDirectionsUrl(place.lat, place.lon)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-indigo-500"
-            aria-label={`Open ${place.name} in Google Maps`}
+            aria-label={`Get directions to ${place.name}`}
           >
-            <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
-            Maps
+            <RouteIcon className="h-2.5 w-2.5" aria-hidden="true" />
+            Route
           </a>
         </div>
       </div>

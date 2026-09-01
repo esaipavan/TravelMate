@@ -10,6 +10,7 @@ import {
   Clock,
   CalendarPlus,
   Check,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SourceTag, UnknownField } from '@/components/shared/SourceTag';
@@ -33,6 +34,10 @@ interface Props {
   /** Opens the "choose a trip" dialog for this place. Omitted entirely (no
    *  button rendered) when the caller doesn't wire it up. */
   onAddToTrip?: () => void;
+  /** Opens the full Place Detail sheet (gallery, About, Location, Visitor
+   *  Info, Nearby, Source). Omitted entirely when the caller doesn't wire it
+   *  up — this compact panel still works standalone. */
+  onViewDetails?: () => void;
 }
 
 export function PlaceDetailPanel({
@@ -43,6 +48,7 @@ export function PlaceDetailPanel({
   className,
   isBroad = false,
   onAddToTrip,
+  onViewDetails,
 }: Props) {
   const reduced = useReducedMotion();
   const meta = CATEGORY_META[place.category];
@@ -93,7 +99,19 @@ export function PlaceDetailPanel({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-foreground">{place.name}</p>
+            {onViewDetails ? (
+              <button
+                type="button"
+                onClick={onViewDetails}
+                className="-ml-0.5 flex items-center gap-0.5 truncate rounded px-0.5 py-2 text-left text-sm font-bold text-foreground hover:text-primary"
+                title="View full place details"
+              >
+                <span className="truncate">{place.name}</span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" aria-hidden="true" />
+              </button>
+            ) : (
+              <p className="truncate text-sm font-bold text-foreground">{place.name}</p>
+            )}
             <span className="text-[11px] font-medium" style={{ color: meta.color }}>
               {meta.label}
             </span>

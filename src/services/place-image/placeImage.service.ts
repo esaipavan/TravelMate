@@ -54,20 +54,33 @@ async function fetchWikiSummary(title: string): Promise<WikiSummary | null> {
   return (await res.json()) as WikiSummary;
 }
 
+interface ResolvedArticle {
+  title: string;
+  /** null when the article verified but had no usable photo — callers that
+   *  only need an image treat this the same as "no article"; callers that
+   *  also want the verified description (fetchPlaceDescription/fetchPlaceMedia)
+   *  can still use the article without one. */
+  leadImage: string | null;
+  extract?: string;
+}
+
 /**
  * Resolves a query to a verified geographic Wikipedia article, or `null`.
  * Confidence bar: search resolves a page; the page is a `standard` article (not
  * a disambiguation/missing page); it carries geographic `coordinates` inside
  * India (excludes people/films/concepts and foreign namesakes); the article
- * names India; and it has a real lead photo (not a locator map / flag / SVG).
- * Returns the article title alongside the lead image so callers that need more
- * than one photo (fetchPlaceGallery) can pull from the SAME verified article
- * instead of re-resolving it.
+ * names India. Callers that need a photo additionally check `leadImage`;
+ * `extract` (Wikipedia's own summary paragraph) is returned whenever the
+ * article verifies at all, since a missing photo doesn't make the text any
+ * less genuine. `knownTitle`, when supplied (e.g. Geoapify's own
+ * wiki_and_media hint for a specific POI), skips the fuzzy search entirely —
+ * more accurate than a name search AND fewer requests.
  */
 async function resolveVerifiedArticle(
   query: string,
-): Promise<{ title: string; leadImage: string } | null> {
-  const title = await searchWikiTitle(query);
+  knownTitle?: string,
+): Promise<ResolvedArticle | null> {
+  const title = knownTitle ?? (await searchWikiTitle(query));
   if (!title) return null;
 
   const summary = await fetchWikiSummary(title);
@@ -78,13 +91,43 @@ async function resolveVerifiedArticle(
   if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
   if (!mentionsIndia(summary)) return null;
 
-  const leadImage = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
-  return leadImage && isUsablePhoto(leadImage) ? { title, leadImage } : null;
+  const image = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
+  return {
+    title,
+    leadImage: image && isUsablePhoto(image) ? image : null,
+    extract: summary.extract,
+  };
 }
 
-async function tryWikiImage(query: string): Promise<string | null> {
-  const resolved = await resolveVerifiedArticle(query);
-  return resolved?.leadImage ?? null;
+// Shared resolution path for every export below: try `knownTitle` alone when
+// given (a provider-supplied exact title deserves no fuzzy fallback — if IT
+// doesn't verify, guessing further is more likely to find the wrong place
+// than the right one); otherwise fall back to the existing candidate search
+// (destination as typed, then its first comma-part for a "Place, City"
+// string) exactly as before.
+async function resolveArticleFor(
+  destination: string,
+  knownTitle?: string,
+): Promise<ResolvedArticle | null> {
+  if (knownTitle) return resolveVerifiedArticle(destination, knownTitle);
+
+  const query = destination.trim();
+  if (!query) return null;
+  const firstPart = query.split(',')[0]?.trim();
+  const candidates: string[] = [query];
+  if (firstPart && firstPart.toLowerCase() !== query.toLowerCase()) candidates.push(firstPart);
+
+  for (const c of candidates) {
+    const resolved = await resolveVerifiedArticle(c);
+    if (resolved) return resolved;
+  }
+  return null;
+}
+
+function placeNameFor(destination: string, knownTitle?: string): string {
+  if (knownTitle) return knownTitle;
+  const query = destination.trim();
+  return query.split(',')[0]?.trim() || query;
 }
 
 /**
@@ -98,26 +141,21 @@ async function tryWikiImage(query: string): Promise<string | null> {
  * We deliberately do NOT fall back to the parent city or state: an obscure
  * locality with no photo of its own (e.g. "Swarnagiri, Hyderabad") shows the
  * honest gradient rather than an unrelated regional photo. The India-only +
- * geographic-article gates in `tryWikiImage` keep foreign/wrong matches out.
+ * geographic-article gates in `resolveVerifiedArticle` keep foreign/wrong
+ * matches out. `knownTitle` is optional — existing callers are unaffected.
  */
-export async function fetchPlaceImage(destination: string): Promise<string | null> {
-  const query = destination.trim();
-  if (!query) return null;
-
-  const candidates: string[] = [query];
-  const firstPart = query.split(',')[0]?.trim();
-  if (firstPart && firstPart.toLowerCase() !== query.toLowerCase()) candidates.push(firstPart);
-
-  for (const c of candidates) {
-    const img = await tryWikiImage(c);
-    if (img) return img;
-  }
-  return null;
+export async function fetchPlaceImage(
+  destination: string,
+  knownTitle?: string,
+): Promise<string | null> {
+  const resolved = await resolveArticleFor(destination, knownTitle);
+  return resolved?.leadImage ?? null;
 }
 
 // Wikipedia article lead images are usually a real photo, but some places carry
 // a locator map / flag / seal / SVG emblem instead. Exclude those by filename.
-function isUsablePhoto(url: string): boolean {
+// Exported (alongside the other pure helpers below) purely for unit testing.
+export function isUsablePhoto(url: string): boolean {
   const u = url.toLowerCase();
   if (u.endsWith('.svg')) return false;
   return !/(flag|coat[_%]|locator|location_map|_map[._]|seal[_%]|emblem|\blogo\b|\bicon\b)/.test(u);
@@ -159,7 +197,7 @@ const GENERIC_TITLE_WORDS = new Set([
 // specific place's gallery just because Wikipedia's own page embedded it.
 // Common words (temple/fort/india/etc.) are excluded from the comparison so a
 // same-category-different-place image still gets caught.
-function isTitleRelevant(filename: string, placeName: string): boolean {
+export function isTitleRelevant(filename: string, placeName: string): boolean {
   const placeWords = new Set(
     (placeName.toLowerCase().match(FILENAME_WORD_RE) ?? []).filter(
       (w) => !GENERIC_TITLE_WORDS.has(w),
@@ -173,40 +211,20 @@ function isTitleRelevant(filename: string, placeName: string): boolean {
 }
 
 // Wikipedia's media-list API returns protocol-relative URLs ("//upload...").
-function toAbsoluteUrl(src: string): string {
+export function toAbsoluteUrl(src: string): string {
   return src.startsWith('//') ? `https:${src}` : src;
 }
 
 const MAX_GALLERY_IMAGES = 6;
 
-/**
- * Returns up to a handful of VERIFIED, place-specific images for a
- * destination, or an empty array when none can be confidently sourced. Every
- * image comes from the SAME Wikipedia article that already passed
- * `resolveVerifiedArticle`'s India + geographic-article gates (the same trust
- * boundary `fetchPlaceImage` relies on for its single cover) — this does not
- * introduce a new image source or a new trust level, only pulls more than one
- * photo from the one already-verified article. The lead image is always
- * first. Filenames are deduped and filtered through both the existing
- * flag/map/seal blocklist and `isTitleRelevant` (rejects a same-page image
- * that names an unrelated broader topic, e.g. "Temples_of_India.jpg" showing
- * up inside a specific temple's own article).
- */
-export async function fetchPlaceGallery(destination: string): Promise<string[]> {
-  const query = destination.trim();
-  if (!query) return [];
-
-  const placeName = query.split(',')[0]?.trim() || query;
-  const candidates: string[] = [query];
-  if (placeName.toLowerCase() !== query.toLowerCase()) candidates.push(placeName);
-
-  let resolved: { title: string; leadImage: string } | null = null;
-  for (const c of candidates) {
-    resolved = await resolveVerifiedArticle(c);
-    if (resolved) break;
-  }
-  if (!resolved) return [];
-
+// Expands one already-verified article (lead image + title) into up to
+// MAX_GALLERY_IMAGES deduped, filename-relevant photos via the article's own
+// media-list. Shared by fetchPlaceGallery and fetchPlaceMedia so there is one
+// gallery-building path, not two.
+async function expandGallery(
+  resolved: { title: string; leadImage: string },
+  placeName: string,
+): Promise<string[]> {
   const seen = new Set<string>([resolved.leadImage]);
   const gallery = [resolved.leadImage];
 
@@ -238,8 +256,89 @@ export async function fetchPlaceGallery(destination: string): Promise<string[]> 
   return gallery;
 }
 
+/**
+ * Returns up to a handful of VERIFIED, place-specific images for a
+ * destination, or an empty array when none can be confidently sourced. Every
+ * image comes from the SAME Wikipedia article that already passed
+ * `resolveVerifiedArticle`'s India + geographic-article gates (the same trust
+ * boundary `fetchPlaceImage` relies on for its single cover) — this does not
+ * introduce a new image source or a new trust level, only pulls more than one
+ * photo from the one already-verified article. The lead image is always
+ * first. `knownTitle` is optional — existing callers are unaffected.
+ */
+export async function fetchPlaceGallery(
+  destination: string,
+  knownTitle?: string,
+): Promise<string[]> {
+  const resolved = await resolveArticleFor(destination, knownTitle);
+  if (!resolved?.leadImage) return [];
+  return expandGallery(
+    { title: resolved.title, leadImage: resolved.leadImage },
+    placeNameFor(destination, knownTitle),
+  );
+}
+
+export interface PlaceDescription {
+  /** Wikipedia's own lead-summary paragraph — genuine sourced text, not an
+   *  AI paraphrase or invention. */
+  text: string;
+  wikipediaTitle: string;
+  wikipediaUrl: string;
+}
+
+function toDescription(resolved: ResolvedArticle): PlaceDescription | undefined {
+  if (!resolved.extract) return undefined;
+  return {
+    text: resolved.extract,
+    wikipediaTitle: resolved.title,
+    wikipediaUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(resolved.title.replace(/ /g, '_'))}`,
+  };
+}
+
+/**
+ * A VERIFIED "about this place" paragraph, sourced directly from the same
+ * Wikipedia article used for imagery — never an AI paraphrase. Returns
+ * `undefined` when no article verifies (the caller should fall back to its
+ * own AI-advisory summary, clearly labelled as such, or show nothing).
+ */
+export async function fetchPlaceDescription(
+  destination: string,
+  knownTitle?: string,
+): Promise<PlaceDescription | undefined> {
+  const resolved = await resolveArticleFor(destination, knownTitle);
+  return resolved ? toDescription(resolved) : undefined;
+}
+
+export interface PlaceMedia {
+  images: string[];
+  description?: PlaceDescription;
+}
+
+/**
+ * Combined gallery + description in a single Wikipedia resolution — for a
+ * rich Place Detail view that wants both without doubling the number of
+ * search/summary requests fetchPlaceGallery + fetchPlaceDescription would
+ * make independently.
+ */
+export async function fetchPlaceMedia(
+  destination: string,
+  knownTitle?: string,
+): Promise<PlaceMedia> {
+  const resolved = await resolveArticleFor(destination, knownTitle);
+  if (!resolved) return { images: [] };
+
+  const description = toDescription(resolved);
+  if (!resolved.leadImage) return { images: [], description };
+
+  const images = await expandGallery(
+    { title: resolved.title, leadImage: resolved.leadImage },
+    placeNameFor(destination, knownTitle),
+  );
+  return { images, description };
+}
+
 // Generous bounding box for India (mainland + Andaman/Nicobar + Lakshadweep).
-function isInIndia(lat: number, lon: number): boolean {
+export function isInIndia(lat: number, lon: number): boolean {
   return lat >= 6.0 && lat <= 37.6 && lon >= 68.0 && lon <= 97.5;
 }
 
@@ -247,7 +346,7 @@ function isInIndia(lat: number, lon: number): boolean {
 // country/an Indian union territory in its short description or first sentence
 // ("… a town in Tamil Nadu, India"). Neighbouring-country articles name their
 // own country instead, so this reliably keeps enrichment India-only.
-function mentionsIndia(summary: WikiSummary): boolean {
+export function mentionsIndia(summary: WikiSummary): boolean {
   const text = `${summary.description ?? ''} ${summary.extract ?? ''}`.toLowerCase();
   return /\bindia\b/.test(text);
 }
