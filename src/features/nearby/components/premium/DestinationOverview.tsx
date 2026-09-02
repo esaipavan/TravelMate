@@ -54,14 +54,20 @@ export function DestinationOverview({ result }: Props) {
       .slice(-2)
       .join(', ');
 
-  const { images } = usePlaceGallery(name);
+  // A bare multi-city landmark name (e.g. "Birla Mandir") gave the AI brief
+  // no way to tell which same-named place was resolved, so it described a
+  // different city's landmark under this one's heading. Qualifying with the
+  // already-resolved region fixes that; settlements aren't ambiguous this way.
+  const disambiguatedQuery = !isSettlementMatch && region ? `${name}, ${region}` : name;
+
+  const { images } = usePlaceGallery(disambiguatedQuery);
   const [activeImage, setActiveImage] = useState(0);
   // Reset to the lead (first, most-confident) image whenever the resolved
   // place changes — otherwise a stale index from the previous search could
   // briefly point at the wrong photo before the gallery finishes loading.
   useEffect(() => setActiveImage(0), [name]);
   const heroImage = images[Math.min(activeImage, images.length - 1)];
-  const { brief, isLoading: briefLoading } = useDestinationBrief(name);
+  const { brief, isLoading: briefLoading } = useDestinationBrief(disambiguatedQuery);
 
   const attractionCount = result.places.filter(
     (p) => p.category === 'attractions' || p.category === 'parks',
