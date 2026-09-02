@@ -66,6 +66,52 @@ export interface GeocodeResult {
   location?: LocationHierarchy;
 }
 
+/**
+ * A UI-safe representation of one candidate place when `geocodeLocation`
+ * cannot confidently pick between several (see `GeocodeError` below).
+ * Deliberately excludes anything internal to the resolution algorithm —
+ * no raw OSM class/type, no importance score, no match tier — only what a
+ * candidate-selection UI actually needs to show and to hand off to the
+ * existing coordinate-based Nearby search path once chosen.
+ */
+export interface PlaceCandidate {
+  name: string;
+  locality?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  lat: number;
+  lon: number;
+}
+
+/**
+ * Distinguishes WHY `geocodeLocation` failed so callers/UI can respond
+ * honestly instead of collapsing every failure into "not found" (Phase 9):
+ *   • 'not_found'  — no genuine Indian destination matches the query at all
+ *                    (unrecognised place, foreign query, business/road
+ *                    namesake with no genuine destination behind it).
+ *   • 'ambiguous'  — multiple genuinely different places plausibly match and
+ *                    the evidence doesn't support confidently picking one
+ *                    (see resolveDestination's CORE PRINCIPLE: WRONG PLACE >
+ *                    NO PLACE). `candidates` on the error carries the
+ *                    UI-safe options.
+ *   • 'unavailable' — the query itself may well be fine, but the geocoding
+ *                    service failed (network, timeout, non-2xx response).
+ *                    Must never be presented as "place not found".
+ */
+export type GeocodeErrorKind = 'not_found' | 'ambiguous' | 'unavailable';
+
+export class GeocodeError extends Error {
+  readonly kind: GeocodeErrorKind;
+  readonly candidates?: PlaceCandidate[];
+  constructor(kind: GeocodeErrorKind, message: string, candidates?: PlaceCandidate[]) {
+    super(message);
+    this.name = 'GeocodeError';
+    this.kind = kind;
+    this.candidates = candidates;
+  }
+}
+
 interface NominatimAddress {
   village?: string;
   town?: string;
@@ -103,8 +149,17 @@ function buildLocationHierarchy(
   address: NominatimAddress | undefined,
 ): LocationHierarchy | undefined {
   if (!address) return undefined;
+  // Bug fix (Phase 9, found while testing "Kondapur"): `suburb` must be
+  // checked BEFORE `city` — a suburb is more local/specific than its
+  // containing city, but the old order picked `city` first whenever both
+  // were present (real Nominatim address breakdowns for a suburb always
+  // include the parent city too), so a Kondapur search's structured
+  // `location.locality` silently resolved to "Hyderabad". The display name
+  // shown elsewhere (DestinationOverview) happened to read the raw
+  // display_name string instead and so wasn't affected, but any caller
+  // trusting this structured field directly would have been.
   const locality =
-    address.village || address.town || address.city || address.municipality || address.suburb;
+    address.village || address.town || address.suburb || address.city || address.municipality;
   const district = address.state_district || address.county;
   const hierarchy: LocationHierarchy = {
     locality: locality || undefined,
@@ -494,6 +549,18 @@ const POI_DECISIVE_IMPORTANCE_RATIO = 3;
 export const AMBIGUOUS_MESSAGE =
   'Multiple different places in India share that name. Try adding a city, district, or state to be more specific.';
 
+/** Internal — carries the raw candidates behind an ambiguous resolution so
+ *  `geocodeLocation` can convert them to the UI-safe `PlaceCandidate` shape
+ *  before surfacing a `GeocodeError('ambiguous', …)`. Not part of the public
+ *  API; `resolveDestination` still just throws (its own tests only assert
+ *  `.toThrow()`), this merely carries more information on the way out. */
+class AmbiguousMatchError extends Error {
+  constructor(readonly candidates: NominatimPlace[]) {
+    super(AMBIGUOUS_MESSAGE);
+    this.name = 'AmbiguousMatchError';
+  }
+}
+
 // A candidate counts as a STRONG (identity-confirmed) match when it's a raw
 // EXACT match, OR when it only reaches TOKEN_MATCH because the query
 // explicitly supplied geographic context that this specific candidate's own
@@ -600,12 +667,27 @@ export function resolveDestination(query: string, candidates: NominatimPlace[]):
   );
   if (distinctLocations.size === 1) return top.place;
 
-  throw new Error(AMBIGUOUS_MESSAGE);
+  throw new AmbiguousMatchError(byImportance.map((e) => e.place));
+}
+
+/** Converts a raw Nominatim record into the UI-safe candidate shape — never
+ *  exposes class/type/importance/match-tier, only what a picker needs. */
+function toPlaceCandidate(p: NominatimPlace): PlaceCandidate {
+  const hierarchy = buildLocationHierarchy(p.address);
+  return {
+    name: (p.display_name.split(',')[0] ?? '').trim(),
+    locality: hierarchy?.locality,
+    district: hierarchy?.district,
+    state: hierarchy?.state,
+    country: hierarchy?.country,
+    lat: parseFloat(p.lat),
+    lon: parseFloat(p.lon),
+  };
 }
 
 export async function geocodeLocation(query: string): Promise<GeocodeResult> {
   const trimmed = query.trim();
-  if (!trimmed) throw new Error('Enter a place to search');
+  if (!trimmed) throw new GeocodeError('not_found', 'Enter a place to search');
 
   // Foreign-place veto. `countrycodes=in` only guarantees the *result* is in
   // India — it does NOT stop a foreign query ("Dubai", "Singapore") from
@@ -613,7 +695,7 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
   // foreign country/place up front (reusing the image resolver's veto) so a
   // foreign search is never silently converted into an unrelated Indian place.
   if (hasForeignContext(trimmed.toLowerCase())) {
-    throw new Error(INDIA_ONLY_MESSAGE);
+    throw new GeocodeError('not_found', INDIA_ONLY_MESSAGE);
   }
 
   // `limit=5` + ranking (instead of the old blind `limit=1`) so a small place
@@ -628,20 +710,28 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
     countrycodes: 'in',
   });
 
-  const res = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
-    headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
-    // Bound the request so a stalled Nominatim connection (which neither
-    // resolves nor rejects on its own) can't hold consumers — Hotels, Nearby,
-    // Weather — in an indefinite loading state. On timeout this rejects with a
-    // TimeoutError, routing into the existing error/fallback path below.
-    signal: AbortSignal.timeout(8000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'TravelMate/1.0' },
+      // Bound the request so a stalled Nominatim connection (which neither
+      // resolves nor rejects on its own) can't hold consumers — Hotels, Nearby,
+      // Weather — in an indefinite loading state. On timeout this rejects with a
+      // TimeoutError, routing into the 'unavailable' path below rather than an
+      // unclassified network exception.
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    // Network failure or timeout — the destination itself may be perfectly
+    // valid; the SERVICE failed. Must never read as "not found" (Phase 9).
+    throw new GeocodeError('unavailable', 'Geocoding request failed');
+  }
 
-  if (!res.ok) throw new Error('Geocoding request failed');
+  if (!res.ok) throw new GeocodeError('unavailable', 'Geocoding request failed');
 
   const results = (await res.json()) as NominatimPlace[];
 
-  if (!results.length) throw new Error(NOT_FOUND_MESSAGE);
+  if (!results.length) throw new GeocodeError('not_found', NOT_FOUND_MESSAGE);
 
   const wanted = trimmed.toLowerCase();
 
@@ -659,15 +749,25 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
     (p) => (p.display_name.split(',')[0] ?? '').trim().toLowerCase() === wanted,
   );
   if (exactNamed.length > 0 && !exactNamed.some(isGenuineDestination)) {
-    throw new Error(NOT_FOUND_MESSAGE);
+    throw new GeocodeError('not_found', NOT_FOUND_MESSAGE);
   }
 
   // Rank only genuine destinations, so an incidental POI (shop, road, hotel)
   // can never be selected even if Nominatim ranks it first.
   const genuine = results.filter(isGenuineDestination);
-  if (!genuine.length) throw new Error(NOT_FOUND_MESSAGE);
+  if (!genuine.length) throw new GeocodeError('not_found', NOT_FOUND_MESSAGE);
 
-  const best = resolveDestination(trimmed, genuine);
+  let best: NominatimPlace;
+  try {
+    best = resolveDestination(trimmed, genuine);
+  } catch (err) {
+    if (err instanceof AmbiguousMatchError) {
+      // Every candidate here already passed isGenuineDestination above — a
+      // picker built from this can never surface a hotel/restaurant/road.
+      throw new GeocodeError('ambiguous', AMBIGUOUS_MESSAGE, err.candidates.map(toPlaceCandidate));
+    }
+    throw err;
+  }
 
   const kind = best.class && best.type ? `${best.class}/${best.type}` : undefined;
 

@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { pickBest, isGenuineDestination, classifyNameMatch, resolveDestination } from './geocode';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import {
+  pickBest,
+  isGenuineDestination,
+  classifyNameMatch,
+  resolveDestination,
+  geocodeLocation,
+  GeocodeError,
+} from './geocode';
 
 // Real candidate data captured from a live Nominatim query for "Kondapur"
 // during Phase 7 verification (2026-09-01) — frozen as a fixture so the bug
@@ -14,6 +21,13 @@ const KONDAPUR_CANDIDATES = [
     importance: 0.1467350293736171,
     lat: '17.4587912',
     lon: '78.3730556',
+    address: {
+      suburb: 'Kondapur',
+      city: 'Hyderabad',
+      state_district: 'Hyderabad',
+      state: 'Telangana',
+      country: 'India',
+    },
   },
   {
     display_name: 'Kondapur, Nawabpet mandal, Mahabubnagar, Telangana, India',
@@ -22,6 +36,12 @@ const KONDAPUR_CANDIDATES = [
     importance: 0.14671826123445483,
     lat: '16.8816413',
     lon: '78.0057156',
+    address: {
+      village: 'Kondapur',
+      state_district: 'Mahabubnagar',
+      state: 'Telangana',
+      country: 'India',
+    },
   },
   {
     display_name: 'Kondapur, Mirdoddi mandal, Siddipet, Telangana, 502114, India',
@@ -30,6 +50,12 @@ const KONDAPUR_CANDIDATES = [
     importance: 0.14670929045548176,
     lat: '18.1002527',
     lon: '78.7146592',
+    address: {
+      village: 'Kondapur',
+      state_district: 'Siddipet',
+      state: 'Telangana',
+      country: 'India',
+    },
   },
   {
     display_name: 'Kondapur, Nirmal Rural mandal, Nirmal, Telangana, 504016, India',
@@ -38,6 +64,12 @@ const KONDAPUR_CANDIDATES = [
     importance: 0.14670903868162047,
     lat: '19.0873261',
     lon: '78.3819240',
+    address: {
+      village: 'Kondapur',
+      state_district: 'Nirmal',
+      state: 'Telangana',
+      country: 'India',
+    },
   },
 ];
 
@@ -512,5 +544,198 @@ describe('resolveDestination', () => {
     ];
     const best = resolveDestination('Example Fort', candidates);
     expect(best.importance).toBe(0.02);
+  });
+});
+
+// ── geocodeLocation (Phase 9: typed GeocodeError + candidate surfacing) ────
+//
+// The pure sub-functions above are tested directly and don't touch the
+// network; geocodeLocation itself does one live Nominatim fetch, so these
+// tests mock `fetch` with real, previously-captured response shapes rather
+// than hitting the network — deterministic, and proves the actual public
+// function (not just its internals) classifies each outcome correctly.
+
+function mockFetchResponse(response: { ok: boolean; status?: number; body?: unknown }) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: response.ok,
+      status: response.status ?? (response.ok ? 200 : 500),
+      json: () => Promise.resolve(response.body ?? []),
+    }),
+  );
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('geocodeLocation', () => {
+  it('Kondapur: resolves to a normal GeocodeResult (the Hyderabad suburb)', async () => {
+    mockFetchResponse({ ok: true, body: KONDAPUR_CANDIDATES });
+    const result = await geocodeLocation('Kondapur');
+    expect(result.location?.locality).toBe('Kondapur');
+    expect(result.location?.state).toBe('Telangana');
+    expect(typeof result.lat).toBe('number');
+    expect(typeof result.lon).toBe('number');
+  });
+
+  it('Ramappa Temple: throws GeocodeError("ambiguous") carrying 2+ UI-safe candidates, never raw provider data', async () => {
+    const ramappaRaw = [
+      {
+        display_name:
+          'Ramappa Temple, Ramappa Temple way, Lingamadugupally, Atmakur mandal, Hanumakonda, Telangana, 506342, India',
+        class: 'amenity',
+        type: 'place_of_worship',
+        importance: 0.0000577,
+        lat: '18.0201620',
+        lon: '79.7187564',
+        address: {
+          village: 'Lingamadugupally',
+          state_district: 'Hanumakonda',
+          state: 'Telangana',
+          country: 'India',
+        },
+      },
+      {
+        display_name:
+          'Ramappa Temple, Ramappa Temple Rd, Palampet, Venkatapur mandal, Mulugu, Telangana, India',
+        class: 'building',
+        type: 'temple',
+        importance: 0.00004,
+        lat: '18.2593042',
+        lon: '79.9432497',
+        address: {
+          village: 'Palampet',
+          state_district: 'Mulugu',
+          state: 'Telangana',
+          country: 'India',
+        },
+      },
+    ];
+    mockFetchResponse({ ok: true, body: ramappaRaw });
+    const err = await geocodeLocation('Ramappa Temple').catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(GeocodeError);
+    const geocodeErr = err as GeocodeError;
+    expect(geocodeErr.kind).toBe('ambiguous');
+    expect(geocodeErr.candidates).toHaveLength(2);
+    // UI-safe shape only — a candidate a picker could render directly, and
+    // exactly what handleSelectCandidate needs to drive the coordinate-based
+    // Nearby path (lat/lon + name + optional locality/district/state/country).
+    for (const c of geocodeErr.candidates!) {
+      expect(c.name).toBe('Ramappa Temple');
+      expect(typeof c.lat).toBe('number');
+      expect(typeof c.lon).toBe('number');
+      // Never raw provider internals.
+      expect(c).not.toHaveProperty('class');
+      expect(c).not.toHaveProperty('type');
+      expect(c).not.toHaveProperty('importance');
+      expect(c).not.toHaveProperty('tier');
+    }
+    const districts = geocodeErr.candidates!.map((c) => c.district);
+    expect(districts).toEqual(expect.arrayContaining(['Hanumakonda', 'Mulugu']));
+  });
+
+  it('Paris: rejected as not_found — every exact-named Indian "Paris" is a shop/hotel/restaurant, never a genuine destination', async () => {
+    // Real Nominatim data (countrycodes=in) for "Paris" — confirms the code's
+    // own comment: it resolves to a tailor shop, a shoe shop, a hotel, a
+    // restaurant, a bus stop… never a genuine place/boundary/tourism-
+    // attraction destination. Rejection here is the exactNamed legitimacy
+    // gate, NOT the upfront hasForeignContext veto — that veto only lists
+    // foreign COUNTRY names (see the next test), not foreign city names, so
+    // "Paris" specifically depends on this downstream gate.
+    mockFetchResponse({
+      ok: true,
+      body: [
+        {
+          display_name: "Paris, King's Circle, Mumbai, India",
+          class: 'shop',
+          type: 'tailor',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+        {
+          display_name: 'Paris, Station Road, India',
+          class: 'shop',
+          type: 'shoes',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+        {
+          display_name: 'paris, Logans Road, India',
+          class: 'tourism',
+          type: 'hotel',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+        {
+          display_name: 'Paris, Guruvayur Road, India',
+          class: 'highway',
+          type: 'bus_stop',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+        {
+          display_name: 'paris, Kannur Highway, India',
+          class: 'amenity',
+          type: 'restaurant',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+        {
+          display_name: 'Park Paris Town, Golden Avenue, India',
+          class: 'leisure',
+          type: 'park',
+          importance: 0.1,
+          lat: '19',
+          lon: '72',
+        },
+      ],
+    });
+    const err = await geocodeLocation('Paris').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GeocodeError);
+    expect((err as GeocodeError).kind).toBe('not_found');
+  });
+
+  it('France (an actual foreign country name): rejected before any network request — the upfront hasForeignContext veto', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        throw new Error('fetch should not be called for a foreign-vetoed query');
+      }),
+    );
+    const err = await geocodeLocation('France').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GeocodeError);
+    expect((err as GeocodeError).kind).toBe('not_found');
+  });
+
+  it('no results at all: remains GeocodeError("not_found")', async () => {
+    mockFetchResponse({ ok: true, body: [] });
+    const err = await geocodeLocation('Xyzzynotarealplace').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GeocodeError);
+    expect((err as GeocodeError).kind).toBe('not_found');
+  });
+
+  it('provider failure (non-2xx response): GeocodeError("unavailable"), never "not found"', async () => {
+    mockFetchResponse({ ok: false, status: 503 });
+    const err = await geocodeLocation('Hyderabad').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GeocodeError);
+    expect((err as GeocodeError).kind).toBe('unavailable');
+  });
+
+  it('provider failure (network/timeout error): GeocodeError("unavailable"), never "not found"', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('The operation timed out.', 'TimeoutError')),
+    );
+    const err = await geocodeLocation('Hyderabad').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(GeocodeError);
+    expect((err as GeocodeError).kind).toBe('unavailable');
   });
 });

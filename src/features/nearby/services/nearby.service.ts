@@ -1,29 +1,36 @@
-import { geocodeLocation } from '@/lib/geocode';
-import type { GeocodeScope, LocationHierarchy } from '@/lib/geocode';
+import { geocodeLocation, GeocodeError } from '@/lib/geocode';
+import type { GeocodeScope, LocationHierarchy, PlaceCandidate } from '@/lib/geocode';
 import { CATEGORY_PRIORITY } from '../types';
 import type { NearbyPlace, NearbyResult, PlaceCategory } from '../types';
 
 const GEOAPIFY = 'https://api.geoapify.com/v2/places';
 const MAX_RESULTS = 200;
 
-// Distinguishes the two very different reasons a nearby lookup can fail so the
-// UI can tell them apart instead of collapsing both into "location not found":
+// Distinguishes the different reasons a nearby lookup can fail so the UI can
+// tell them apart instead of collapsing them all into "location not found":
 //   • 'not_found'    — geocoding rejected the destination (invalid / unsupported
 //                      / not an Indian place). The place itself is the problem.
-//   • 'unavailable'  — geocoding SUCCEEDED but the places provider (Geoapify)
-//                      failed (missing key, HTTP error, network). The location is
-//                      fine; the service is temporarily unavailable.
+//   • 'ambiguous'    — geocoding found multiple genuinely different places that
+//                      plausibly match and can't confidently pick one (Phase 8's
+//                      WRONG PLACE > NO PLACE). `candidates` carries the
+//                      UI-safe options for a candidate-selection UI (Phase 9).
+//   • 'unavailable'  — geocoding OR the places provider (Nominatim/Geoapify)
+//                      failed (missing key, HTTP error, network, timeout). The
+//                      location itself may be fine; the service is temporarily
+//                      unavailable — must never read as "not found".
 // A successful geocode that simply returns zero nearby places is NOT an error —
 // it resolves to a NearbyResult with an empty `places` array (a distinct UI
 // state), so it is deliberately not represented here.
-export type NearbyErrorKind = 'not_found' | 'unavailable';
+export type NearbyErrorKind = 'not_found' | 'ambiguous' | 'unavailable';
 
 export class NearbyError extends Error {
   readonly kind: NearbyErrorKind;
-  constructor(kind: NearbyErrorKind, message: string) {
+  readonly candidates?: PlaceCandidate[];
+  constructor(kind: NearbyErrorKind, message: string, candidates?: PlaceCandidate[]) {
     super(message);
     this.name = 'NearbyError';
     this.kind = kind;
+    this.candidates = candidates;
   }
 }
 
@@ -526,9 +533,13 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
   try {
     geo = await geocodeLocation(destination);
   } catch (err) {
-    // Geocoding rejected the destination → a 'not_found' problem with the place
-    // itself (kept distinct from a downstream provider failure below). Preserve
-    // geocode's own India-scoped message.
+    // Preserve geocode's own classification (not_found / ambiguous /
+    // unavailable) instead of collapsing every failure into 'not_found' — a
+    // provider outage or a genuinely ambiguous name are not "place not found"
+    // (Phase 9). Any other, unclassified error still degrades safely.
+    if (err instanceof GeocodeError) {
+      throw new NearbyError(err.kind, err.message, err.candidates);
+    }
     throw new NearbyError('not_found', err instanceof Error ? err.message : 'Location not found');
   }
   // Beyond this point the location resolved; any failure is a provider problem,
@@ -540,13 +551,15 @@ export async function fetchNearbyPlaces(destination: string): Promise<NearbyResu
 // from already-known coordinates, per the Phase 1 requirement that Near Me
 // "does not require geocoding". Coordinates are a precise point, so this is
 // always a point-like ('place') scope, never a whole-state view. Also reused
-// for trip-context coordinates (a trip's saved destination lat/lon) — pass
-// `locationLabel` there so the result header names the actual place instead
-// of defaulting to GPS-flavored copy.
+// for trip-context coordinates (a trip's saved destination lat/lon) and for a
+// candidate the user picked from an ambiguous-search picker — pass
+// `locationLabel`/`locationDetail` there so the result header and hierarchy
+// name the actual place instead of defaulting to GPS-flavored copy.
 export async function fetchNearbyPlacesAtCoords(
   lat: number,
   lon: number,
   locationLabel = 'Your current location',
+  locationDetail?: LocationHierarchy,
 ): Promise<NearbyResult> {
-  return searchPlacesNear(lat, lon, locationLabel, 'place');
+  return searchPlacesNear(lat, lon, locationLabel, 'place', locationDetail);
 }

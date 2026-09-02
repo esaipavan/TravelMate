@@ -2,7 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { selectTripCoverImage } from '@/services/place-image/placeImage.service';
-import { geocodeLocation } from '@/lib/geocode';
+import { geocodeLocation, GeocodeError } from '@/lib/geocode';
 import { useAuthStore } from '@/store/auth.store';
 import { useBatchUpsertBudgetsMutation } from '@/features/budget/hooks/useBudget';
 import { useCreateTrip } from '../hooks/useTrips';
@@ -38,15 +38,23 @@ function WizardPage() {
 
     /* Best-effort coordinates for the resolved destination. Geocoding is never
      * a hard dependency for trip creation — a failure (unrecognised place,
-     * network issue) simply leaves latitude/longitude unset; the trip still
-     * creates normally with its free-text destination. */
+     * network issue, or an ambiguous name) simply leaves latitude/longitude
+     * unset; the trip still creates normally with its free-text destination.
+     * Trip creation has no candidate-selection UI (that's Nearby's job), so
+     * an ambiguous destination is handled safely by NOT silently guessing —
+     * just reported with a non-blocking toast per Phase 9. */
     let latitude: number | null = null;
     let longitude: number | null = null;
     try {
       const geo = await geocodeLocation(destination);
       latitude = geo.lat;
       longitude = geo.lon;
-    } catch {
+    } catch (err) {
+      if (err instanceof GeocodeError && err.kind === 'ambiguous') {
+        toast.info(
+          'Multiple places share that destination name — created without exact coordinates. Search for it in Explore with a city or state added for precise results.',
+        );
+      }
       /* Unresolved destination — proceed without coordinates. */
     }
 

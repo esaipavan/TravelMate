@@ -9,12 +9,16 @@ import {
   Compass,
   Map as MapIcon,
   Luggage,
+  ChevronRight,
+  HelpCircle,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { rv, PAGE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { getCurrentCoordinates, GeolocationError } from '@/lib/geolocation';
+import { formatLocationHierarchy } from '@/lib/geocode';
+import type { LocationHierarchy, PlaceCandidate } from '@/lib/geocode';
 import { useTrip } from '@/features/trips/hooks/useTrips';
 import { useNearbyPlaces, useNearbyPlacesAtCoords } from '../hooks/useNearby';
 import { NearbyError } from '../services/nearby.service';
@@ -42,8 +46,15 @@ export default function NearbyPage() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   // Overrides the "Your current location" default label when `coords` came
   // from somewhere other than live GPS (currently: a trip's saved
-  // destination coordinates) — undefined falls back to the GPS phrasing.
+  // destination coordinates, or a candidate picked from an ambiguous-search
+  // selection) — undefined falls back to the GPS phrasing.
   const [coordsLabel, setCoordsLabel] = useState<string | undefined>(undefined);
+  // Structured locality/district/state for a picked candidate, so the result
+  // header reads the same as a confident text search would. Only ever set
+  // alongside coordsLabel when selecting a candidate; undefined otherwise.
+  const [coordsLocationDetail, setCoordsLocationDetail] = useState<LocationHierarchy | undefined>(
+    undefined,
+  );
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [category, setCategory] = useState<PlaceCategory | 'all'>('all');
@@ -81,7 +92,7 @@ export default function NearbyPage() {
   }, [tripId, contextTrip]);
 
   const stringQuery = useNearbyPlaces(destination);
-  const coordsQuery = useNearbyPlacesAtCoords(coords, coordsLabel);
+  const coordsQuery = useNearbyPlacesAtCoords(coords, coordsLabel, coordsLocationDetail);
   const { data, isLoading, isError, isFetching, error } = coords ? coordsQuery : stringQuery;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -96,6 +107,7 @@ export default function NearbyPage() {
       const c = await getCurrentCoordinates();
       setInput('');
       setCoordsLabel(undefined);
+      setCoordsLocationDetail(undefined);
       setCoords(c);
     } catch (err) {
       setCoords(null);
@@ -128,6 +140,28 @@ export default function NearbyPage() {
     } else {
       setDestination(parsed.location);
     }
+  }
+
+  // A user picking one option from the ambiguous-search candidate list
+  // (Phase 9) becomes the canonical result for that search — routed through
+  // the SAME coordinate-based path Near Me and trip-context already use, so
+  // it flows through the existing map/list/detail pipeline unchanged rather
+  // than re-geocoding the name (which could hit the same ambiguity again, or
+  // resolve to a different candidate than the one actually chosen).
+  function handleSelectCandidate(candidate: PlaceCandidate) {
+    setSearch('');
+    setSelectedPlace(null);
+    setLocationError(null);
+    setInput(candidate.name);
+    setDestination('');
+    setCoordsLabel(candidate.name);
+    setCoordsLocationDetail({
+      locality: candidate.locality,
+      district: candidate.district,
+      state: candidate.state,
+      country: candidate.country,
+    });
+    setCoords({ lat: candidate.lat, lon: candidate.lon });
   }
 
   function handleRefresh() {
@@ -225,12 +259,26 @@ export default function NearbyPage() {
   const hasQuery = !!destination || !!coords;
   const showEmpty = !hasQuery && !isLocating;
   const showLoading = (hasQuery && isLoading) || isLocating;
-  const showError = hasQuery && isError && !isLoading;
-  // Distinguish "the destination itself couldn't be recognised" (geocoding
-  // rejected it) from "the location was fine but the places provider failed".
-  // Only the former is a genuine location problem; the latter is a service
-  // hiccup and must NOT read as "location not found".
+  // Three genuinely different failures, never collapsed into one message:
+  // the destination couldn't be recognised at all (isNotFound); several
+  // genuinely different places plausibly match and none can be confidently
+  // picked (isAmbiguous — Phase 8's WRONG PLACE > NO PLACE, surfaced here as
+  // Phase 9's candidate picker); or the place was fine but the provider
+  // failed (neither of the above — a service hiccup, never "not found").
   const isNotFound = error instanceof NearbyError && error.kind === 'not_found';
+  const isAmbiguous = error instanceof NearbyError && error.kind === 'ambiguous';
+  // Defensive per Phase 9 Step 10: resolveDestination only ever throws
+  // ambiguous with 2+ genuinely distinct candidates, but never render a
+  // fake single-option "picker" if that assumption is ever violated —
+  // fall through to the honest not-found treatment instead.
+  const ambiguousCandidates: PlaceCandidate[] =
+    isAmbiguous && error instanceof NearbyError && (error.candidates?.length ?? 0) >= 2
+      ? error.candidates!
+      : [];
+  const showCandidatePicker = isAmbiguous && ambiguousCandidates.length >= 2;
+  // The candidate picker gets its own dedicated block below — never merged
+  // with the generic error card (Phase 9 Step 5).
+  const showError = hasQuery && isError && !isLoading && !showCandidatePicker;
   const showResults = !!data && !isError;
   // Geocoding succeeded and returned a real location, but the provider had no
   // usable nearby places for it — a distinct, honest state (not a filter issue).
@@ -310,6 +358,76 @@ export default function NearbyPage() {
             exit="exit"
           >
             <ExplorerSkeleton />
+          </motion.div>
+        )}
+
+        {/* ── Ambiguous destination — candidate picker ───────────────────── */}
+        {/* Deliberately its own state (Phase 9 Step 5), never merged with the
+            "not found" card below: the search wasn't wrong, TravelMate just
+            can't yet tell which of several genuinely different real places
+            was meant. Selecting one routes through the exact same
+            coordinate-based path Near Me already uses (handleSelectCandidate)
+            — no separate map/search pipeline. */}
+        {showCandidatePicker && (
+          <motion.div
+            key="ambiguous"
+            variants={rv(PAGE_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border/60 py-16 text-center"
+          >
+            <HelpCircle className="h-10 w-10 text-muted-foreground opacity-40" aria-hidden="true" />
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">Multiple places found</p>
+              <p className="text-sm text-muted-foreground">Which place did you mean?</p>
+            </div>
+            <div
+              className="flex w-full max-w-sm flex-col gap-2 px-4"
+              role="group"
+              aria-label="Choose the place you meant"
+            >
+              {ambiguousCandidates.map((c, i) => {
+                const subtitle =
+                  formatLocationHierarchy(
+                    {
+                      locality: c.locality,
+                      district: c.district,
+                      state: c.state,
+                      country: c.country,
+                    },
+                    { includeLocality: true },
+                  ) || c.country;
+                return (
+                  <button
+                    // Candidates are ephemeral (never persisted/given a
+                    // stable id) — index is stable for this static list.
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelectCandidate(c)}
+                    className="flex min-h-[3.25rem] items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-foreground">
+                        {c.name}
+                      </span>
+                      {subtitle && (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {subtitle}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => handleExampleClick('')}>
+              Clear search
+            </Button>
           </motion.div>
         )}
 
