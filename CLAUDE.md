@@ -11,15 +11,16 @@ npm run type-check   # tsc --noEmit (no emit, strict check)
 npm run lint         # ESLint, zero warnings tolerance
 npm run lint:fix     # ESLint with auto-fix
 npm run format       # Prettier over src/**/*.{ts,tsx,css}
+npm run test         # vitest run — unit tests (src/**/*.test.ts + supabase/functions/**/*.test.ts)
+npm run test:e2e     # playwright test — authenticated E2E suite (needs E2E_EMAIL/E2E_PASSWORD, see docs/E2E_VERIFICATION.md)
 npm run analyze      # build + open bundle visualizer (dist/stats.html)
 ```
 
-There is no test runner — no vitest, jest, or similar is configured.
-
-Deploy the Edge Function after changes:
+Deploy an Edge Function after changes:
 
 ```bash
 supabase functions deploy ai-chat
+supabase functions deploy hotels-search
 ```
 
 Apply DB migrations:
@@ -76,6 +77,14 @@ Date-only strings from the DB (`YYYY-MM-DD`) must be parsed as local midnight, n
 ### Nearby Places
 
 `src/features/nearby/services/nearby.service.ts` — geocodes via Nominatim (no key), then fetches from Geoapify Places API (`VITE_GEOAPIFY_API_KEY`). Category strings must match the Geoapify taxonomy exactly (see comments in file). The `CATEGORY_MAP` maps Geoapify prefix strings to `PlaceCategory` UI values.
+
+### Hotels
+
+`src/features/hotels/services/hotels.provider.ts` geocodes via the same `geocodeLocation` (`src/lib/geocode.ts`) Nearby uses, then calls the `hotels-search` Supabase Edge Function (`supabase/functions/hotels-search/`) — real hotel data from a RapidAPI-hosted Booking.com-family API, never a mock fallback. The upstream API key stays server-side only (`HOTELS_API_KEY`/`HOTELS_API_HOST` Edge Function secrets), same decoupling principle as the AI service below. `Hotel.source` is `'mock' | 'live'`.
+
+### Local Transport
+
+`src/features/local/services/local.provider.ts` geocodes pickup/dropoff via `geocodeLocation`, then gets real driving distance/duration from Geoapify's **Routing** API (same `VITE_GEOAPIFY_API_KEY`, called client-side like Nearby's Places calls — no new secret). Fare is computed from that real distance/duration but stays a labeled estimate; provider list, per-provider price spread, and pickup ETA stay synthetic — no public multi-provider ride-quote API exists for Indian ride-hailing apps. `Trains`/`Flights` (`src/features/{trains,flights}/services/*.provider.ts`) still use the original seeded-PRNG mock pattern; Trains has no viable official API (IRCTC publishes none) so its swap is deferred/unofficial-API-only.
 
 ### Animations
 

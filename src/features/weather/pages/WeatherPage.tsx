@@ -62,7 +62,7 @@ export default function WeatherPage() {
           <Input
             ref={inputRef}
             className="pl-9"
-            placeholder="Search destination — e.g. Tokyo, Bali, London…"
+            placeholder="Search an Indian destination — e.g. Manali, Goa, Hampi…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

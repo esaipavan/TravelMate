@@ -2,10 +2,10 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---|---|
-| Latest (`main`) | ✅ Active |
-| Older branches | ❌ Not supported |
+| Version         | Supported        |
+| --------------- | ---------------- |
+| Latest (`main`) | ✅ Active        |
+| Older branches  | ❌ Not supported |
 
 Only the latest commit on `main` receives security fixes.
 
@@ -20,6 +20,7 @@ If you discover a security issue in TravelMate, report it privately by emailing:
 **saipavanetikala5@gmail.com**
 
 Include in your report:
+
 - A description of the vulnerability and its potential impact
 - Steps to reproduce or a proof-of-concept (if available)
 - Any suggested fix or mitigation you have in mind
@@ -33,13 +34,13 @@ You can expect an acknowledgement within **72 hours** and a status update within
 ### Key design decisions that protect user data
 
 **No secrets in the client bundle**
-All AI provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`) are stored exclusively in Supabase Edge Function secrets. The browser never communicates with AI providers directly — it only calls `supabase.functions.invoke('ai-chat')`. There are no API keys in `.env.local`, frontend environment variables, or the browser bundle.
+All AI provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`) and the hotel-search provider key (`HOTELS_API_KEY`, `HOTELS_API_HOST`) are stored exclusively in Supabase Edge Function secrets. The browser never communicates with these providers directly — it only calls `supabase.functions.invoke('ai-chat')` / `supabase.functions.invoke('hotels-search')`. There are no API keys in `.env.local`, frontend environment variables, or the browser bundle.
 
 **Row Level Security on every table**
 All PostgreSQL tables enforce RLS policies that restrict access to `user_id = auth.uid()`. Application-layer bugs cannot accidentally expose another user's data — the database rejects unauthorized queries before returning results.
 
-**JWT verification on the Edge Function**
-Every request to the `ai-chat` Edge Function is verified against the Supabase JWT before any AI provider call is made.
+**JWT verification on the Edge Functions**
+Every request to the `ai-chat` and `hotels-search` Edge Functions is verified against the Supabase JWT before any external provider call is made.
 
 **Content Security Policy**
 A strict CSP is enforced via `vercel.json`. Only the exact third-party origins the application uses are allowlisted. AI provider hostnames are deliberately absent from `connect-src` — they are only reachable from the Edge Function, not the browser.
@@ -49,12 +50,12 @@ A strict CSP is enforced via `vercel.json`. Only the exact third-party origins t
 
 **Additional HTTP security headers**
 
-| Header | Value |
-|---|---|
-| `X-Frame-Options` | `DENY` — clickjacking prevention |
-| `X-Content-Type-Options` | `nosniff` — MIME sniffing prevention |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | Camera and microphone disabled; geolocation self-only |
+| Header                   | Value                                                 |
+| ------------------------ | ----------------------------------------------------- |
+| `X-Frame-Options`        | `DENY` — clickjacking prevention                      |
+| `X-Content-Type-Options` | `nosniff` — MIME sniffing prevention                  |
+| `Referrer-Policy`        | `strict-origin-when-cross-origin`                     |
+| `Permissions-Policy`     | Camera and microphone disabled; geolocation self-only |
 
 ---
 

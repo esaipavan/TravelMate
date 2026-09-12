@@ -98,9 +98,11 @@ supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 
-# 3. Deploy the AI Edge Function and set secrets
+# 3. Deploy the Edge Functions and set secrets
 supabase functions deploy ai-chat
 supabase secrets set GROQ_API_KEY=gsk_...
+supabase functions deploy hotels-search
+supabase secrets set HOTELS_API_KEY=... HOTELS_API_HOST=booking-com.p.rapidapi.com
 
 # 4. Configure environment and start
 cp .env.example .env.local   # add your Supabase URL and anon key
@@ -130,7 +132,7 @@ VITE_AI_PROVIDER=groq
 | `VITE_AI_PROVIDER`       | Optional    | Display label only (`groq` / `gemini` / `openrouter`). Defaults to `groq`.           |
 | `VITE_APP_NAME`          | Optional    | App display name. Defaults to `TravelMate`.                                          |
 
-AI provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`) are **never stored in `.env.local`** — they are set exclusively as Supabase Edge Function secrets via `supabase secrets set`.
+AI provider API keys (`GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`) and the hotel-search provider key (`HOTELS_API_KEY`, `HOTELS_API_HOST`) are **never stored in `.env.local`** — they are set exclusively as Supabase Edge Function secrets via `supabase secrets set`. Without `HOTELS_API_KEY` set, Hotels search returns an honest "not configured yet" error rather than falling back to fake data.
 
 ---
 
