@@ -49,6 +49,13 @@ export interface LocalRide {
   seats: number; // vehicle capacity
   price: number; // fare for the whole ride (not per passenger)
   currency: string;
-  /** Explicit marker so a real ride-hailing API can be told apart later. */
-  source: 'mock';
+  /** `live`: distanceKm/durationMin come from real geocoding + routing
+   *  (Geoapify Routing API) — the only value the current provider produces;
+   *  a geocoding/routing failure throws rather than falling back to a
+   *  `mock` result (see local.provider.ts). `mock` kept in the union for the
+   *  same reason as `Hotel.source` — documents the prior fully-synthetic
+   *  state. Provider list, per-provider price jitter, and etaMin stay
+   *  synthetic either way — no public multi-provider ride-quote API exists
+   *  for Uber/Ola/Rapido. */
+  source: 'mock' | 'live';
 }

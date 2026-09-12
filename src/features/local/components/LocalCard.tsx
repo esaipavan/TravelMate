@@ -36,8 +36,7 @@ export function LocalCard({ ride, selectedForCompare, onToggleCompare, onSelect 
             {ride.provider} · {LOCAL_VEHICLE_LABEL[ride.vehicle]}
           </p>
           <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Clock className="h-3 w-3" aria-hidden />
-            {ride.etaMin} min to pickup
+            <Clock className="h-3 w-3" aria-hidden />~{ride.etaMin} min to pickup · estimated
           </p>
         </div>
         <label className="absolute right-2 top-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
