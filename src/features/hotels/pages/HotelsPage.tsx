@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { rv, PAGE_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { formatCurrency } from '@/utils/formatters';
-import { usePlaceImage } from '@/hooks/usePlaceImage';
+import { usePlaceGallery } from '@/hooks/usePlaceGallery';
 import { resolveDestinationTheme } from '@/utils/destinationTheme';
 import { HotelSearchBar } from '../components/HotelSearchBar';
 import { HotelCard } from '../components/HotelCard';
@@ -27,11 +27,9 @@ export default function HotelsPage() {
 
   const [input, setInput] = useState(searchParams.get('destination') ?? '');
   const [guests, setGuests] = useState(2);
-  const [submitted, setSubmitted] = useState<HotelSearchParams | null>(
-    searchParams.get('destination')
-      ? { destination: searchParams.get('destination')!, guests: 2 }
-      : null,
-  );
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [submitted, setSubmitted] = useState<HotelSearchParams | null>(null);
   const [sort, setSort] = useState<SortKey>('recommended');
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
   const [reviewHotel, setReviewHotel] = useState<Hotel | null>(null);
@@ -41,9 +39,13 @@ export default function HotelsPage() {
 
   const { data: hotels = [], isLoading, isFetching, isError } = useHotelSearch(submitted);
 
-  // Honest destination hero image (real Wikipedia photo when recognised, else gradient).
+  // Honest destination hero image (real Wikipedia photo when recognised, else
+  // gradient). Gallery hook (not the single-image one) so this shares its
+  // cached Wikipedia fetch with any other surface enriching the same
+  // destination — this compact 128px banner only shows the lead photo.
   const heroDest = submitted?.destination ?? '';
-  const { imageUrl: heroImage } = usePlaceImage(heroDest, { enabled: !!heroDest });
+  const { images: heroImages } = usePlaceGallery(heroDest, { enabled: !!heroDest });
+  const heroImage = heroImages[0]?.url;
 
   // Keep compare selection in sync with the current result set.
   useEffect(() => {
@@ -56,9 +58,9 @@ export default function HotelsPage() {
 
   function handleSearch() {
     const destination = input.trim();
-    if (!destination) return;
+    if (!destination || !checkIn || !checkOut) return;
     setCompareIds(new Set());
-    setSubmitted({ destination, guests });
+    setSubmitted({ destination, guests, checkIn, checkOut });
   }
 
   const sorted = useMemo(() => {
@@ -119,6 +121,12 @@ export default function HotelsPage() {
             onChange={setInput}
             guests={guests}
             onGuestsChange={setGuests}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            onDatesChange={(nextCheckIn, nextCheckOut) => {
+              setCheckIn(nextCheckIn);
+              setCheckOut(nextCheckOut);
+            }}
             onSearch={handleSearch}
             isLoading={isFetching}
           />
@@ -177,6 +185,22 @@ export default function HotelsPage() {
               <Button variant="outline" size="sm" onClick={handleSearch}>
                 Try again
               </Button>
+            </div>
+          )}
+
+          {/* No results — a genuine, honest empty search, distinct from an
+              error (a provider outage/misconfiguration is already its own
+              branch above). */}
+          {hasSearched && !isLoading && !isError && sorted.length === 0 && (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 py-16 text-center">
+              <BedDouble className="h-10 w-10 text-muted-foreground opacity-40" aria-hidden />
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">No hotels found</p>
+                <p className="text-sm text-muted-foreground">
+                  No stays for these dates in {heroDest.split(',')[0]}. Try different dates or a
+                  nearby destination.
+                </p>
+              </div>
             </div>
           )}
 
@@ -325,8 +349,8 @@ export default function HotelsPage() {
       {/* ── Booking review dialog ───────────────────────────────────────── */}
       <BookingReviewDialog
         hotel={reviewHotel}
-        checkIn=""
-        checkOut=""
+        checkIn={submitted?.checkIn ?? ''}
+        checkOut={submitted?.checkOut ?? ''}
         guests={guests}
         defaultTripId={searchParams.get('tripId')}
         onOpenChange={(open) => {

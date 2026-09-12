@@ -14,25 +14,35 @@ interface Props {
 }
 
 export function HotelCard({ hotel, selectedForCompare, onToggleCompare, onSelect }: Props) {
-  // Honest imagery: the mock provider has no real per-hotel photo, so we never
-  // fabricate one. We render a destination-themed gradient banner with a hotel
-  // glyph — the same "no real image → gradient" rule the rest of the app uses.
+  // Honest imagery: only ever a REAL per-hotel photo from the provider
+  // (hotel.imageUrl) or, when none exists (mock source, or a live result the
+  // provider had no photo for), a destination-themed gradient — never a
+  // fabricated/guessed image. Same "no real image → gradient" rule the rest
+  // of the app uses (see src/services/place-image/placeImage.service.ts).
   const theme = resolveDestinationTheme(hotel.destination);
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-shadow hover:shadow-md">
-      {/* Banner (gradient placeholder — not a fabricated photo) */}
+      {/* Banner — real photo when available, else gradient placeholder */}
       <div
         className="relative h-28"
-        style={{
-          background: `linear-gradient(135deg, ${theme.accent}40 0%, ${theme.secondary}22 100%)`,
-        }}
+        style={
+          hotel.imageUrl
+            ? undefined
+            : {
+                background: `linear-gradient(135deg, ${theme.accent}40 0%, ${theme.secondary}22 100%)`,
+              }
+        }
         role="img"
         aria-label={`${hotel.name} in ${hotel.area}`}
       >
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <BedDouble className="h-10 w-10 text-foreground/15" aria-hidden />
-        </div>
+        {hotel.imageUrl ? (
+          <img src={hotel.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <BedDouble className="h-10 w-10 text-foreground/15" aria-hidden />
+          </div>
+        )}
         {/* Compare toggle */}
         <label className="absolute right-2 top-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
           <Checkbox

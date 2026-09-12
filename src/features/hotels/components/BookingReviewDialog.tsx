@@ -53,6 +53,15 @@ export function BookingReviewDialog({
 
   const nights = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
   const total = hotel ? hotel.pricePerNight * nights : 0;
+  // hotel.pricePerNight was quoted for the ORIGINAL search dates
+  // (initCheckIn/initCheckOut) — a live provider's nightly rate varies by
+  // date/season/occupancy, so editing the dates here doesn't refetch a new
+  // rate. Flag it rather than silently implying the total is valid for
+  // whatever dates the user just typed.
+  const datesChangedFromSearch =
+    hotel?.source === 'live' &&
+    !!initCheckIn &&
+    (checkIn !== initCheckIn || checkOut !== initCheckOut);
 
   function handleSave() {
     if (!hotel) return;
@@ -164,6 +173,12 @@ export function BookingReviewDialog({
                 {formatCurrency(total, hotel.currency)}
               </div>
             </div>
+            {datesChangedFromSearch && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Price shown is for your original search dates — search again to get pricing for
+                these new dates.
+              </p>
+            )}
 
             <Button onClick={handleSave} className="w-full">
               Save booking draft

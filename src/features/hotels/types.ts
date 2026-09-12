@@ -24,9 +24,17 @@ export interface Hotel {
   amenities: string[];
   lat?: number;
   lon?: number;
-  /** Where this result came from. `mock` today — an explicit marker so a real
-   *  provider adapter can be told apart in the UI when one is added. */
-  source: 'mock';
+  /** A real per-hotel photo from the provider, when it returns one. Never
+   *  guessed/fabricated — absent means HotelCard shows its honest gradient
+   *  placeholder instead, same "no real image → gradient" rule the rest of
+   *  the app uses (see src/services/place-image/placeImage.service.ts). */
+  imageUrl?: string;
+  /** Official star rating (1–5), when the provider supplies one — distinct
+   *  from `rating`, which is a guest review score. */
+  stars?: number;
+  /** Where this result came from — `mock` (the seeded-PRNG placeholder
+   *  generator) or `live` (a real provider, currently hotels-search). */
+  source: 'mock' | 'live';
 }
 
 // ── Booking drafts (mode-agnostic) ──────────────────────────────────────────
