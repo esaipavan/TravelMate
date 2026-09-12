@@ -435,7 +435,15 @@ describe('resolveDestination', () => {
     expect(() => resolveDestination('Central Park', candidates)).toThrow();
   });
 
-  it('a single genuine candidate always resolves without triggering ambiguity (misspelling fallback, e.g. Tirupathi → Dwaraka Tirumala)', () => {
+  it('Tirupathi (misspelling, single candidate): a lone candidate sharing ZERO words with the query is rejected, never silently returned (fix — was: Tirupathi → Dwaraka Tirumala)', () => {
+    // Regression fixture from real live Nominatim data (Phase 10 QA,
+    // confirmed via the actual authenticated app): searching "Tirupathi"
+    // returns exactly one candidate, "Dwaraka Tirumala" — a real, different
+    // place ~60km away that shares no name token with the query at all. Prior
+    // behavior (Phase 7) silently returned it as the answer; the fix throws
+    // instead, which geocodeLocation maps to the same GeocodeError('not_found')
+    // an unmatched query already gets — never a wrong place presented as the
+    // right one.
     const candidates = [
       candidate({
         name: 'Dwaraka Tirumala',
@@ -447,18 +455,38 @@ describe('resolveDestination', () => {
         state: 'Andhra Pradesh',
       }),
     ];
-    expect(resolveDestination('Tirupathi', candidates).display_name).toContain('Dwaraka');
+    expect(() => resolveDestination('Tirupathi', candidates)).toThrow();
   });
 
-  it('Tirupathi (real multi-candidate case): the dramatically-more-important fuzzy match wins over low-importance candidates that merely CONTAIN the misspelled query as a substring', () => {
-    // Regression fixture from real Nominatim data: "Dwaraka Tirumala" shares
-    // ZERO tokens with "Tirupathi" (Tirumala != Tirupathi as strings) and so
-    // scores NONE by this module's own name matching, while "Malekallu
-    // Tirupathi" and "Tirupathi Cheruvu" (a lake) merely happen to contain
-    // the literal word "Tirupathi" and so reached TOKEN_MATCH — a tier floor
-    // on cross-tier promotion let those coincidental substring matches beat
-    // the correct, ~2.5x-more-important fuzzy answer. Promotion must not
-    // require a minimum tier on the outside candidate.
+  it('Tirupati (correct spelling): resolves cleanly and is completely unaffected by the Tirupathi fix', () => {
+    // Regression fixture from real live Nominatim data (Phase 10 QA): the
+    // correctly-spelled city resolves directly to itself — proves the fix
+    // above is specific to the zero-token-overlap misspelling case, not a
+    // general tightening that would also reject correct queries.
+    const candidates = [
+      candidate({
+        name: 'Tirupati',
+        cls: 'place',
+        type: 'city',
+        importance: 0.5,
+        city: 'Tirupati',
+        state_district: 'Tirupati',
+        state: 'Andhra Pradesh',
+      }),
+    ];
+    const best = resolveDestination('Tirupati', candidates);
+    expect(best.address?.city).toBe('Tirupati');
+  });
+
+  it('Tirupathi (real multi-candidate case): now surfaces the ambiguity picker instead of silently picking the unrelated fuzzy match (fix)', () => {
+    // Same real Nominatim fixture as before the fix, re-asserted with the new,
+    // safer expectation: "Dwaraka Tirumala" still shares ZERO tokens with
+    // "Tirupathi" and is now excluded entirely from consideration (never
+    // offered, not even as a picker option) rather than winning outright.
+    // "Malekallu Tirupathi" and "Tirupathi Cheruvu" both genuinely contain the
+    // searched word "Tirupathi" (TOKEN_MATCH tier) and sit in different
+    // districts/states with only a ~1.4x importance ratio — not decisive — so
+    // this now throws (ambiguous) rather than confidently guessing among them.
     const candidates = [
       candidate({
         name: 'Dwaraka Tirumala',
@@ -488,7 +516,50 @@ describe('resolveDestination', () => {
         state: 'Andhra Pradesh',
       }),
     ];
-    expect(resolveDestination('Tirupathi', candidates).display_name).toContain('Dwaraka Tirumala');
+    let thrown: unknown;
+    try {
+      resolveDestination('Tirupathi', candidates);
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(Error);
+    // The unrelated Dwaraka Tirumala must never appear as a picker option.
+    const candidateNames = (
+      thrown as { candidates?: Array<{ display_name: string }> }
+    ).candidates?.map((c) => c.display_name);
+    if (candidateNames) {
+      expect(candidateNames.some((n) => n.includes('Dwaraka'))).toBe(false);
+    }
+  });
+
+  it('a candidate sharing SOME real word with the query beats an unrelated one on importance alone (the general form of the Tirupathi fix)', () => {
+    // Synthetic case isolating the fix's actual rule: when nothing reaches a
+    // strong match, a TOKEN_MATCH-tier candidate (shares a real word with the
+    // query) must be preferred over a higher-importance NONE-tier candidate
+    // (shares nothing) — this is what makes the Tirupathi case reject rather
+    // than trust raw importance blindly.
+    const candidates = [
+      candidate({
+        name: 'Totally Unrelated Place',
+        cls: 'place',
+        type: 'village',
+        importance: 0.9, // deliberately the highest importance
+        village: 'Totally Unrelated Place',
+        state_district: 'Nowhere',
+        state: 'Karnataka',
+      }),
+      candidate({
+        name: 'Example Junction',
+        cls: 'place',
+        type: 'village',
+        importance: 0.1,
+        village: 'Example Junction',
+        state_district: 'Somewhere',
+        state: 'Karnataka',
+      }),
+    ];
+    const best = resolveDestination('Example', candidates);
+    expect(best.display_name).toContain('Example Junction');
   });
 
   it('a more specifically-named exact match wins outright over a same-place variant with extra words, no ambiguity', () => {
@@ -544,6 +615,175 @@ describe('resolveDestination', () => {
     ];
     const best = resolveDestination('Example Fort', candidates);
     expect(best.importance).toBe(0.02);
+  });
+
+  it('Birla Mandir: six same-named temples across six different states → ambiguous, none silently wins (regression, RV Phase 10 live)', () => {
+    // Real-shape regression fixture: searching "Birla Mandir" live returns
+    // distinct genuine temples in Kolkata/Jaipur/Thane/Hooghly/Hyderabad/
+    // Bhopal, each an exact name match with no query-supplied context and no
+    // decisive importance gap — must surface the ambiguity picker, not guess.
+    const cities = [
+      { city: 'Kolkata', state_district: 'Kolkata', state: 'West Bengal', importance: 0.12 },
+      { city: 'Jaipur', state_district: 'Jaipur', state: 'Rajasthan', importance: 0.11 },
+      { city: 'Thane', state_district: 'Thane', state: 'Maharashtra', importance: 0.1 },
+      { city: 'Hooghly', state_district: 'Hooghly', state: 'West Bengal', importance: 0.09 },
+      { city: 'Hyderabad', state_district: 'Hyderabad', state: 'Telangana', importance: 0.13 },
+      { city: 'Bhopal', state_district: 'Bhopal', state: 'Madhya Pradesh', importance: 0.1 },
+    ];
+    const candidates = cities.map((c) =>
+      candidate({
+        name: 'Birla Mandir',
+        cls: 'amenity',
+        type: 'place_of_worship',
+        importance: c.importance,
+        city: c.city,
+        state_district: c.state_district,
+        state: c.state,
+      }),
+    );
+    expect(() => resolveDestination('Birla Mandir', candidates)).toThrow();
+  });
+
+  it('Birla Mandir Hyderabad: query-supplied context resolves the correct one outright, unaffected by the six-way ambiguity above', () => {
+    const candidates = [
+      candidate({
+        name: 'Birla Mandir',
+        cls: 'amenity',
+        type: 'place_of_worship',
+        importance: 0.12,
+        city: 'Kolkata',
+        state_district: 'Kolkata',
+        state: 'West Bengal',
+      }),
+      candidate({
+        name: 'Birla Mandir',
+        cls: 'amenity',
+        type: 'place_of_worship',
+        importance: 0.13,
+        city: 'Hyderabad',
+        state_district: 'Hyderabad',
+        state: 'Telangana',
+      }),
+    ];
+    const best = resolveDestination('Birla Mandir Hyderabad', candidates);
+    expect(best.address?.city).toBe('Hyderabad');
+  });
+
+  it('Hampi: a dominant genuine heritage-site candidate resolves directly, no ambiguity (regression, RV Phase 10 live + this session)', () => {
+    const candidates = [
+      candidate({
+        name: 'Hampi',
+        cls: 'place',
+        type: 'town',
+        importance: 0.45,
+        city: 'Hampi',
+        state_district: 'Vijayanagara',
+        state: 'Karnataka',
+      }),
+    ];
+    const best = resolveDestination('Hampi', candidates);
+    expect(best.address?.city).toBe('Hampi');
+  });
+
+  it('Mangalagiri: resolves through the full resolveDestination path (not just pickBest in isolation), still the suburb over the coarser administrative match', () => {
+    const candidates = [
+      candidate({
+        name: 'Mangalagiri',
+        cls: 'place',
+        type: 'suburb',
+        importance: 0.38867939096549164,
+        city: 'Guntur',
+        state_district: 'Guntur',
+        state: 'Andhra Pradesh',
+      }),
+      candidate({
+        name: 'Mangalagiri',
+        cls: 'boundary',
+        type: 'administrative',
+        importance: 0.19938740066310082,
+        city: 'Guntur',
+        state_district: 'Guntur',
+        state: 'Andhra Pradesh',
+      }),
+    ];
+    const best = resolveDestination('Mangalagiri', candidates);
+    expect(best.type).toBe('suburb');
+  });
+
+  it('a genuine small village, searched by its own correct name, still resolves directly — the Tirupathi fix only rejects ZERO-relation matches, not small places in general', () => {
+    // Same real place (Dwaraka Tirumala) as the Tirupathi misspelling fixture
+    // above, this time searched correctly — proves the fix is specific to
+    // the misspelling case, not a general village/small-locality penalty.
+    const candidates = [
+      candidate({
+        name: 'Dwaraka Tirumala',
+        cls: 'place',
+        type: 'village',
+        importance: 0.36,
+        village: 'Dwarakatirumala',
+        state_district: 'Eluru',
+        state: 'Andhra Pradesh',
+      }),
+    ];
+    const best = resolveDestination('Dwaraka Tirumala', candidates);
+    expect(best.address?.village).toBe('Dwarakatirumala');
+  });
+
+  it('Shirdi: resolves to the real town via the verified common-name alias (Nominatim indexes it as "Sainagar") — regression for a real live-confirmed false rejection', () => {
+    // Real fixture captured live: Nominatim's only candidate for "Shirdi" is
+    // "Sainagar" (the town's formal/administrative name — "Shirdi" is the
+    // popular name for the same place). Before the alias mechanism, this
+    // was indistinguishable from the Tirupathi bug (a lone NONE-tier
+    // candidate) and was incorrectly rejected as not_found.
+    const candidates = [
+      candidate({
+        name: 'Sainagar',
+        cls: 'place',
+        type: 'town',
+        importance: 0.16,
+        city: 'Sainagar',
+        state_district: 'Ahilyanagar',
+        state: 'Maharashtra',
+      }),
+    ];
+    const best = resolveDestination('Shirdi', candidates);
+    expect(best.display_name).toContain('Sainagar');
+  });
+
+  it('Shirdi alias does not blindly trust the query — a single candidate that ALSO fails to match the alias target still rejects (the alias is re-verified, not a shortcut)', () => {
+    // Same query, but the (hypothetical) only candidate Nominatim returns
+    // shares no relation with either "Shirdi" OR the alias target
+    // "Sainagar" — must still be rejected as low-confidence, proving the
+    // alias can't be used to rubber-stamp an unrelated result.
+    const candidates = [
+      candidate({
+        name: 'Nagpur',
+        cls: 'place',
+        type: 'city',
+        importance: 0.5,
+        city: 'Nagpur',
+        state_district: 'Nagpur',
+        state: 'Maharashtra',
+      }),
+    ];
+    expect(() => resolveDestination('Shirdi', candidates)).toThrow();
+  });
+
+  it('Tirupathi still does not resolve via any alias — the alias list is exact-key, not fuzzy, and Tirupathi has no entry', () => {
+    // Regression guard: adding the Shirdi alias must not accidentally widen
+    // matching for other misspellings. Reuses the real Tirupathi fixture.
+    const candidates = [
+      candidate({
+        name: 'Dwaraka Tirumala',
+        cls: 'place',
+        type: 'village',
+        importance: 0.3,
+        village: 'Dwarakatirumala',
+        state_district: 'Eluru',
+        state: 'Andhra Pradesh',
+      }),
+    ];
+    expect(() => resolveDestination('Tirupathi', candidates)).toThrow();
   });
 });
 

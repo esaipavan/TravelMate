@@ -69,33 +69,26 @@ const DESTINATIONS: DestinationEntry[] = [
   },
   {
     keys: ['mathura', 'vrindavan', 'brindavan'],
+    // The generic gopuram stand-in (see TEMPLE_IMAGE below) was previously
+    // listed here as a second, effectively-unused image (only images[0] is
+    // ever read) — dropped rather than left claiming to depict this place.
     images: [
       'photo-1561361058-c24cecae35ca', // temple riverside
-      'photo-1708346561250-ea0f8b54bc1c', // ornate Hindu temple gopuram
     ],
     colors: { accent: '#F97316', accentRgb: '249,115,22', secondary: '#F59E0B' },
   },
-  {
-    keys: ['tirupati', 'tirumala'],
-    images: [
-      'photo-1708346561250-ea0f8b54bc1c', // South Indian temple gopuram
-    ],
-    colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#D97706' },
-  },
-  {
-    keys: ['puri'],
-    images: [
-      'photo-1708346561250-ea0f8b54bc1c', // temple town — ornate gopuram
-    ],
-    colors: { accent: '#0EA5E9', accentRgb: '14,165,233', secondary: '#F97316' },
-  },
-  {
-    keys: ['shirdi'],
-    images: [
-      'photo-1708346561250-ea0f8b54bc1c', // pilgrimage temple town
-    ],
-    colors: { accent: '#F59E0B', accentRgb: '245,158,11', secondary: '#D97706' },
-  },
+  // Tirupati/Tirumala, Puri, and Shirdi previously listed ONLY the generic
+  // gopuram stand-in (TEMPLE_IMAGE) as their curated cover — i.e. a guessed,
+  // not-actually-this-place photo was the ONLY option for these three real
+  // pilgrimage towns. Removed entirely rather than replaced with another
+  // guessed photo (per the "never present a guessed image as real" rule
+  // TEMPLE_IMAGE's own comment below already states): with no curated entry,
+  // `resolveCore` returns no photoIds, `wantsRealPhoto` becomes true exactly
+  // as it already was in the generic-cover case, and the existing
+  // Wikipedia-gallery fallback (usePlaceGallery/fetchPlaceImage) — already
+  // wired into every cover-consuming surface — tries a REAL, place-specific
+  // photo first; the honest gradient is the fallback only if Wikipedia has
+  // nothing, never a wrong temple photo standing in as the real one.
   {
     keys: ['goa'],
     images: [

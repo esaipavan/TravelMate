@@ -561,6 +561,58 @@ class AmbiguousMatchError extends Error {
   }
 }
 
+// Thrown when resolveDestination's ONLY option (or every remaining option
+// after filtering) shares literally no word with the query — a genuinely
+// unrelated candidate that a naive "trust Nominatim's importance" fallback
+// would otherwise return silently (the original Tirupathi → Dwaraka
+// Tirumala bug). `geocodeLocation` maps this to GeocodeError('not_found'),
+// the same honest "we couldn't confidently match that" outcome a real typo
+// with zero results gets — never a wrong place presented as a right one.
+class LowConfidenceMatchError extends Error {
+  constructor() {
+    super(NOT_FOUND_MESSAGE);
+    this.name = 'LowConfidenceMatchError';
+  }
+}
+
+// A small, hand-curated list of well-known Indian places whose common,
+// most-searched name differs entirely from Nominatim's own indexed name —
+// e.g. "Shirdi" (the town almost everyone means when they search it) is
+// indexed by Nominatim under its formal administrative name "Sainagar".
+// Without this, the NONE-tier rejection that correctly stops "Tirupathi" →
+// "Dwaraka Tirumala" (an unrelated real place 60km away) also incorrectly
+// stopped "Shirdi" → "Sainagar" (the SAME real place, just under a
+// different name) — name-text comparison alone can't tell those two
+// situations apart.
+//
+// Each entry is applied ONLY when RE-VERIFIED: the single candidate
+// Nominatim actually returned must itself be a genuine name match
+// (EXACT/TOKEN_MATCH/PARTIAL — never NONE) against the alias's OWN target
+// name, not merely "the query happens to be a known alias key". A stale or
+// wrong alias entry can therefore never override real data — if Nominatim's
+// data ever changes so the alias target no longer describes what it
+// returns for that query, the alias silently stops applying and the query
+// correctly falls back to LowConfidenceMatchError, exactly like any other
+// unverified NONE-tier match (see verifiedAliasMatch below).
+//
+// Deliberately scoped to the single-candidate path only (resolveDestination
+// below) — it never participates in resolveWeakMatch's multi-candidate
+// filtering, so it can never turn a genuinely ambiguous multi-candidate
+// query (Central Park, Ramappa Temple, Birla Mandir…) into a confident
+// single answer. Add an entry here only for a specific, confirmed
+// real-world alternate-name mismatch (see the Shirdi regression test) —
+// never as a general fuzzy-matching mechanism.
+const COMMON_NAME_ALIASES: Record<string, string> = {
+  shirdi: 'sainagar',
+};
+
+function verifiedAliasMatch(query: string, place: NominatimPlace): boolean {
+  const target = COMMON_NAME_ALIASES[normalizeName(query)];
+  if (!target) return false;
+  const primaryName = (place.display_name.split(',')[0] ?? '').trim();
+  return classifyNameMatch(target, primaryName) !== 'NONE';
+}
+
 // A candidate counts as a STRONG (identity-confirmed) match when it's a raw
 // EXACT match, OR when it only reaches TOKEN_MATCH because the query
 // explicitly supplied geographic context that this specific candidate's own
@@ -573,20 +625,66 @@ function isStrongMatch(e: CandidateEvaluation): boolean {
   return e.tier === 'EXACT' || (e.hasContext && e.tier === 'TOKEN_MATCH');
 }
 
+// Called only when NOTHING reached a strong (identity-confirmed) match —
+// resolveDestination's own fallback for that case. Prefers any candidate
+// that shares a real word with the query (tier TOKEN_MATCH/PARTIAL) over one
+// that shares none, so a textually-unrelated candidate can never win purely
+// on Nominatim importance (the Tirupathi bug). Reuses the exact same
+// decisive-importance-gap / same-location-collapse / else-ambiguous logic
+// resolveDestination already applies to strong-match POI collisions below —
+// this is that same tiered fallback applied one confidence level down, not a
+// new threshold.
+function resolveWeakMatch(
+  query: string,
+  evaluations: CandidateEvaluation[],
+  candidates: NominatimPlace[],
+): NominatimPlace {
+  const related = evaluations.filter((e) => e.tier !== 'NONE');
+
+  if (related.length === 0) {
+    // Every candidate shares literally no word with the query — genuinely
+    // blind fuzzy/phonetic territory (Phase 7's original Tirupathi case had
+    // exactly one such candidate, handled by resolveDestination's own
+    // length-1 check above; this covers the same situation with 2+). Trust
+    // Nominatim's own relevance ranking, since this module has no better
+    // signal to offer.
+    return pickBest(query, candidates);
+  }
+  if (related.length === 1) return related[0].place;
+
+  const byImportance = [...related].sort((a, b) => b.importance - a.importance);
+  const [top, second] = byImportance;
+  if (top.importance >= second.importance * POI_DECISIVE_IMPORTANCE_RATIO) {
+    return top.place;
+  }
+
+  const distinctLocations = new Set(
+    byImportance.map(
+      (e) => `${e.place.address?.state_district ?? ''}|${e.place.address?.state ?? ''}`,
+    ),
+  );
+  if (distinctLocations.size === 1) return top.place;
+
+  throw new AmbiguousMatchError(byImportance.map((e) => e.place));
+}
+
 /**
  * Selects the intended candidate from an already-`isGenuineDestination`
  * -filtered list, or throws when the evidence genuinely doesn't support a
  * confident choice (CORE PRINCIPLE: WRONG PLACE > NO PLACE — see module
  * comment above). `candidates` must be non-empty.
  *
- * When NO candidate reaches a strong match at all, this module has no
- * opinion worth trusting over Nominatim's own relevance ranking, and defers
- * entirely to pickBest() across every candidate — this is what keeps a
- * genuine misspelling ("Tirupathi" → "Dwaraka Tirumala", Nominatim's own
- * highest-relevance answer, which shares zero name tokens with the query)
- * working exactly as Phase 7 left it, rather than letting some OTHER
- * low-importance candidate that merely happens to contain the query text as
- * a substring win by accident.
+ * When NO candidate reaches a strong match at all, this module still prefers
+ * any candidate that shares SOME real word with the query (tier TOKEN_MATCH
+ * or PARTIAL) over one that shares none — a candidate that is NONE-tier
+ * (e.g. "Tirupathi" → "Dwaraka Tirumala", which shares zero name tokens with
+ * the query) is never silently returned as the answer merely for having the
+ * highest Nominatim importance; it throws LowConfidenceMatchError instead
+ * (→ GeocodeError('not_found') — see geocodeLocation), the same honest
+ * outcome a genuinely unmatched query gets. Only when EVERY candidate is
+ * NONE-tier does this defer to pickBest()'s raw importance ranking — that
+ * remaining case is genuinely blind fuzzy/phonetic territory where this
+ * module has no better signal to offer than Nominatim's own relevance score.
  *
  * Settlement-vs-settlement collisions among strong matches (Kondapur's
  * suburb vs same-named rural villages) are delegated to pickBest()
@@ -601,16 +699,25 @@ function isStrongMatch(e: CandidateEvaluation): boolean {
  * indistinguishable, this throws rather than guesses.
  */
 export function resolveDestination(query: string, candidates: NominatimPlace[]): NominatimPlace {
-  if (candidates.length === 1) return candidates[0];
+  if (candidates.length === 1) {
+    // A lone candidate that shares literally no word with the query (e.g.
+    // "Tirupathi" → "Dwaraka Tirumala") is not confirmed just by being the
+    // only option Nominatim returned — see LowConfidenceMatchError above.
+    // The one exception is a re-verified common-name alias (e.g. "Shirdi" →
+    // "Sainagar", the SAME real place under its formal name, not a
+    // different one) — see COMMON_NAME_ALIASES/verifiedAliasMatch above.
+    const tier = evaluateCandidate(query, candidates[0]).tier;
+    if (tier === 'NONE' && !verifiedAliasMatch(query, candidates[0])) {
+      throw new LowConfidenceMatchError();
+    }
+    return candidates[0];
+  }
 
   const evaluations = candidates.map((c) => evaluateCandidate(query, c));
 
   let topSet = evaluations.filter(isStrongMatch);
   if (topSet.length === 0) {
-    // Nothing reaches a confirmed identity match — trust Nominatim's own
-    // relevance/importance ranking over every candidate, unchanged Phase 7
-    // behaviour (see Tirupathi in the function comment above).
-    return pickBest(query, candidates);
+    return resolveWeakMatch(query, evaluations, candidates);
   }
 
   // Cross-tier promotion: a candidate that ISN'T a strong match can still win
@@ -765,6 +872,12 @@ export async function geocodeLocation(query: string): Promise<GeocodeResult> {
       // Every candidate here already passed isGenuineDestination above — a
       // picker built from this can never surface a hotel/restaurant/road.
       throw new GeocodeError('ambiguous', AMBIGUOUS_MESSAGE, err.candidates.map(toPlaceCandidate));
+    }
+    if (err instanceof LowConfidenceMatchError) {
+      // The only/best candidate shares no real word with the query — same
+      // honest "not found" outcome as zero results, never a wrong place
+      // presented as the right one (see LowConfidenceMatchError above).
+      throw new GeocodeError('not_found', NOT_FOUND_MESSAGE);
     }
     throw err;
   }

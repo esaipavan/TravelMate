@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPlaceGallery } from '@/services/place-image/placeImage.service';
+import type { PlaceImage } from '@/services/place-image/placeImage.service';
 
 interface Options {
   /** Set false to skip the fetch entirely. Default true. */
@@ -18,11 +19,11 @@ interface Options {
 export function usePlaceGallery(
   destination: string | null | undefined,
   options: Options = {},
-): { images: string[]; isLoading: boolean } {
+): { images: PlaceImage[]; isLoading: boolean } {
   const key = destination?.trim().toLowerCase() ?? '';
   const enabled = (options.enabled ?? true) && key.length > 0;
 
-  const { data, isLoading, fetchStatus } = useQuery<string[], Error>({
+  const { data, isLoading, fetchStatus } = useQuery<PlaceImage[], Error>({
     queryKey: ['place-gallery', key],
     queryFn: () => fetchPlaceGallery(destination!.trim()),
     enabled,

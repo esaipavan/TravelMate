@@ -5,12 +5,17 @@
 // (fetch) are already allow-listed in the CSP — no boundary change needed.
 //
 // This deliberately does NOT guess. An image is only returned when Wikipedia
-// gives us a *geographic* article (a standard page that carries map
-// coordinates) that also has a real image — which structurally excludes
-// people / films / concepts / disambiguation pages. Anything short of that
-// returns null so the caller shows its honest gradient instead of a photo.
+// gives us a *genuinely matching, India-scoped geographic* article that also
+// has a real image — which structurally excludes people / films / concepts /
+// disambiguation pages. Anything short of that returns null so the caller
+// shows its honest gradient instead of a photo. See resolveVerifiedArticle
+// for the two ways an article can prove it's genuinely about the right,
+// India-located place: real GPS coordinates (strongest), or — only when an
+// article genuinely has none, a real Wikipedia data gap, not a relaxation —
+// a re-verified name match between the query and the resolved title.
 
 import { resolveDestinationImageDetail } from '@/utils/destinationTheme';
+import { classifyNameMatch } from '@/lib/geocode';
 
 const WIKI_SEARCH = 'https://en.wikipedia.org/w/api.php';
 const WIKI_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
@@ -66,15 +71,28 @@ interface ResolvedArticle {
 
 /**
  * Resolves a query to a verified geographic Wikipedia article, or `null`.
- * Confidence bar: search resolves a page; the page is a `standard` article (not
- * a disambiguation/missing page); it carries geographic `coordinates` inside
- * India (excludes people/films/concepts and foreign namesakes); the article
- * names India. Callers that need a photo additionally check `leadImage`;
- * `extract` (Wikipedia's own summary paragraph) is returned whenever the
- * article verifies at all, since a missing photo doesn't make the text any
- * less genuine. `knownTitle`, when supplied (e.g. Geoapify's own
- * wiki_and_media hint for a specific POI), skips the fuzzy search entirely —
- * more accurate than a name search AND fewer requests.
+ * Confidence bar: search resolves a page; the page is a `standard` article
+ * (not a disambiguation/missing page); the article names India. Beyond that,
+ * genuine India-location confirmation comes from ONE of two signals:
+ *   - real GPS `coordinates`, confirmed inside India (the strongest signal,
+ *     used whenever the article has them) — excludes people/films/concepts
+ *     and foreign namesakes; or
+ *   - when the article genuinely has no coordinates at all (a real Wikipedia
+ *     data gap — e.g. Warangal Fort's own article has none, confirmed live)
+ *     AND the title came from a fuzzy name search (not a trusted
+ *     `knownTitle`), a real name match between the query and the resolved
+ *     title. This is a DIFFERENT check, not a relaxed one: the coordinates
+ *     path never requires a name match at all, because it has its own,
+ *     independent geographic proof; losing that signal is compensated by
+ *     requiring this one instead, so a coordinate-less article that has
+ *     nothing to do with the query still correctly fails to verify.
+ * A `knownTitle` (e.g. Geoapify's own wiki_and_media hint for a specific
+ * POI) is already independently trusted via that provider's own OSM tag
+ * linkage, so the name-match fallback only applies to the fuzzy-search path.
+ * Callers that need a photo additionally check `leadImage`; `extract`
+ * (Wikipedia's own summary paragraph) is returned whenever the article
+ * verifies at all, since a missing photo doesn't make the text any less
+ * genuine.
  */
 async function resolveVerifiedArticle(
   query: string,
@@ -87,9 +105,13 @@ async function resolveVerifiedArticle(
   if (!summary) return null;
 
   if (summary.type !== 'standard') return null;
-  if (!summary.coordinates) return null;
-  if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
   if (!mentionsIndia(summary)) return null;
+
+  if (summary.coordinates) {
+    if (!isInIndia(summary.coordinates.lat, summary.coordinates.lon)) return null;
+  } else if (!knownTitle && classifyNameMatch(query, title) === 'NONE') {
+    return null;
+  }
 
   const image = summary.originalimage?.source ?? summary.thumbnail?.source ?? null;
   return {
@@ -217,6 +239,24 @@ export function toAbsoluteUrl(src: string): string {
 
 const MAX_GALLERY_IMAGES = 6;
 
+/** A single gallery image, carrying the same provenance
+ *  `PlaceDescription` already exposes for the article text — so a caller can
+ *  show "Source: Wikipedia — {title}", linked to the real article, next to
+ *  the photo itself instead of a bare, unexplained URL. `wikipediaTitle`/
+ *  `wikipediaUrl` are identical across every image in one gallery response
+ *  (all verified against the same article) — kept per-image rather than
+ *  hoisted to the array so a caller never has to reach for a second object
+ *  to know where a specific photo came from. */
+export interface PlaceImage {
+  url: string;
+  wikipediaTitle: string;
+  wikipediaUrl: string;
+}
+
+function wikipediaUrlFor(title: string): string {
+  return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+}
+
 // Expands one already-verified article (lead image + title) into up to
 // MAX_GALLERY_IMAGES deduped, filename-relevant photos via the article's own
 // media-list. Shared by fetchPlaceGallery and fetchPlaceMedia so there is one
@@ -224,9 +264,16 @@ const MAX_GALLERY_IMAGES = 6;
 async function expandGallery(
   resolved: { title: string; leadImage: string },
   placeName: string,
-): Promise<string[]> {
+): Promise<PlaceImage[]> {
+  const wikipediaUrl = wikipediaUrlFor(resolved.title);
+  const toPlaceImage = (url: string): PlaceImage => ({
+    url,
+    wikipediaTitle: resolved.title,
+    wikipediaUrl,
+  });
+
   const seen = new Set<string>([resolved.leadImage]);
-  const gallery = [resolved.leadImage];
+  const gallery = [toPlaceImage(resolved.leadImage)];
 
   try {
     const res = await fetch(`${WIKI_MEDIA_LIST}/${encodeURIComponent(resolved.title)}`, {
@@ -245,7 +292,7 @@ async function expandGallery(
         if (!isUsablePhoto(url)) continue;
         if (!isTitleRelevant(item.title, placeName)) continue;
         seen.add(url);
-        gallery.push(url);
+        gallery.push(toPlaceImage(url));
       }
     }
   } catch {
@@ -269,7 +316,7 @@ async function expandGallery(
 export async function fetchPlaceGallery(
   destination: string,
   knownTitle?: string,
-): Promise<string[]> {
+): Promise<PlaceImage[]> {
   const resolved = await resolveArticleFor(destination, knownTitle);
   if (!resolved?.leadImage) return [];
   return expandGallery(
@@ -291,7 +338,7 @@ function toDescription(resolved: ResolvedArticle): PlaceDescription | undefined 
   return {
     text: resolved.extract,
     wikipediaTitle: resolved.title,
-    wikipediaUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(resolved.title.replace(/ /g, '_'))}`,
+    wikipediaUrl: wikipediaUrlFor(resolved.title),
   };
 }
 
@@ -310,7 +357,7 @@ export async function fetchPlaceDescription(
 }
 
 export interface PlaceMedia {
-  images: string[];
+  images: PlaceImage[];
   description?: PlaceDescription;
 }
 

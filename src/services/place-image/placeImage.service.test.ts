@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   isUsablePhoto,
   isTitleRelevant,
   toAbsoluteUrl,
   isInIndia,
   mentionsIndia,
+  fetchPlaceImage,
 } from './placeImage.service';
 
 describe('isUsablePhoto', () => {
@@ -85,5 +86,84 @@ describe('mentionsIndia', () => {
 
   it('rejects a summary that never mentions India', () => {
     expect(mentionsIndia({ description: 'A castle in Scotland' })).toBe(false);
+  });
+});
+
+// ── resolveVerifiedArticle's coordinate-less fallback (via fetchPlaceImage) ─
+//
+// Tested through the public fetchPlaceImage, same convention geocode.test.ts
+// uses for geocodeLocation — real captured API response shapes, not
+// reimplemented ones, mocked at the fetch boundary.
+
+function mockWikiSearchThenSummary(title: string, summary: Record<string, unknown>) {
+  const fetchMock = vi.fn();
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    json: () => Promise.resolve({ query: { search: [{ title }] } }),
+  });
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    json: () => Promise.resolve(summary),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('resolveVerifiedArticle (coordinate-less fallback, via fetchPlaceImage)', () => {
+  it('Warangal Fort: resolves the image even though the real article has no coordinates, because the title genuinely matches the query — regression for a live-confirmed false rejection', () => {
+    // Real captured response shape (Wikipedia REST summary API, live —
+    // confirmed this article has type "standard", an image, and no
+    // `coordinates` field at all): a UNESCO-tentative-list heritage site
+    // whose own Wikipedia infobox simply lacks geo-coordinates metadata.
+    mockWikiSearchThenSummary('Warangal Fort', {
+      type: 'standard',
+      title: 'Warangal Fort',
+      description: 'Building in Telangana, India',
+      extract: 'Warangal Fort is located in Warangal District, Telangana, India.',
+      originalimage: {
+        source:
+          'https://upload.wikimedia.org/wikipedia/commons/c/c3/Shiv_Linga_at_Warangal_Fort_Complex.jpg',
+      },
+      // no `coordinates` field — this is the exact real-world gap.
+    });
+
+    return fetchPlaceImage('Warangal Fort').then((url) => {
+      expect(url).toBe(
+        'https://upload.wikimedia.org/wikipedia/commons/c/c3/Shiv_Linga_at_Warangal_Fort_Complex.jpg',
+      );
+    });
+  });
+
+  it('a coordinate-less article whose title has NOTHING to do with the query is still rejected — the fallback re-verifies by name, it does not relax verification', () => {
+    // Same shape as above (standard, India-mentioning, no coordinates,
+    // has an image) but the resolved title shares no word with the query —
+    // proves losing the coordinates signal does not mean losing all
+    // verification.
+    mockWikiSearchThenSummary('Completely Unrelated Topic', {
+      type: 'standard',
+      title: 'Completely Unrelated Topic',
+      description: 'Something in Maharashtra, India',
+      extract: 'This is located in Maharashtra, India.',
+      originalimage: { source: 'https://upload.wikimedia.org/wikipedia/commons/unrelated.jpg' },
+    });
+
+    return fetchPlaceImage('Warangal Fort').then((url) => {
+      expect(url).toBeNull();
+    });
+  });
+
+  it('a coordinate-less article is still rejected on the OTHER existing gates (non-standard type) — the new fallback only replaces the coordinates check, not the rest', () => {
+    mockWikiSearchThenSummary('Warangal Fort (disambiguation)', {
+      type: 'disambiguation',
+      title: 'Warangal Fort (disambiguation)',
+      description: 'A disambiguation page',
+    });
+
+    return fetchPlaceImage('Warangal Fort').then((url) => {
+      expect(url).toBeNull();
+    });
   });
 });
