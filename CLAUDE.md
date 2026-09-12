@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Repository:** https://github.com/esaipavan/TravelMate (renamed from `travel-planner` — the old URL still redirects, but new clones/remotes should use this one)
+
 ## Commands
 
 ```bash
