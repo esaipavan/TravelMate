@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { PlaneTakeoff, ArrowRight, Sparkles, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
 import { formatDateRange } from '@/utils/formatters';
@@ -71,8 +72,7 @@ const TripImageCard = memo(function TripImageCard({ trip, reduced }: TripImageCa
             {/* AI badge — top right */}
             {trip.ai_brief_status === 'complete' && (
               <div
-                className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full px-1.5 py-0.5 backdrop-blur-sm"
-                style={{ background: 'rgba(99,102,241,0.75)' }}
+                className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-primary/75 px-1.5 py-0.5 backdrop-blur-sm"
                 aria-label="AI brief available"
               >
                 <Sparkles className="h-2.5 w-2.5 text-white" aria-hidden="true" />
@@ -158,11 +158,7 @@ export function UpcomingTripsSection() {
         </div>
       </div>
 
-      {isError && (
-        <p className="py-4 text-center text-sm text-muted-foreground">
-          Could not load trips. Please refresh.
-        </p>
-      )}
+      {isError && <ErrorState compact message="Could not load trips. Please refresh." />}
 
       {!isError && isLoading && (
         <div className="flex gap-3 overflow-hidden">

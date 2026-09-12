@@ -10,6 +10,9 @@ interface Props {
   onRetry?: () => void;
   onReload?: boolean;
   className?: string;
+  /** Sized for a widget slot (WidgetCard) instead of a full page — smaller
+   *  icon/padding, no title line, just the message. */
+  compact?: boolean;
 }
 
 export function ErrorState({
@@ -18,6 +21,7 @@ export function ErrorState({
   onRetry,
   onReload,
   className,
+  compact,
 }: Props) {
   const reduced = useReducedMotion();
 
@@ -25,20 +29,31 @@ export function ErrorState({
     <motion.div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-12 text-center',
+        'flex flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/20 bg-destructive/5 text-center',
+        compact ? 'gap-2.5 p-6' : 'p-12',
         className,
       )}
       variants={rv(CARD_VARIANTS, reduced)}
       initial="hidden"
       animate="show"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-        <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
+      <div
+        className={cn(
+          'flex items-center justify-center rounded-xl bg-destructive/10',
+          compact ? 'h-9 w-9' : 'h-12 w-12',
+        )}
+      >
+        <AlertTriangle
+          className={compact ? 'h-4 w-4 text-destructive' : 'h-6 w-6 text-destructive'}
+          aria-hidden
+        />
       </div>
 
       <div className="space-y-1.5">
-        <h3 className="font-semibold text-foreground">{title}</h3>
-        <p className="max-w-sm text-sm text-muted-foreground">{message}</p>
+        {!compact && <h3 className="font-semibold text-foreground">{title}</h3>}
+        <p className={cn('max-w-sm text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
+          {message}
+        </p>
       </div>
 
       <div className="flex gap-2">

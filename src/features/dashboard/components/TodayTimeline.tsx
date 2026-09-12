@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
 import {
   MapPin,
   Plus,
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { rv, CARD_VARIANTS } from '@/lib/motion';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { useCurrentTrip } from '../hooks/useDashboard';
 import { useItineraryDataReadOnly } from '@/features/itinerary/hooks/useItinerary';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,7 +69,6 @@ function TimelineSkeleton() {
 }
 
 export function TodayTimeline() {
-  const reduced = useReducedMotion();
   const { data: trip, isLoading: tripLoading } = useCurrentTrip();
   const { data: itinerary, isLoading: itineraryLoading } = useItineraryDataReadOnly(trip?.id ?? '');
 
@@ -98,14 +96,10 @@ export function TodayTimeline() {
   const isLoading = tripLoading || (!!trip && itineraryLoading);
 
   return (
-    <motion.section
-      aria-label="Today's itinerary"
-      className="rounded-2xl border border-border/50 bg-card p-5"
-      variants={rv(CARD_VARIANTS, reduced)}
-      initial="hidden"
-      animate="show"
-    >
-      {/* Header */}
+    // WidgetCard used purely as the shell (shared border/radius/motion) —
+    // the title+date+Add header has a two-line title WidgetCard's
+    // single-line header slot doesn't fit, so it stays custom here.
+    <WidgetCard>
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h2 className="text-sm font-semibold text-foreground">Today's Plan</h2>
@@ -126,7 +120,7 @@ export function TodayTimeline() {
       {/* No active trip */}
       {!trip && !isLoading && (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
             <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
           </div>
           <div className="space-y-1">
@@ -251,6 +245,6 @@ export function TodayTimeline() {
           </div>
         </>
       )}
-    </motion.section>
+    </WidgetCard>
   );
 }

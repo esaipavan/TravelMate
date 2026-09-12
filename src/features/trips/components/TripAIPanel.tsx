@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, Sparkles, RefreshCw, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WidgetEmptyState } from '@/components/shared/WidgetEmptyState';
 import { chatWithAI } from '@/services/ai/ai.service';
 import type { TripRow } from '../types';
 
@@ -19,7 +20,7 @@ function RecCard({ rec, index }: { rec: Rec; index: number }) {
   const reduced = useReducedMotion();
   return (
     <motion.div
-      className="flex gap-3 rounded-2xl border border-border/40 bg-card p-4 shadow-card"
+      className="flex gap-3 rounded-2xl border border-border/50 bg-card p-4 shadow-card"
       initial={reduced ? {} : { opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={
@@ -45,8 +46,8 @@ function PanelSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex gap-3 rounded-2xl border border-border/40 bg-card p-4">
-          <Skeleton className="h-8 w-8 shrink-0 rounded-xl" />
+        <div key={i} className="flex gap-3 rounded-2xl border border-border/50 bg-card p-4">
+          <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-3 w-full" />
@@ -137,7 +138,7 @@ export function TripAIPanel({ trip }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10">
             <Sparkles className="h-4 w-4 text-violet-500" />
           </div>
           <div>
@@ -174,16 +175,16 @@ export function TripAIPanel({ trip }: Props) {
       {isFetching ? (
         <PanelSkeleton />
       ) : isError ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 py-10 text-center">
-          <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">Couldn't load recommendations</p>
-            <p className="text-xs text-muted-foreground">AI service may be unavailable.</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            Try again
-          </Button>
-        </div>
+        <WidgetEmptyState
+          icon={AlertCircle}
+          title="Couldn't load recommendations"
+          description="AI service may be unavailable."
+          action={
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              Try again
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {(recs ?? []).map((rec, i) => (

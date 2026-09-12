@@ -156,21 +156,17 @@ export function WelcomeChecklist() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12, height: 0 }}
           transition={{ type: 'spring', damping: 24, stiffness: 100 }}
-          className="relative overflow-hidden rounded-2xl"
-          style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)' }}
+          className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary/5"
           aria-label="Trip setup checklist"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
             <div className="flex items-center gap-3">
-              <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                style={{ background: 'rgba(99,102,241,0.15)' }}
-              >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
                 {allDone ? (
-                  <Check className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                  <Check className="h-4 w-4 text-primary" aria-hidden="true" />
                 ) : (
-                  <BookOpen className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                  <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
                 )}
               </div>
               <div>
@@ -279,21 +275,17 @@ export function WelcomeChecklist() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -12, height: 0 }}
         transition={{ type: 'spring', damping: 24, stiffness: 100 }}
-        className="relative overflow-hidden rounded-2xl"
-        style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)' }}
+        className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary/5"
         aria-label="Getting started checklist"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
           <div className="flex items-center gap-3">
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-              style={{ background: 'rgba(99,102,241,0.15)' }}
-            >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
               {allDone ? (
-                <Check className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                <Check className="h-4 w-4 text-primary" aria-hidden="true" />
               ) : (
-                <BookOpen className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
               )}
             </div>
             <div>

@@ -1,13 +1,13 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles, AlertTriangle, RefreshCw, ArrowRight, FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SPRING } from '@/lib/motion';
 import { useOnboarding } from '@/features/onboarding/hooks/useOnboarding';
 import { useAuthStore } from '@/store/auth.store';
 import { useTripBrief } from '../hooks/useTripBrief';
 import { regenerateTripBrief } from '../services/brief.service';
-
-const SPRING = { type: 'spring', damping: 24, stiffness: 100 } as const;
 
 export function TripBriefCard() {
   const reduced = useReducedMotion() ?? false;
@@ -38,15 +38,15 @@ export function TripBriefCard() {
   if (isLoading) {
     return (
       <div
-        className="animate-pulse rounded-2xl border border-border/50 bg-card p-5"
+        className="rounded-2xl border border-border/50 bg-card p-5"
         role="status"
         aria-label="Loading AI brief"
       >
-        <div className="mb-3 h-3 w-1/3 rounded bg-muted" />
+        <Skeleton className="mb-3 h-3 w-1/3" />
         <div className="space-y-2">
-          <div className="h-3 w-full rounded bg-muted" />
-          <div className="h-3 w-4/5 rounded bg-muted" />
-          <div className="h-3 w-3/5 rounded bg-muted" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-4/5" />
+          <Skeleton className="h-3 w-3/5" />
         </div>
       </div>
     );
@@ -54,24 +54,29 @@ export function TripBriefCard() {
 
   if (!brief) return null;
 
+  // `primary` is this app's established "AI-generated content" accent —
+  // TripAIPanel's violet header badge and the destination-intel SourceTag AI
+  // kind both already use it — so the generating/complete states below stay
+  // visibly "AI-branded" without inventing a second ad hoc color (indigo-*)
+  // to mean the same thing.
   if (brief.status === 'generating') {
     return (
       <div
-        className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-5"
+        className="rounded-2xl border border-primary/20 bg-primary/5 p-5"
         role="status"
         aria-live="polite"
         aria-label={`Preparing AI brief for ${destination}`}
       >
         <div className="mb-3 flex items-center gap-2">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-400" aria-hidden="true" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-indigo-400">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
             Preparing your AI brief for {destination}...
           </span>
         </div>
         <div className="animate-pulse space-y-2" aria-hidden="true">
-          <div className="h-3 w-full rounded bg-indigo-500/10" />
-          <div className="h-3 w-4/5 rounded bg-indigo-500/10" />
-          <div className="h-3 w-3/5 rounded bg-indigo-500/10" />
+          <div className="h-3 w-full rounded bg-primary/10" />
+          <div className="h-3 w-4/5 rounded bg-primary/10" />
+          <div className="h-3 w-3/5 rounded bg-primary/10" />
         </div>
       </div>
     );
@@ -82,22 +87,19 @@ export function TripBriefCard() {
       <motion.div
         initial={reduced ? {} : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={SPRING}
-        className="rounded-2xl border border-indigo-500/20 p-5"
-        style={{
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.06))',
-        }}
+        transition={SPRING.gentle}
+        className="rounded-2xl border border-primary/20 bg-primary/5 p-5"
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400" aria-hidden="true" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-indigo-400">
+            <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-primary">
               AI brief ready
             </span>
           </div>
           <Link
             to={`/trips/${tripId}`}
-            className="flex items-center gap-1 rounded text-xs text-indigo-400 hover:text-indigo-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
+            className="flex items-center gap-1 rounded text-xs text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             View full brief
             <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -110,7 +112,7 @@ export function TripBriefCard() {
 
         <Link
           to={`/trips/${tripId}/itinerary`}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-3 text-xs font-medium text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-3 text-xs font-medium text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
           View Day 1 plan
@@ -119,16 +121,19 @@ export function TripBriefCard() {
     );
   }
 
-  // Failed state (brief.status === 'failed')
+  // Failed state (brief.status === 'failed') — `warning`, not `destructive`:
+  // the trip itself was created fine, only the AI brief generation didn't
+  // complete, so this isn't a hard error the rest of the app uses
+  // `destructive`/`ErrorState` for.
   return (
-    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+    <div className="rounded-2xl border border-warning/20 bg-warning/5 p-5">
       <p className="sr-only" role="status" aria-live="polite">
         AI brief could not be generated for {destination}.
       </p>
 
       <div className="mb-2 flex items-center gap-1.5">
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-400" aria-hidden="true" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-amber-400">
+        <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-warning">
           AI brief unavailable
         </span>
       </div>
@@ -144,7 +149,7 @@ export function TripBriefCard() {
             void handleRegenerate();
           }}
           disabled={isInitiating}
-          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-amber-500/15 px-3 text-xs font-medium text-amber-300 hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-warning/15 px-3 text-xs font-medium text-warning hover:bg-warning/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning disabled:opacity-50"
         >
           <RefreshCw
             className={['h-3.5 w-3.5', isInitiating ? 'animate-spin' : ''].join(' ')}
@@ -162,7 +167,7 @@ export function TripBriefCard() {
       </div>
 
       {initError && (
-        <p className="mt-2 text-xs text-rose-400" role="alert">
+        <p className="mt-2 text-xs text-destructive" role="alert">
           {initError}
         </p>
       )}

@@ -20,7 +20,7 @@ function StatChip({ icon: Icon, label, value, sub, accent, index }: StatChipProp
   const reduced = useReducedMotion();
   return (
     <motion.div
-      className="flex flex-col gap-1 rounded-2xl border border-border/40 bg-card px-4 py-4 shadow-card"
+      className="flex flex-col gap-1 rounded-2xl border border-border/50 bg-card px-4 py-4 shadow-card"
       initial={reduced ? {} : { opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={

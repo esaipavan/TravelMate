@@ -11,8 +11,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import type { LucideIcon } from 'lucide-react';
@@ -81,60 +81,39 @@ export function EnhancedWeatherWidget() {
 
   if (!destination) {
     return (
-      <motion.section
-        aria-label="Weather"
-        className="flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card p-5"
-        variants={rv(CARD_VARIANTS, reduced)}
-        initial="hidden"
-        animate="show"
-      >
-        <Sun className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-        <p className="text-center text-sm text-muted-foreground">
-          Start a trip to see destination weather.
-        </p>
-      </motion.section>
+      <WidgetCard
+        empty
+        emptyIcon={Sun}
+        emptyTitle="No destination yet"
+        emptyDescription="Start a trip to see destination weather."
+      />
     );
   }
 
   if (isLoading) {
     return (
-      <motion.section
-        aria-label="Weather loading"
-        className="space-y-3 rounded-2xl border border-border/50 bg-card p-5"
-        variants={rv(CARD_VARIANTS, reduced)}
-        initial="hidden"
-        animate="show"
-      >
-        <Skeleton className="h-3 w-32" />
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-14 w-14 rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-20" />
-            <Skeleton className="h-3 w-28" />
+      <WidgetCard>
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-32" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-14 w-14 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-14 rounded-xl" />
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-14 rounded-xl" />
-          ))}
-        </div>
-      </motion.section>
+      </WidgetCard>
     );
   }
 
   if (isError || !data) {
-    return (
-      <motion.section
-        aria-label="Weather"
-        className="flex min-h-[80px] items-center gap-3 rounded-2xl border border-border/50 bg-card p-5"
-        variants={rv(CARD_VARIANTS, reduced)}
-        initial="hidden"
-        animate="show"
-      >
-        <Sun className="h-5 w-5 text-muted-foreground/40" aria-hidden="true" />
-        <p className="text-sm text-muted-foreground">Weather unavailable for {destination}.</p>
-      </motion.section>
-    );
+    return <WidgetCard error={`Weather unavailable for ${destination}.`} />;
   }
 
   const { current, location } = data;
@@ -143,13 +122,7 @@ export function EnhancedWeatherWidget() {
   const isSun = current.weathercode <= 2;
 
   return (
-    <motion.section
-      aria-label={`Weather in ${location.displayName || destination}`}
-      className="rounded-2xl border border-border/50 bg-card p-5"
-      variants={rv(CARD_VARIANTS, reduced)}
-      initial="hidden"
-      animate="show"
-    >
+    <WidgetCard>
       {/* Location label */}
       <p className="mb-3 truncate text-xs font-medium text-muted-foreground">
         {location.displayName || destination}
@@ -211,6 +184,6 @@ export function EnhancedWeatherWidget() {
           </span>
         </div>
       </div>
-    </motion.section>
+    </WidgetCard>
   );
 }

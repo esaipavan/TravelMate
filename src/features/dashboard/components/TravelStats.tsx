@@ -57,13 +57,19 @@ export function TravelStats() {
 
   if (isLoading) {
     return (
-      <section aria-label="Travel statistics" aria-busy="true">
+      <motion.section
+        aria-label="Travel statistics"
+        aria-busy="true"
+        variants={rv(CARD_VARIANTS, reduced)}
+        initial="hidden"
+        animate="show"
+      >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
-      </section>
+      </motion.section>
     );
   }
 

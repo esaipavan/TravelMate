@@ -5,17 +5,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInDays, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { rv, HERO_VARIANTS } from '@/lib/motion';
+import { ProgressRing } from '@/components/shared/ProgressRing';
 import { getTripStatus, getTripProgress, todayLocal } from '@/utils/tripStatus';
 import { formatDateRange } from '@/utils/formatters';
 import { useCurrentTrip, useUpcomingTrips } from '../hooks/useDashboard';
 import { useDestinationTheme } from '../hooks/useDestinationTheme';
 import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
-import { usePlaceImage } from '@/hooks/usePlaceImage';
+import { usePlaceGallery } from '@/hooks/usePlaceGallery';
 import { useWeather } from '@/features/weather/hooks/useWeather';
 import { DestinationImage } from './DestinationImage';
-
-const RING_R = 42;
-const RING_CIRC = 2 * Math.PI * RING_R;
 
 function weatherEmoji(code: number): string {
   if (code === 0) return '☀️';
@@ -69,57 +67,6 @@ function WeatherBadge({ temp, code }: WeatherBadgeProps) {
   );
 }
 
-interface ProgressRingProps {
-  progress: number;
-  label: string;
-  accent: string;
-  reduced: boolean | null;
-}
-
-function ProgressRing({ progress, label, accent, reduced }: ProgressRingProps) {
-  const clamped = Math.min(Math.max(progress, 0), 1);
-  const offset = RING_CIRC * (1 - clamped);
-
-  return (
-    <div
-      className="relative h-20 w-20 shrink-0"
-      aria-label={`Trip progress: ${Math.round(clamped * 100)}%`}
-    >
-      <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-        <circle
-          cx="50"
-          cy="50"
-          r={RING_R}
-          fill="none"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth="6"
-        />
-        <motion.circle
-          cx="50"
-          cy="50"
-          r={RING_R}
-          fill="none"
-          stroke={accent}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray={RING_CIRC}
-          initial={{ strokeDashoffset: RING_CIRC }}
-          animate={{ strokeDashoffset: offset }}
-          transition={
-            reduced ? { duration: 0 } : { duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.5 }
-          }
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-lg font-bold tabular-nums leading-none text-white">
-          {Math.round(clamped * 100)}%
-        </span>
-        <span className="mt-0.5 text-[9px] leading-none text-white/60">{label}</span>
-      </div>
-    </div>
-  );
-}
-
 function HeroSkeleton() {
   return <Skeleton className="-mx-4 -mt-4 min-h-[460px] rounded-none lg:-mx-6 lg:-mt-6" />;
 }
@@ -138,8 +85,12 @@ export function TripCommandHero() {
   // No cover, or only the generic temple-gopuram stand-in → try a real,
   // place-specific Wikipedia photo; gradient otherwise.
   const wantsRealPhoto = !reconciledCover || isGenericTempleCover(reconciledCover);
-  const { imageUrl: enrichedCover } = usePlaceImage(destination, { enabled: wantsRealPhoto });
-  const coverSrc = wantsRealPhoto ? (enrichedCover ?? reconciledCover) : reconciledCover;
+  // Gallery hook (not the single-image one) so this shares its cached
+  // Wikipedia fetch with any other surface enriching the same destination —
+  // this compact dashboard widget only ever shows the lead photo, though;
+  // see DestinationHero for the visible multi-photo affordance.
+  const { images: enrichedImages } = usePlaceGallery(destination, { enabled: wantsRealPhoto });
+  const coverSrc = wantsRealPhoto ? (enrichedImages[0]?.url ?? reconciledCover) : reconciledCover;
 
   if (loadingCurr || loadingUp) return <HeroSkeleton />;
 
@@ -279,7 +230,7 @@ export function TripCommandHero() {
               <Link
                 to={`/trips/${displayTrip.id}`}
                 className={cn(
-                  'mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold',
+                  'mt-4 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-semibold',
                   'border border-white/20 bg-white/10 text-white backdrop-blur-sm',
                   'transition-colors hover:bg-white/20',
                 )}
@@ -295,6 +246,11 @@ export function TripCommandHero() {
                 progress={progress}
                 label="done"
                 accent={theme.accent}
+                variant="dark"
+                radius={42}
+                strokeWidth={6}
+                duration={1.4}
+                delay={0.5}
                 reduced={reduced}
               />
             )}

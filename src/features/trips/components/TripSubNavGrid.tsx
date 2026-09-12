@@ -166,7 +166,7 @@ const NavCard = memo(function NavCard({ def, index }: { def: CardDef; index: num
           className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <motion.div
-            className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border/40 bg-card p-4 shadow-card"
+            className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border/50 bg-card p-4 shadow-card"
             style={reduced ? undefined : { rotateX: rotX, rotateY: rotY }}
             whileHover={
               reduced

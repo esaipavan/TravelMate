@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { formatDateRange, tripDuration } from '@/utils/formatters';
 import { getTripStatus } from '@/utils/tripStatus';
 import { resolveTripCoverImage, isGenericTempleCover } from '@/utils/destinationTheme';
-import { usePlaceImage } from '@/hooks/usePlaceImage';
+import { usePlaceGallery } from '@/hooks/usePlaceGallery';
 import type { TripRow } from '../types';
 
 /* ── Destination gradient themes ──────────────────────────────── */
@@ -146,8 +146,11 @@ export function TripDetailHero({ trip, onEdit, onDelete, onFavToggle, isFavPendi
   // place-specific Wikipedia photo (e.g. the actual Tirumala temple for
   // Tirupati); gradient otherwise.
   const wantsRealPhoto = !reconciledCover || isGenericTempleCover(reconciledCover);
-  const { imageUrl: enriched } = usePlaceImage(trip.destination, { enabled: wantsRealPhoto });
-  const cover = wantsRealPhoto ? (enriched ?? reconciledCover) : reconciledCover;
+  // Gallery hook (not the single-image one) so this shares its cached
+  // Wikipedia fetch with any other surface enriching the same destination;
+  // this hero shows only the lead photo today.
+  const { images: enrichedImages } = usePlaceGallery(trip.destination, { enabled: wantsRealPhoto });
+  const cover = wantsRealPhoto ? (enrichedImages[0]?.url ?? reconciledCover) : reconciledCover;
   const duration = tripDuration(trip.start_date, trip.end_date);
   const status = getTripStatus(trip);
   const statusCfg = STATUS_LABEL[status] ?? STATUS_LABEL['upcoming'];

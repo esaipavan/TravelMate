@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Wallet, ArrowRight, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { formatCurrency } from '@/utils/formatters';
 import { getTripStatus, getTripProgress } from '@/utils/tripStatus';
 import type { TripRow } from '../types';
@@ -20,90 +21,79 @@ export function TripBudgetCard({ trip }: Props) {
   /* No budget set */
   if (trip.total_budget == null) {
     return (
-      <motion.div
-        className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 p-6 text-center"
-        initial={reduced ? {} : { opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.22, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
-          <Wallet className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">No budget set</p>
-          <p className="text-xs text-muted-foreground">Track spending by setting a budget.</p>
-        </div>
-        <Button asChild size="sm" variant="outline">
-          <Link to={`/trips/${trip.id}/budget`}>
-            <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-            Set budget
-          </Link>
-        </Button>
-      </motion.div>
+      <WidgetCard
+        icon={Wallet}
+        title="Budget"
+        empty
+        emptyIcon={Wallet}
+        emptyTitle="No budget set"
+        emptyDescription="Track spending by setting a budget."
+        emptyAction={
+          <Button asChild size="sm" variant="outline">
+            <Link to={`/trips/${trip.id}/budget`}>
+              <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+              Set budget
+            </Link>
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <motion.div
-      className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card p-5 shadow-card"
-      initial={reduced ? {} : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.22, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={reduced ? {} : { y: -3, boxShadow: '0 12px 36px -8px rgba(0,0,0,0.10)' }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-            <Wallet className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">Budget</span>
-        </div>
+    <WidgetCard
+      icon={Wallet}
+      title="Budget"
+      headerAction={
         <Link
           to={`/trips/${trip.id}/budget`}
-          className="hover:bg-primary/8 flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition-colors"
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
           aria-label="Open budget details"
         >
           Details
           <ArrowRight className="h-3 w-3" />
         </Link>
-      </div>
-
-      {/* Amount */}
-      <div>
-        <p className="text-3xl font-bold tabular-nums tracking-tight text-foreground">
-          {formatCurrency(trip.total_budget, trip.currency)}
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Total trip budget · {trip.currency}</p>
-      </div>
-
-      {/* Progress bar — only for active trips */}
-      {status === 'active' && (
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Trip progress</span>
-            <span className="font-medium tabular-nums">{pct}%</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-violet-500"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: pct / 100 }}
-              style={{ transformOrigin: 'left' }}
-              transition={
-                reduced ? { duration: 0 } : { duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }
-              }
-            />
-          </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        {/* Amount */}
+        <div>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-foreground">
+            {formatCurrency(trip.total_budget, trip.currency)}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Total trip budget · {trip.currency}
+          </p>
         </div>
-      )}
 
-      {/* Upcoming: days until trip */}
-      {status === 'upcoming' && (
-        <div className="bg-primary/6 rounded-xl px-3 py-2 text-xs text-primary/80">
-          Budget ready for your upcoming trip.
-        </div>
-      )}
-    </motion.div>
+        {/* Progress bar — only for active trips */}
+        {status === 'active' && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Trip progress</span>
+              <span className="font-medium tabular-nums">{pct}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-primary to-violet-500"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: pct / 100 }}
+                style={{ transformOrigin: 'left' }}
+                transition={
+                  reduced ? { duration: 0 } : { duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming: days until trip */}
+        {status === 'upcoming' && (
+          <div className="rounded-xl bg-primary/5 px-3 py-2 text-xs text-primary/80">
+            Budget ready for your upcoming trip.
+          </div>
+        )}
+      </div>
+    </WidgetCard>
   );
 }

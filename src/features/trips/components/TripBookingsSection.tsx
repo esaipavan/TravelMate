@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { BookingStatusBadge } from '@/components/shared/BookingStatusBadge';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetEmptyState } from '@/components/shared/WidgetEmptyState';
 import { useBookings } from '@/features/hotels/hooks/useBookings';
 import type { BookingMode } from '@/features/hotels/types';
 import type { TripRow } from '../types';
@@ -47,7 +49,11 @@ export function TripBookingsSection({ trip }: Props) {
   const localHref = `/local?dropoff=${dest}&tripId=${trip.id}`;
 
   return (
-    <section aria-label="Trip bookings" className="rounded-2xl border border-border/60 bg-card p-5">
+    // WidgetCard used purely as the shell (shared border/radius/motion) — the
+    // multi-button header (5 mode links) doesn't fit WidgetCard's single
+    // headerAction slot, so it stays custom here, same approach as
+    // TodayTimeline/TripAIPanel.
+    <WidgetCard>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -94,13 +100,11 @@ export function TripBookingsSection({ trip }: Props) {
       </div>
 
       {bookings.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/50 py-8 text-center">
-          <Plus className="h-7 w-7 text-muted-foreground/40" aria-hidden />
-          <p className="text-sm text-muted-foreground">
-            No bookings saved for this trip yet. Search stays or trains for{' '}
-            {trip.destination.split(',')[0]}.
-          </p>
-        </div>
+        <WidgetEmptyState
+          icon={Plus}
+          title="No bookings yet"
+          description={`Search stays or trains for ${trip.destination.split(',')[0]}.`}
+        />
       ) : (
         <div className="flex flex-col gap-2.5">
           <TripTotalsSummary bookings={bookings} trip={trip} />
@@ -116,7 +120,7 @@ export function TripBookingsSection({ trip }: Props) {
                   cancelled && 'opacity-60',
                 )}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Icon className="h-5 w-5 text-primary/70" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -222,6 +226,6 @@ export function TripBookingsSection({ trip }: Props) {
           })}
         </div>
       )}
-    </section>
+    </WidgetCard>
   );
 }
