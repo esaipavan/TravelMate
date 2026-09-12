@@ -4,11 +4,13 @@ import { toast } from 'sonner';
 import { Heart, CalendarPlus, Clock, Sunrise, Star, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { rv, CARD_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import type { Attraction, AttractionCategory } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type { Attraction, AttractionCategory, DestinationDataSource } from '../types';
 
 interface Props {
   attractions: Attraction[];
   destination: string;
+  source: DestinationDataSource | undefined;
 }
 
 const CATEGORY_META: Record<AttractionCategory, { label: string; cls: string }> = {
@@ -204,7 +206,7 @@ function AttractionCard({ attraction, isFavourite, onToggleFav }: CardProps) {
   );
 }
 
-export function AttractionsSection({ attractions, destination }: Props) {
+export function AttractionsSection({ attractions, destination, source }: Props) {
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
 
   if (attractions.length === 0) return null;
@@ -228,11 +230,14 @@ export function AttractionsSection({ attractions, destination }: Props) {
       className="space-y-5"
     >
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Top Attractions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {attractions.length} handpicked highlights — tap ♡ to save your favourites
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Top Attractions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {attractions.length} handpicked highlights — tap ♡ to save your favourites
+          </p>
+        </div>
+        <DestinationDataSourceTag source={source} />
       </div>
 
       {/* Grid */}

@@ -194,6 +194,13 @@ export interface AIInsight {
   priority: InsightPriority;
 }
 
+/** 'curated' — hand-verified static data (Goa today, DESTINATION_DATABASE).
+ *  'ai' — live LLM generation, gated behind AI_DESTINATION_GENERATION_ENABLED
+ *  and always rendered with an explicit "AI Advisory" label — never as a
+ *  verified fact. 'fallback' — no trustworthy data exists for this
+ *  destination; sections render their own honest empty/unknown state. */
+export type DestinationDataSource = 'curated' | 'ai' | 'fallback';
+
 export interface DestinationData {
   overview: DestinationOverview;
   weather: WeatherData;
@@ -204,9 +211,12 @@ export interface DestinationData {
   safety: SafetyInfo;
   checklist: ChecklistItem[];
   insights: AIInsight[];
-  /** Present and true only when this data is the generic fallback returned
-   * after an AI/provider failure — never set on real AI or curated data. */
+  /** Present on every response so section components can render the correct
+   * trust label (SourceTag) without re-deriving it from the destination
+   * name. `isFallback` is kept for the existing branches (safety/packing/
+   * companion) that already check it. */
   meta?: {
     isFallback: boolean;
+    source: DestinationDataSource;
   };
 }

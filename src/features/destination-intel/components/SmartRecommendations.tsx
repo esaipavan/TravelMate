@@ -2,11 +2,13 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { rv, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import type { AIInsight, InsightCategory } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type { AIInsight, InsightCategory, DestinationDataSource } from '../types';
 
 interface Props {
   destination: string;
   insights: AIInsight[];
+  source: DestinationDataSource | undefined;
 }
 
 const CATEGORY_STYLES: Record<InsightCategory, { badge: string; label: string }> = {
@@ -75,19 +77,22 @@ function InsightCard({
   );
 }
 
-export function SmartRecommendations({ destination, insights }: Props) {
+export function SmartRecommendations({ destination, insights, source }: Props) {
   const reduced = useReducedMotion();
 
   return (
     <section id="recommendations" aria-label="Local insights" className="space-y-5">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-          <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Local Insights</h2>
+            <p className="text-sm text-muted-foreground">Insider tips for {destination}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Local Insights</h2>
-          <p className="text-sm text-muted-foreground">Insider tips for {destination}</p>
-        </div>
+        <DestinationDataSourceTag source={source} />
       </div>
 
       {insights.length > 0 ? (

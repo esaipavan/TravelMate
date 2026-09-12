@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { rv, CARD_VARIANTS, LIST_VARIANTS, LIST_ITEM_VARIANTS } from '@/lib/motion';
-import type { Dish, Restaurant, FoodGuide, SpiceLevel } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type { Dish, Restaurant, FoodGuide, SpiceLevel, DestinationDataSource } from '../types';
 
 interface Props {
   food: FoodGuide;
   destination: string;
+  source: DestinationDataSource | undefined;
 }
 
 const SPICE_META: Record<SpiceLevel, { label: string; dots: number; cls: string }> = {
@@ -283,7 +285,7 @@ function DrinksTab({ food }: { food: FoodGuide }) {
   );
 }
 
-export function FoodSection({ food, destination }: Props) {
+export function FoodSection({ food, destination, source }: Props) {
   const [tab, setTab] = useState('dishes');
 
   const mustTryCount = food.dishes.filter((d) => d.mustTry).length;
@@ -291,11 +293,14 @@ export function FoodSection({ food, destination }: Props) {
   if (food.dishes.length === 0 && food.restaurants.length === 0) {
     return (
       <section id="food" aria-label={`Food and drink in ${destination}`} className="space-y-5">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Food &amp; Drink</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Curated food guide not available for this destination.
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Food &amp; Drink</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Curated food guide not available for this destination.
+            </p>
+          </div>
+          <DestinationDataSourceTag source={source} />
         </div>
         <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
           Ask your AI assistant about local cuisine, must-try dishes, and restaurant recommendations
@@ -308,12 +313,15 @@ export function FoodSection({ food, destination }: Props) {
   return (
     <section id="food" aria-label={`Food and drink in ${destination}`} className="space-y-5">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Food &amp; Drink</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {food.dishes.length} local dishes · {mustTryCount} must-tries · {food.restaurants.length}{' '}
-          recommended restaurants
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Food &amp; Drink</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {food.dishes.length} local dishes · {mustTryCount} must-tries ·{' '}
+            {food.restaurants.length} recommended restaurants
+          </p>
+        </div>
+        <DestinationDataSourceTag source={source} />
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>

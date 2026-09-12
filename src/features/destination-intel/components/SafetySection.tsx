@@ -20,11 +20,13 @@ import {
   LIST_ITEM_VARIANTS,
   SECTION_VARIANTS,
 } from '@/lib/motion';
-import type { SafetyInfo, SafetyRating } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type { SafetyInfo, SafetyRating, DestinationDataSource } from '../types';
 
 interface Props {
   safety: SafetyInfo;
   destination: string;
+  source: DestinationDataSource | undefined;
 }
 
 const RATING_META: Record<
@@ -70,7 +72,7 @@ const EMERGENCY_CARDS = [
   { key: 'general' as const, label: 'General / SOS', icon: Phone, color: 'rgb(139,92,246)' },
 ];
 
-export function SafetySection({ safety, destination }: Props) {
+export function SafetySection({ safety, destination, source }: Props) {
   const reduced = useReducedMotion();
   const rating = RATING_META[safety.overallRating];
   const RatingIcon = rating.icon;
@@ -91,11 +93,14 @@ export function SafetySection({ safety, destination }: Props) {
         aria-label={`Safety information for ${destination}`}
         className="space-y-5"
       >
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Safety</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Emergency contacts, local tips, and cultural etiquette
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Safety</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Emergency contacts, local tips, and cultural etiquette
+            </p>
+          </div>
+          <DestinationDataSourceTag source={source} />
         </div>
         <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
           Safety guide not available for this destination. Ask your AI assistant about local safety
@@ -115,15 +120,18 @@ export function SafetySection({ safety, destination }: Props) {
             Emergency contacts, local tips, and cultural etiquette
           </p>
         </div>
-        <motion.div
-          className={`flex items-center gap-2 rounded-full border px-4 py-2 ${rating.bg}`}
-          variants={rv(CARD_VARIANTS, reduced)}
-          initial="hidden"
-          animate="show"
-        >
-          <RatingIcon className={`h-4 w-4 ${rating.cls}`} aria-hidden />
-          <span className={`text-sm font-bold ${rating.cls}`}>{rating.label}</span>
-        </motion.div>
+        <div className="flex flex-wrap items-center gap-2">
+          <DestinationDataSourceTag source={source} />
+          <motion.div
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 ${rating.bg}`}
+            variants={rv(CARD_VARIANTS, reduced)}
+            initial="hidden"
+            animate="show"
+          >
+            <RatingIcon className={`h-4 w-4 ${rating.cls}`} aria-hidden />
+            <span className={`text-sm font-bold ${rating.cls}`}>{rating.label}</span>
+          </motion.div>
+        </div>
       </div>
 
       {/* Rating note */}

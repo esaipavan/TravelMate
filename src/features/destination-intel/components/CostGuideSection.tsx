@@ -7,11 +7,13 @@ import {
   LIST_VARIANTS,
   LIST_ITEM_VARIANTS,
 } from '@/lib/motion';
-import type { CostGuide } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type { CostGuide, DestinationDataSource } from '../types';
 
 interface Props {
   cost: CostGuide;
   destination: string;
+  source: DestinationDataSource | undefined;
 }
 
 const TIERS = [
@@ -138,7 +140,7 @@ function TierCard({
   );
 }
 
-export function CostGuideSection({ cost, destination }: Props) {
+export function CostGuideSection({ cost, destination, source }: Props) {
   const reduced = useReducedMotion();
   const maxTotal = Math.max(cost.dailyTotalBudget, cost.dailyTotalMidrange, cost.dailyTotalLuxury);
 
@@ -160,15 +162,18 @@ export function CostGuideSection({ cost, destination }: Props) {
             Estimated daily spend in {destination} · all prices in USD
           </p>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5">
-          <span className="text-xs font-medium text-muted-foreground">1 USD</span>
-          <span className="text-xs text-muted-foreground/60">≈</span>
-          <span className="text-xs font-bold text-foreground">
-            {cost.usdToLocalRate < 10
-              ? cost.usdToLocalRate.toFixed(2)
-              : Math.round(cost.usdToLocalRate).toLocaleString()}{' '}
-            {cost.localCurrencyCode}
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <DestinationDataSourceTag source={source} />
+          <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5">
+            <span className="text-xs font-medium text-muted-foreground">1 USD</span>
+            <span className="text-xs text-muted-foreground/60">≈</span>
+            <span className="text-xs font-bold text-foreground">
+              {cost.usdToLocalRate < 10
+                ? cost.usdToLocalRate.toFixed(2)
+                : Math.round(cost.usdToLocalRate).toLocaleString()}{' '}
+              {cost.localCurrencyCode}
+            </span>
+          </div>
         </div>
       </div>
 

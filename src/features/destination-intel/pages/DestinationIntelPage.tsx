@@ -121,24 +121,47 @@ export default function DestinationIntelPage() {
       />
 
       {/* Local insights (from the already-fetched destination guide — no extra AI call) */}
-      <SmartRecommendations destination={intel.overview.destination} insights={intel.insights} />
+      <SmartRecommendations
+        destination={intel.overview.destination}
+        insights={intel.insights}
+        source={intel.meta?.source}
+      />
 
       {/* Nearby places list (same TanStack Query cache as DestinationMap — no extra API call) */}
       <NearbyExplorer destination={trip.destination} />
 
-      {/* Existing curated sections */}
+      {/* Existing curated sections — each labeled with its actual trust level
+          (curated/AI/fallback) via intel.meta.source, required before
+          AI_DESTINATION_GENERATION_ENABLED can ever be turned back on. */}
       <AttractionsSection
         attractions={intel.attractions}
         destination={intel.overview.destination}
+        source={intel.meta?.source}
       />
 
-      <FoodSection food={intel.food} destination={intel.overview.destination} />
+      <FoodSection
+        food={intel.food}
+        destination={intel.overview.destination}
+        source={intel.meta?.source}
+      />
 
-      <TransportSection transport={intel.transport} destination={intel.overview.destination} />
+      <TransportSection
+        transport={intel.transport}
+        destination={intel.overview.destination}
+        source={intel.meta?.source}
+      />
 
-      <SafetySection safety={intel.safety} destination={intel.overview.destination} />
+      <SafetySection
+        safety={intel.safety}
+        destination={intel.overview.destination}
+        source={intel.meta?.source}
+      />
 
-      <CostGuideSection cost={intel.cost} destination={intel.overview.destination} />
+      <CostGuideSection
+        cost={intel.cost}
+        destination={intel.overview.destination}
+        source={intel.meta?.source}
+      />
 
       <PackingChecklist checklist={intel.checklist} destination={intel.overview.destination} />
     </motion.div>

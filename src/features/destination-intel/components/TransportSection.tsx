@@ -7,11 +7,18 @@ import {
   LIST_ITEM_VARIANTS,
   SECTION_VARIANTS,
 } from '@/lib/motion';
-import type { TransportGuide, TransportOption, TransportMode } from '../types';
+import { DestinationDataSourceTag } from './DestinationDataSourceTag';
+import type {
+  TransportGuide,
+  TransportOption,
+  TransportMode,
+  DestinationDataSource,
+} from '../types';
 
 interface Props {
   transport: TransportGuide;
   destination: string;
+  source: DestinationDataSource | undefined;
 }
 
 const MODE_COLOR: Partial<Record<TransportMode, string>> = {
@@ -106,7 +113,7 @@ function TransportCard({ option }: { option: TransportOption }) {
   );
 }
 
-export function TransportSection({ transport, destination }: Props) {
+export function TransportSection({ transport, destination, source }: Props) {
   const reduced = useReducedMotion();
 
   if (!transport.fromAirport && transport.options.length === 0) return null;
@@ -114,11 +121,14 @@ export function TransportSection({ transport, destination }: Props) {
   return (
     <section id="transport" aria-label={`Local transport in ${destination}`} className="space-y-5">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Local Transport</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Getting around {destination} — from the airport and beyond
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Local Transport</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Getting around {destination} — from the airport and beyond
+          </p>
+        </div>
+        <DestinationDataSourceTag source={source} />
       </div>
 
       {/* From Airport */}

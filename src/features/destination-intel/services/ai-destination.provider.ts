@@ -647,7 +647,7 @@ export class AIDestinationProvider implements DestinationProvider {
   async getDestinationData(destination: string): Promise<DestinationData> {
     // Static curated data takes precedence — it's hand-crafted and verified.
     if (hasStaticData(destination)) {
-      return getDestinationData(destination);
+      return { ...getDestinationData(destination), meta: { isFallback: false, source: 'curated' } };
     }
 
     // No trustworthy curated data for this destination. We must NOT present an
@@ -657,7 +657,8 @@ export class AIDestinationProvider implements DestinationProvider {
     // (safety/packing/companion) already branch on `meta.isFallback`.
     if (AI_DESTINATION_GENERATION_ENABLED) {
       try {
-        return await generateAIDestination(destination);
+        const data = await generateAIDestination(destination);
+        return { ...data, meta: { isFallback: false, source: 'ai' } };
       } catch (err) {
         if (import.meta.env.DEV) {
           console.warn(
@@ -668,6 +669,6 @@ export class AIDestinationProvider implements DestinationProvider {
       }
     }
 
-    return { ...buildGenericData(destination), meta: { isFallback: true } };
+    return { ...buildGenericData(destination), meta: { isFallback: true, source: 'fallback' } };
   }
 }
