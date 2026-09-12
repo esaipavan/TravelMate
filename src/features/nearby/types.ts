@@ -184,3 +184,17 @@ export function travelTime(distanceM: number): { walk: string; drive: string } {
   const fmt = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
   return { walk: `~${fmt(walkMins)} walk`, drive: `~${fmt(driveMins)} drive` };
 }
+
+// Data-source technical names → the honest, user-facing phrase for the
+// Source line/section — shared by PlaceDetailPanel and PlaceDetailSheet so
+// both surfaces describe the same field the same way. Falls back to the raw
+// technical string for any value this list doesn't recognise, rather than
+// hiding it.
+const DATA_SOURCE_LABELS: Record<string, string> = {
+  openstreetmap: 'OpenStreetMap',
+};
+
+export function dataSourceLabel(dataSource: string | undefined): string | null {
+  if (!dataSource) return null;
+  return DATA_SOURCE_LABELS[dataSource] ?? dataSource;
+}

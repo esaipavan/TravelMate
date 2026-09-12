@@ -6,19 +6,19 @@ import { cn } from '@/lib/utils';
 import { SourceTag, UnknownField } from '@/components/shared/SourceTag';
 import { getMapSearchUrl, getDirectionsUrl } from '@/lib/mapLinks';
 import { usePlaceMedia } from '@/hooks/usePlaceMedia';
+import type { PlaceImage } from '@/services/place-image/placeImage.service';
 import { usePlaceTripPlacements } from '@/features/itinerary/hooks/useItinerary';
 import { useTrips } from '@/features/trips/hooks/useTrips';
 import { formatLocationHierarchy } from '@/lib/geocode';
 import { useDestinationBrief } from '../../hooks/useDestinationBrief';
 import { deriveHighlights } from '../../services/nearby.service';
-import { CATEGORY_META, formatDistance, type NearbyPlace, type PlaceCategory } from '../../types';
-
-// Data-source technical names → the honest, user-facing phrase for the
-// Source section. Falls back to a generic "map data provider" for any value
-// this list doesn't recognise, rather than showing a raw technical string.
-const DATA_SOURCE_LABELS: Record<string, string> = {
-  openstreetmap: 'OpenStreetMap',
-};
+import {
+  CATEGORY_META,
+  formatDistance,
+  dataSourceLabel,
+  type NearbyPlace,
+  type PlaceCategory,
+} from '../../types';
 
 interface Props {
   place: NearbyPlace | null;
@@ -40,7 +40,7 @@ function GallerySection({
   name,
   category,
 }: {
-  images: string[];
+  images: PlaceImage[];
   isLoading: boolean;
   name: string;
   category: PlaceCategory;
@@ -55,8 +55,8 @@ function GallerySection({
       <div className="relative h-48 w-full overflow-hidden bg-muted sm:h-64">
         {hero ? (
           <img
-            key={hero}
-            src={hero}
+            key={hero.url}
+            src={hero.url}
             alt={`${name}${meta ? ` — ${meta.label}` : ''}`}
             className="h-full w-full object-cover"
             loading="lazy"
@@ -73,9 +73,19 @@ function GallerySection({
           </div>
         )}
         {hero && (
-          <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm">
+          // Links straight to the actual Wikipedia article this photo was
+          // verified against — "Verified photo" alone said THAT it was
+          // checked, not WHERE it came from; this lets a user confirm it
+          // themselves rather than trusting the label on faith.
+          <a
+            href={hero.wikipediaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm transition-colors hover:bg-black/60"
+            title={`View source: ${hero.wikipediaTitle} on Wikipedia`}
+          >
             <SourceTag kind="verified" label="Verified photo" className="text-white" />
-          </span>
+          </a>
         )}
         {images.length > 1 && (
           <span
@@ -92,9 +102,9 @@ function GallerySection({
           role="group"
           aria-label={`${images.length} photos of ${name}`}
         >
-          {images.map((url, i) => (
+          {images.map((img, i) => (
             <button
-              key={url}
+              key={img.url}
               type="button"
               onClick={() => setActive(i)}
               className={cn(
@@ -104,7 +114,7 @@ function GallerySection({
               aria-label={`Show photo ${i + 1} of ${images.length}`}
               aria-current={i === active}
             >
-              <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+              <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
             </button>
           ))}
         </div>
@@ -151,9 +161,7 @@ export function PlaceDetailSheet({
   const mapsUrl = getMapSearchUrl(place.lat, place.lon);
   const routeUrl = getDirectionsUrl(place.lat, place.lon);
   const hierarchyLine = formatLocationHierarchy(place.locationDetail, { includeLocality: true });
-  const dataSourceLabel = place.dataSource
-    ? (DATA_SOURCE_LABELS[place.dataSource] ?? place.dataSource)
-    : null;
+  const sourceLabel = dataSourceLabel(place.dataSource);
 
   // VERIFIED first (Geoapify's own category tags for THIS place) — only when
   // that yields nothing do we fall back to the AI destination brief's
@@ -232,7 +240,7 @@ export function PlaceDetailSheet({
                 isFavorite && 'border-rose-500/30 bg-rose-500/5 text-rose-500 hover:bg-rose-500/10',
               )}
               onClick={onFavorite}
-              title="Remember this place — kept on this device, not tied to any trip"
+              title="Remember this place — saved to your account, not tied to any trip"
             >
               <Heart className={cn('h-4 w-4', isFavorite && 'fill-rose-500')} aria-hidden="true" />
               {isFavorite ? 'Saved' : 'Save'}
@@ -403,12 +411,20 @@ export function PlaceDetailSheet({
               <li className="flex items-center gap-1.5">
                 <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
                 Place data
-                {dataSourceLabel ? `: Verified from ${dataSourceLabel}` : ': source unknown'}
+                {sourceLabel ? `: Verified from ${sourceLabel}` : ': source unknown'}
               </li>
               {images.length > 0 && (
                 <li className="flex items-center gap-1.5">
                   <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
-                  Photos: Verified from Wikipedia
+                  Photos: Verified from{' '}
+                  <a
+                    href={images[0].wikipediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Wikipedia — {images[0].wikipediaTitle}
+                  </a>
                 </li>
               )}
               {highlights.length > 0 && (
@@ -416,7 +432,7 @@ export function PlaceDetailSheet({
                   <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
                   Highlights:{' '}
                   {verifiedHighlights.length > 0
-                    ? `Verified from ${dataSourceLabel ?? 'map data'}`
+                    ? `Verified from ${sourceLabel ?? 'map data'}`
                     : 'AI advisory — not independently verified'}
                 </li>
               )}

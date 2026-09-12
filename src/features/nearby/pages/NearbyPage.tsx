@@ -646,7 +646,7 @@ export default function NearbyPage() {
                           onSelect={() => handlePlaceSelect(place)}
                           onFavorite={(e) => {
                             e.stopPropagation();
-                            toggleFavorite(place.id);
+                            toggleFavorite(place);
                           }}
                           isBroad={isBroad}
                           staggered
@@ -659,7 +659,9 @@ export default function NearbyPage() {
 
               {/* ── Right column: Map + detail panel ──────────────────────── */}
               <div className="relative flex-1">
-                {/* Map */}
+                {/* Map — taller on mobile (h-80, was h-64) so a selected
+                    place's detail panel below has real map still visible
+                    above it, not just enough room to fully cover a short box. */}
                 <InteractiveMap
                   centerLat={data.lat}
                   centerLon={data.lon}
@@ -668,21 +670,27 @@ export default function NearbyPage() {
                   filteredIds={mapVisibleIds}
                   selectedPlace={selectedPlace}
                   onPlaceSelect={handlePlaceSelect}
-                  className="h-64 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)]"
+                  className="h-80 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)]"
                 />
 
-                {/* Floating detail panel — absolutely positioned inside map column */}
+                {/* Floating detail panel — absolutely positioned inside map
+                    column. Capped to a fraction of the viewport height (not
+                    just the map box) with internal scroll, so on a short
+                    mobile map the panel can never grow tall enough to fully
+                    hide the map above it, and every action stays reachable
+                    by scrolling the panel itself rather than being clipped. */}
                 <AnimatePresence>
                   {selectedPlace && (
                     <div className="absolute bottom-4 left-4 right-4 z-[1000]">
                       <PlaceDetailPanel
                         place={selectedPlace}
                         isFavorite={isFavorite(selectedPlace.id)}
-                        onFavorite={() => toggleFavorite(selectedPlace.id)}
+                        onFavorite={() => toggleFavorite(selectedPlace)}
                         onClose={() => setSelectedPlace(null)}
                         isBroad={isBroad}
                         onAddToTrip={() => setAddToTripOpen(true)}
                         onViewDetails={() => setDetailSheetOpen(true)}
+                        className="max-h-[60vh] overflow-y-auto overflow-x-hidden lg:max-h-none lg:overflow-visible"
                       />
                     </div>
                   )}
@@ -702,7 +710,7 @@ export default function NearbyPage() {
               open={detailSheetOpen}
               onOpenChange={setDetailSheetOpen}
               isFavorite={!!selectedPlace && isFavorite(selectedPlace.id)}
-              onFavorite={() => selectedPlace && toggleFavorite(selectedPlace.id)}
+              onFavorite={() => selectedPlace && toggleFavorite(selectedPlace)}
               onAddToTrip={() => setAddToTripOpen(true)}
               isBroad={isBroad}
               relatedPlaces={data.places}

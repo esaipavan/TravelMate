@@ -89,8 +89,8 @@ export function DestinationOverview({ result }: Props) {
       <div className="relative h-48 w-full sm:h-60">
         {heroImage ? (
           <img
-            key={heroImage}
-            src={heroImage}
+            key={heroImage.url}
+            src={heroImage.url}
             alt={name}
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
@@ -103,9 +103,15 @@ export function DestinationOverview({ result }: Props) {
           aria-hidden
         />
         {heroImage && (
-          <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm">
+          <a
+            href={heroImage.wikipediaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 backdrop-blur-sm transition-colors hover:bg-black/60"
+            title={`View source: ${heroImage.wikipediaTitle} on Wikipedia`}
+          >
             <SourceTag kind="verified" label="Verified photo" className="text-white" />
-          </span>
+          </a>
         )}
         <div className="absolute inset-x-0 bottom-0 p-5">
           <h2 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">{name}</h2>
@@ -129,9 +135,9 @@ export function DestinationOverview({ result }: Props) {
           role="group"
           aria-label={`${images.length} photos of ${name}`}
         >
-          {images.slice(0, 5).map((url, i) => (
+          {images.slice(0, 5).map((img, i) => (
             <button
-              key={url}
+              key={img.url}
               type="button"
               onClick={() => setActiveImage(i)}
               className={cn(
@@ -143,7 +149,7 @@ export function DestinationOverview({ result }: Props) {
               aria-label={`Show photo ${i + 1} of ${images.length}`}
               aria-current={i === activeImage}
             >
-              <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+              <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
             </button>
           ))}
           {images.length > 5 && (

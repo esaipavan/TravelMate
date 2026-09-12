@@ -1041,6 +1041,54 @@ export type Database = {
           },
         ];
       };
+      saved_places: {
+        Row: {
+          address: string | null;
+          category: string;
+          country: string | null;
+          created_at: string;
+          district: string | null;
+          id: string;
+          latitude: number;
+          locality: string | null;
+          longitude: number;
+          name: string;
+          place_id: string;
+          state: string | null;
+          user_id: string;
+        };
+        Insert: {
+          address?: string | null;
+          category: string;
+          country?: string | null;
+          created_at?: string;
+          district?: string | null;
+          id?: string;
+          latitude: number;
+          locality?: string | null;
+          longitude: number;
+          name: string;
+          place_id: string;
+          state?: string | null;
+          user_id: string;
+        };
+        Update: {
+          address?: string | null;
+          category?: string;
+          country?: string | null;
+          created_at?: string;
+          district?: string | null;
+          id?: string;
+          latitude?: number;
+          locality?: string | null;
+          longitude?: number;
+          name?: string;
+          place_id?: string;
+          state?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

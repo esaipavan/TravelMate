@@ -11,15 +11,23 @@ import {
   CalendarPlus,
   Check,
   ChevronRight,
+  Compass,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SourceTag, UnknownField } from '@/components/shared/SourceTag';
 import { cn } from '@/lib/utils';
 import { rv, CARD_VARIANTS } from '@/lib/motion';
 import { getMapSearchUrl, getDirectionsUrl } from '@/lib/mapLinks';
+import { formatLocationHierarchy } from '@/lib/geocode';
 import { usePlaceTripPlacements } from '@/features/itinerary/hooks/useItinerary';
 import { useTrips } from '@/features/trips/hooks/useTrips';
-import { CATEGORY_META, formatDistance, travelTime, type NearbyPlace } from '../../types';
+import {
+  CATEGORY_META,
+  formatDistance,
+  travelTime,
+  dataSourceLabel,
+  type NearbyPlace,
+} from '../../types';
 
 interface Props {
   place: NearbyPlace;
@@ -55,6 +63,8 @@ export function PlaceDetailPanel({
   const time = travelTime(place.distance);
   const mapsUrl = getMapSearchUrl(place.lat, place.lon);
   const routeUrl = getDirectionsUrl(place.lat, place.lon);
+  const hierarchyLine = formatLocationHierarchy(place.locationDetail, { includeLocality: true });
+  const sourceLabel = dataSourceLabel(place.dataSource);
   const { data: placements } = usePlaceTripPlacements(place);
   const { data: trips } = useTrips();
   const placementSummary =
@@ -103,7 +113,12 @@ export function PlaceDetailPanel({
               <button
                 type="button"
                 onClick={onViewDetails}
-                className="-ml-0.5 flex items-center gap-0.5 truncate rounded px-0.5 py-2 text-left text-sm font-bold text-foreground hover:text-primary"
+                // Visible padding is unchanged (keeps alignment with the
+                // emoji icon beside it); the actual tap target is expanded
+                // to the ~44px accessibility minimum via an invisible
+                // pseudo-element instead, so this stays the primary path
+                // into the full detail sheet without shifting layout.
+                className="relative -ml-0.5 flex items-center gap-0.5 truncate rounded px-0.5 py-2 text-left text-sm font-bold text-foreground after:absolute after:inset-x-0 after:-bottom-2.5 after:-top-2.5 after:content-[''] hover:text-primary"
                 title="View full place details"
               >
                 <span className="truncate">{place.name}</span>
@@ -128,10 +143,17 @@ export function PlaceDetailPanel({
 
         {/* Address */}
         {place.address && (
-          <p className="mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+          <p className="mb-1 flex items-start gap-1.5 text-xs text-muted-foreground">
             <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
             {place.address}
           </p>
+        )}
+
+        {/* Location hierarchy (locality · district · state) — same
+            structured data and formatter PlaceDetailSheet already shows;
+            the compact panel was previously missing this. */}
+        {hierarchyLine && (
+          <p className="mb-3 truncate pl-4 text-[11px] text-muted-foreground/70">{hierarchyLine}</p>
         )}
 
         {/* Distance + travel */}
@@ -219,6 +241,15 @@ export function PlaceDetailPanel({
           </p>
         )}
 
+        {/* Source — a condensed one-line version of the full Source section
+            in PlaceDetailSheet (Compass icon, "Verified from X" phrasing,
+            same shared dataSourceLabel), so the compact panel doesn't leave
+            provenance unstated for a user who never opens the full sheet. */}
+        <p className="mb-3 flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+          <Compass className="h-3 w-3 shrink-0" aria-hidden="true" />
+          Place data{sourceLabel ? `: Verified from ${sourceLabel}` : ': source unknown'}
+        </p>
+
         {/* Actions */}
         <div className="flex gap-2">
           <Button
@@ -229,7 +260,7 @@ export function PlaceDetailPanel({
               isFavorite && 'border-rose-500/30 bg-rose-500/5 text-rose-500 hover:bg-rose-500/10',
             )}
             onClick={onFavorite}
-            title="Remember this place — kept on this device, not tied to any trip"
+            title="Remember this place — saved to your account, not tied to any trip"
           >
             <Heart
               className={cn('h-3.5 w-3.5', isFavorite && 'fill-rose-500')}

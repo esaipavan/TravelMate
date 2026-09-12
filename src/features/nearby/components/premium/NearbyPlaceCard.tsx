@@ -87,11 +87,14 @@ export function NearbyPlaceCard({
           <p className="truncate text-sm font-semibold text-foreground" title={place.name}>
             {place.name}
           </p>
-          {/* Favorite button */}
+          {/* Favorite button — the visible icon stays small (14px), but the
+              actual tap target is expanded to the ~44px accessibility
+              minimum via an invisible pseudo-element, same technique already
+              used for LoginPage's password-visibility toggle. */}
           <button
             onClick={onFavorite}
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:text-rose-500"
+            className="relative shrink-0 rounded-full p-1 text-muted-foreground transition-colors after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:text-rose-500"
           >
             <Heart
               className={cn('h-3.5 w-3.5', isFavorite && 'fill-rose-500 text-rose-500')}
@@ -147,13 +150,16 @@ export function NearbyPlaceCard({
           )}
         </div>
 
-        {/* Contact info */}
-        <div className="mt-1 flex items-center gap-2">
+        {/* Contact info — each link gets invisible vertical padding (offset
+            by a matching negative margin so row height/layout is unchanged)
+            to bring its tap height closer to the accessibility minimum, plus
+            a wider gap between links to reduce mis-taps on narrow screens. */}
+        <div className="-my-1.5 mt-1 flex items-center gap-3">
           {place.phone && (
             <a
               href={`tel:${place.phone}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1 py-1.5 text-[10px] text-muted-foreground hover:text-foreground"
               aria-label={`Call ${place.name}`}
             >
               <Phone className="h-2.5 w-2.5" aria-hidden="true" />
@@ -166,7 +172,7 @@ export function NearbyPlaceCard({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-indigo-500"
+              className="flex items-center gap-1 py-1.5 text-[10px] text-muted-foreground hover:text-indigo-500"
               aria-label={`Visit ${place.name} website`}
             >
               <Globe className="h-2.5 w-2.5" aria-hidden="true" />
@@ -178,7 +184,7 @@ export function NearbyPlaceCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-indigo-500"
+            className="ml-auto flex items-center gap-1 py-1.5 text-[10px] text-muted-foreground hover:text-indigo-500"
             aria-label={`Get directions to ${place.name}`}
           >
             <RouteIcon className="h-2.5 w-2.5" aria-hidden="true" />
