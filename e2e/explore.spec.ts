@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import { search, resultCards, DENSE } from './helpers';
 
 // Authenticated Explore/Nearby regression suite (uses the saved storageState).
 //
@@ -12,23 +12,10 @@ import type { Page } from '@playwright/test';
 // Geoapify is a shared free-tier quota, so each test performs at most one
 // destination search and the heavier interactions are combined into a single
 // desktop smoke.
-
-const DENSE = 'Hampi'; // heritage destination that reliably returns many attractions
-
-// Fill the destination field and submit via Enter (the "Explore" button label is
-// hidden on mobile, so Enter is the cross-viewport-robust trigger).
-async function search(page: Page, term: string): Promise<void> {
-  const input = page.getByLabel('Destination');
-  await input.click();
-  await input.fill(term);
-  await input.press('Enter');
-}
-
-// A result card is the role="button" that contains a favourite toggle — unique
-// to cards (category chips do not), so this reliably targets result cards.
-function resultCards(page: Page) {
-  return page.getByRole('button').filter({ has: page.getByRole('button', { name: /favorites/i }) });
-}
+//
+// search()/resultCards()/DENSE now live in ./helpers.ts, shared with the
+// other authenticated spec files added alongside this one (Save/Favorites,
+// geocoding safety, place-detail consistency, mobile viewports, Add to Trip).
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/nearby');
@@ -60,16 +47,35 @@ test('Explore desktop smoke: map, clustering, selection, detail, category filter
   await expect(clusters.first()).toBeVisible({ timeout: 30_000 });
   const markersBefore = await page.locator('.leaflet-marker-icon').count();
   await clusters.first().click();
-  await expect(page.getByRole('link', { name: 'View' })).toHaveCount(0); // no detail from a cluster
+  // exact: true — result cards' own "Get directions to <place name>" Route
+  // links can legitimately contain the substring "view" (e.g. "Panorama View
+  // Point"), which a non-exact name match would wrongly count here too.
+  await expect(page.getByRole('link', { name: 'View', exact: true })).toHaveCount(0); // no detail from a cluster
+  // A click zooms to fit that cluster's own bounds (default
+  // zoomToBoundsOnClick) — for a very large/wide supercluster (Hampi's dense
+  // old-town has one with 100+ places) that can still leave most of it
+  // re-clustered at the new zoom, so one click isn't always enough. Click
+  // again whenever the layout hasn't changed yet; library defaults (zoom,
+  // then spiderfy once no further zoom is possible) guarantee it eventually
+  // will.
   await expect
-    .poll(async () => page.locator('.leaflet-marker-icon').count(), { timeout: 15_000 })
+    .poll(
+      async () => {
+        const count = await page.locator('.leaflet-marker-icon').count();
+        if (count === markersBefore && (await clusters.count()) > 0) {
+          await clusters.first().click();
+        }
+        return count;
+      },
+      { timeout: 20_000 },
+    )
     .not.toBe(markersBefore); // the map re-clustered (zoomed/expanded)
 
   // E — selecting a result card opens PlaceDetailPanel for that place.
   const firstCard = resultCards(page).first();
   const name = await firstCard.locator('p[title]').first().getAttribute('title');
   await firstCard.click();
-  const view = page.getByRole('link', { name: 'View' });
+  const view = page.getByRole('link', { name: 'View', exact: true }); // exact — see cluster-click note above
   const route = page.getByRole('link', { name: 'Route' });
   await expect(view).toBeVisible();
   await expect(route).toBeVisible();
@@ -80,12 +86,18 @@ test('Explore desktop smoke: map, clustering, selection, detail, category filter
   expect(await route.getAttribute('href')).toMatch(/destination=-?\d+(\.\d+)?,-?\d+(\.\d+)?/);
 
   // D(category) — selecting a category chip changes the visible result set.
+  // Uses the same resultCards() locator as the rest of this test — the
+  // previous `/in Google Maps$/` link-name match was stale copy from an
+  // earlier card design; no current Explore/Nearby link carries that text
+  // (PlaceDetailPanel's Maps link is bare "View", NearbyPlaceCard's is
+  // "Get directions to <place>"), so it always matched zero links.
   const group = page.getByRole('group', { name: 'Filter by category' });
-  const mapsLinks = page.getByRole('link', { name: /in Google Maps$/ });
-  const totalBefore = await mapsLinks.count();
+  const totalBefore = await resultCards(page).count();
   // Chips: index 0 is "All"; pick the first specific category chip.
   await group.getByRole('button').nth(1).click();
-  await expect.poll(async () => mapsLinks.count(), { timeout: 15_000 }).not.toBe(totalBefore); // filtered set differs from "All"
+  await expect
+    .poll(async () => resultCards(page).count(), { timeout: 15_000 })
+    .not.toBe(totalBefore); // filtered set differs from "All"
 });
 
 // G — mobile smoke: search → select → detail, no horizontal overflow.
@@ -106,7 +118,8 @@ test('Explore mobile smoke: search, select, detail, no horizontal overflow', asy
 
   // A result is still selectable on mobile.
   await resultCards(page).first().click();
-  await expect(page.getByRole('link', { name: 'View' })).toBeVisible();
+  // exact: true — see the desktop smoke's cluster-click note above.
+  await expect(page.getByRole('link', { name: 'View', exact: true })).toBeVisible();
 });
 
 // D(stale markers + honest empty) — desktop only.

@@ -13,6 +13,10 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // supabase/functions/**/*.test.ts: Edge Functions are Deno code, but
+    // their pure (non-Deno-API) helper functions — e.g. hotels-search's
+    // response mapper — are plain TS and testable under Node like anything
+    // else. Functions that touch Deno.env/fetch stay untested here.
+    include: ['src/**/*.test.ts', 'supabase/functions/**/*.test.ts'],
   },
 });
