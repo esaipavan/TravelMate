@@ -21,6 +21,10 @@ import { rv, PAGE_VARIANTS } from '@/lib/motion';
 import { MembersSection } from '@/features/collaboration/components/MembersSection';
 import { ActivityFeed } from '@/features/collaboration/components/ActivityFeed';
 import { useTripRole } from '@/features/collaboration/hooks/useTripRole';
+import { WidgetCustomizeBar } from '@/components/shared/WidgetCustomizeBar';
+import { useWidgetOrder } from '@/hooks/useWidgetOrder';
+import type { TripRow } from '../types';
+import type { EffectiveRole } from '@/features/collaboration/types';
 
 /* ── Section entrance wrapper ─────────────────────────────────── */
 function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -37,6 +41,49 @@ function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: n
   );
 }
 
+// Registry of reorderable/hideable Trip Detail sections, rendered between
+// the pinned hero and the fixed TripItinerary/dialogs/FAB below. `stats` and
+// `membersActivity`/`budgetNotes` group an existing intentional grid layout
+// as one reorderable unit (same reasoning as DashboardPage's
+// `todayAndWeather`/`travelOverview`). `shareControl` is only registered
+// when the viewer canEdit — permission-gating stays separate from the
+// user's own show/hide preference, so a viewer without edit rights never
+// sees a "hidden" entry for something they were never allowed to see.
+function buildWidgetRegistry(
+  trip: TripRow,
+  myRole: EffectiveRole,
+  canEdit: boolean,
+): Record<string, { label: string; render: () => React.ReactNode }> {
+  const registry: Record<string, { label: string; render: () => React.ReactNode }> = {
+    stats: { label: 'Trip stats', render: () => <TripStatsRow trip={trip} /> },
+    membersActivity: {
+      label: 'Members & activity',
+      render: () => (
+        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+          <MembersSection tripId={trip.id} myRole={myRole} />
+          <ActivityFeed tripId={trip.id} />
+        </div>
+      ),
+    },
+    budgetNotes: {
+      label: 'Budget & notes',
+      render: () => (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TripBudgetCard trip={trip} />
+          <TripNotesCard trip={trip} />
+        </div>
+      ),
+    },
+    subNav: { label: 'Trip tools', render: () => <TripSubNavGrid tripId={trip.id} /> },
+    bookings: { label: 'Bookings', render: () => <TripBookingsSection trip={trip} /> },
+    aiPanel: { label: 'AI recommendations', render: () => <TripAIPanel trip={trip} /> },
+  };
+  if (canEdit) {
+    registry.shareControl = { label: 'Share trip', render: () => <TripShareControl trip={trip} /> };
+  }
+  return registry;
+}
+
 /* ── TripDetailPage ───────────────────────────────────────────── */
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +93,12 @@ export default function TripDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const reduced = useReducedMotion();
+
+  const defaultOrder = ['stats', 'membersActivity', 'budgetNotes', 'subNav', 'bookings'].concat(
+    canEdit ? ['shareControl'] : [],
+    ['aiPanel'],
+  );
+  const { entries, visibleIds, reorder, toggleHidden } = useWidgetOrder('tripDetail', defaultOrder);
 
   /* ── Loading ── */
   if (isLoading) return <TripDetailSkeleton />;
@@ -60,6 +113,8 @@ export default function TripDetailPage() {
       />
     );
   if (!trip) return <Navigate to="/trips" replace />;
+
+  const registry = buildWidgetRegistry(trip, myRole, canEdit);
 
   function handleFavToggle() {
     toggleFav(
@@ -91,52 +146,29 @@ export default function TripDetailPage() {
 
         {/* ── Content sections ── */}
         <div className="mt-5 space-y-5">
-          {/* Stats chips row */}
-          <Section delay={0.05}>
-            <TripStatsRow trip={trip} />
-          </Section>
+          <div className="flex justify-end">
+            <WidgetCustomizeBar
+              entries={entries}
+              labels={Object.fromEntries(Object.entries(registry).map(([id, w]) => [id, w.label]))}
+              onReorder={reorder}
+              onToggleHidden={toggleHidden}
+              pinnedLabels={['Trip hero']}
+            />
+          </div>
 
-          {/* Members + Activity */}
-          <Section delay={0.08}>
-            <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-              <MembersSection tripId={trip.id} myRole={myRole} />
-              <ActivityFeed tripId={trip.id} />
-            </div>
-          </Section>
+          {visibleIds
+            .filter((id) => registry[id])
+            .map((id, index) => (
+              <Section key={id} delay={0.05 + index * 0.03}>
+                {registry[id].render()}
+              </Section>
+            ))}
 
-          {/* Budget + Notes/Map row */}
-          <Section delay={0.1}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TripBudgetCard trip={trip} />
-              <TripNotesCard trip={trip} />
-            </div>
-          </Section>
-
-          {/* Sub-feature navigation grid */}
-          <Section delay={0.14}>
-            <TripSubNavGrid tripId={trip.id} />
-          </Section>
-
-          {/* Attached bookings (all transport modes) */}
-          <Section delay={0.16}>
-            <TripBookingsSection trip={trip} />
-          </Section>
-
-          {/* Day-by-day itinerary derived from attached bookings.
-              Renders nothing (no wrapper gap) when the trip has no bookings. */}
+          {/* Day-by-day itinerary derived from attached bookings. Fixed
+              position (not user-reorderable) — self-collapses (no wrapper
+              gap) when the trip has no bookings, driven by data, not a
+              show/hide preference. */}
           <TripItinerary trip={trip} />
-
-          {/* Owner-only public share control */}
-          {canEdit && (
-            <Section delay={0.18}>
-              <TripShareControl trip={trip} />
-            </Section>
-          )}
-
-          {/* AI Recommendations */}
-          <Section delay={0.18}>
-            <TripAIPanel trip={trip} />
-          </Section>
         </div>
 
         {/* ── Floating edit FAB (owner/editor only) ── */}
